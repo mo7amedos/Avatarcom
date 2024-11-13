@@ -1,0 +1,10 @@
+{
+    "id": "vigstudio/vig-seo",
+    "name": "VigSeo",
+    "namespace": "VigStudio\\VigSeo\\",
+    "provider": "VigStudio\\VigSeo\\Providers\\VigSeoServiceProvider",
+    "author": "Nghĩa nè",
+    "url": "https://github.com/vigstudio/vig-seo",
+    "version": "0.0.11",
+    "description": "The description for module vig_seo"
+}

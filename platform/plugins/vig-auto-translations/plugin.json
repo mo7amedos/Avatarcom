@@ -1,0 +1,13 @@
+{
+    "id": "vigstudio/vig-auto-translations",
+    "name": "Auto Translations",
+    "namespace": "VigStudio\\VigAutoTranslations\\",
+    "provider": "VigStudio\\VigAutoTranslations\\Providers\\VigAutoTranslationsServiceProvider",
+    "author": "Nghĩa Nè",
+    "url": "https://nghiane.com",
+    "version": "0.1.9",
+    "description": "Auto Translations Theme and Plugin for Botble CMS, using Google or Amazon Translate",
+    "required_plugins": [
+        "translation"
+    ]
+}
