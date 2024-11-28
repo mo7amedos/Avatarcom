@@ -3,7 +3,7 @@
     "description": "Auto generate content",
     "type": "package",
     "require": {
-        "orhanerday/open-ai": "^5.1"
+            "orhanerday/open-ai": "^4.7.1"
     },
     "authors": [
         {
