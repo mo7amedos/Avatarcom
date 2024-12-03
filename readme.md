@@ -5,6 +5,7 @@ MAIL_USERNAME=test@avatarcom.net
 MAIL_PASSWORD=3z+l(KXLijmX
 MAIL_ENCRYPTION=ssl
 MAIL_FROM_ADDRESS=test@avatarcom.net
+
 2 - storage file path .
 
 3 - config  database
