@@ -9,8 +9,9 @@ MAIL_FROM_ADDRESS=test@avatarcom.net
 3 - config  database
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE="bazaregstore_avatarcom"
-DB_USERNAME="bazaregstore_avatarcom"
-DB_PASSWORD="v--l@lgV[FLO"
+DB_DATABASE="avatarcom"
+DB_USERNAME="avatarcom"
+DB_PASSWORD="avatarcom"
+
 4 - base  Url  
 AURL=https://bazaregstore.com
