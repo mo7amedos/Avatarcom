@@ -13,4 +13,4 @@ DB_DATABASE="bazaregstore_avatarcom"
 DB_USERNAME="bazaregstore_avatarcom"
 DB_PASSWORD="v--l@lgV[FLO"
 4 - base  Url  
-AURL=https://bazaregstore.com
+AURL=https://bazaregstore.com test
