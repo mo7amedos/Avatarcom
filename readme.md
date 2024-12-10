@@ -16,4 +16,4 @@ DB_USERNAME="avatarcom"
 DB_PASSWORD="avatarcom"
 
 4 - base  Url  
-AURL=https://bazaregstore.com
+AURL=https://bazaregstore.com test
