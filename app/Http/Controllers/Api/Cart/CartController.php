@@ -110,7 +110,9 @@ public function update_cart(Request $request)
 
 public function get_my_cart(Request $request)
 {
-   return $OrderProduct = OrderProduct::get();
+   return $OrderProduct = OrderProduct::query()
+        ->with(['product.translations', 'product.wishlists.customer'])
+        ->paginate(20);
 
     $formattedProducts = [];
 
