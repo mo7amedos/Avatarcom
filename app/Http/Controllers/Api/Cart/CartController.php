@@ -114,6 +114,7 @@ public function get_my_cart(Request $request)
         ->with(['product.translations', 'product.wishlists.customer'])
         ->orderBy('id')
         ->orderByDesc('created_at')
+        ->whereUser_id(auth()->user()->id)
         ->paginate(20);
 
     $formattedProducts = [];
