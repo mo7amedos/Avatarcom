@@ -9,6 +9,20 @@ use App\Http\Controllers\Api\Cart\CartController;
 
 
 
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+
+Route::get('add-column', function () {
+    if (!Schema::hasColumn('ec_order_product', 'user_id')) {
+        Schema::table('ec_order_product', function (Blueprint $table) {
+            $table->integer('user_id')->nullable(); 
+        });
+
+        return "العمود 'user_id' تم إضافته بنجاح.";
+    } else {
+        return "العمود 'user_id' موجود بالفعل.";
+    }
+});
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
