@@ -255,6 +255,58 @@ public function delete_my_cart(Request $request)
 }
 
 
+
+
+public function add_order(Request $request)
+{
+    $validated = $request->validate([
+        'shipping_option' => 'nullable|string|max:60',
+        'shipping_method' => 'required|string|max:60',
+        'amount' => 'required|numeric|min:0',
+        'tax_amount' => 'nullable|numeric|min:0',
+        'shipping_amount' => 'nullable|numeric|min:0',
+        'description' => 'nullable|string|max:500',
+        'coupon_code' => 'nullable|string|max:120',
+        'discount_amount' => 'nullable|numeric|min:0',
+        'sub_total' => 'required|numeric|min:0',
+        // 'cancellation_reason' => 'nullable|string|max:191',
+        // 'cancellation_reason_description' => 'nullable|string|max:500',
+        // 'payment_id' => 'nullable|exists:payments,id',
+    ]);
+
+    $Order = new Order();
+    $Order->code = rand(100000, 999999);
+    $Order->user_id = auth()->user()->id;
+    $Order->shipping_option = $request->shipping_option;
+    $Order->shipping_method = $request->shipping_method;
+    $Order->status = 'pending';
+    $Order->amount = $request->amount;
+    $Order->tax_amount = $request->tax_amount ?? 0;
+    $Order->shipping_amount = $request->shipping_amount ?? 0;
+    $Order->description = $request->description;
+    $Order->coupon_code = $request->coupon_code;
+    $Order->discount_amount = $request->discount_amount ?? 0;
+    $Order->sub_total = $request->sub_total;
+    $Order->is_confirmed = 0;
+    $Order->is_finished = 0;
+    $Order->payment_id = $request->payment_id;
+
+    $Order->save();
+
+    $customResponse = [
+        'success' => true,
+        'message' => __('add Order success'),
+        'data' => $Order,
+    ];
+
+    return response()->json($customResponse, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+}
+
+
+   
+
+
+
 public function get_my_order(Request $request)
 { 
     return $MyOrders = Order::with('getMyOrderProducts')

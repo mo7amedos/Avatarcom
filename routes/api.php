@@ -58,7 +58,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/get-my-cart', [CartController::class, 'get_my_cart']);
     Route::get('/delete-my-cart', [CartController::class, 'delete_my_cart']);
 
+    Route::post('/add-order', [CartController::class, 'add_order']);
     Route::get('/get-my-order', [CartController::class, 'get_my_order']);
+    
     Route::get('/delete-account', [AuthController::class, 'delete_account']);
     Route::get('/logout', [AuthController::class, 'logout']);
 
