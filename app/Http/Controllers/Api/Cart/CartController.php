@@ -319,23 +319,23 @@ public function get_my_order(Request $request)
 
 
 public function coupon(Request $request)
-{ 
-    $Discount = Discount::where('code' , $coupon_id)->first();
-    
+{
+    // حاول الحصول على الكوبون بناءً على المعرف
+    $Discount = Discount::where('code', $request->coupon_id)->first();  // تأكد من أن $coupon_id يأتي من request
+
     if (!$Discount) {
-        $customResponse = [
+        return response()->json([
             'success' => false,
             'message' => 'Coupon Not Found',
             'data' => [],
-        ];
+        ]);
     }
 
-    $customResponse = [
+    return response()->json([
         'success' => true,
         'message' => __('Coupon Found'),
         'data' => $Discount,
-    ];
- 
+    ]);
 }
 
   
