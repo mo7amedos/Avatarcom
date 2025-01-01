@@ -294,7 +294,7 @@ public function update_profile(Request $request)
     $validatedData = $request->validate([
         'name' => 'nullable|string|max:255',
         'email' => 'nullable|email|unique:ec_customers,email,' . $customer->id,
-        'phone' => ['nullable', 'regex:/^01[0-9]{9}$/', 'unique:ec_customers,phone,' . $customer->id],   
+        'phone' => ['nullable', 'unique:ec_customers,phone,' . $customer->id],
         'dob' => 'nullable|date',
         'password' => 'nullable|min:8|confirmed',
         'avatar' => 'nullable|image|mimes:jpg,jpeg,png|max:2048'

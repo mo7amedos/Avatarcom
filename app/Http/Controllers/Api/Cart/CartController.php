@@ -271,7 +271,7 @@ public function add_order(Request $request)
         'sub_total' => 'required|numeric|min:0',
         // 'cancellation_reason' => 'nullable|string|max:191',
         // 'cancellation_reason_description' => 'nullable|string|max:500',
-        // 'payment_id' => 'nullable|exists:payments,id',
+        // 'payment_id' => 'nullable|exists:payments,id',  
     ]);
 
     $Order = new Order();
