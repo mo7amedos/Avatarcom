@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Botble\Ecommerce\Models\OrderProduct;
 use Botble\Ecommerce\Models\Order;
 use Botble\Ecommerce\Models\Product;
+use Botble\Ecommerce\Models\Discount;
 
 use Illuminate\Support\Facades\App;
 
@@ -316,6 +317,26 @@ public function get_my_order(Request $request)
  
 }
 
+
+public function coupon(Request $request)
+{ 
+    $Discount = Discount::where('code' , $coupon_id)->first();
+    
+    if (!$Discount) {
+        $customResponse = [
+            'success' => false,
+            'message' => 'Coupon Not Found',
+            'data' => [],
+        ];
+    }
+
+    $customResponse = [
+        'success' => true,
+        'message' => __('Coupon Found'),
+        'data' => $Discount,
+    ];
+ 
+}
 
   
 
