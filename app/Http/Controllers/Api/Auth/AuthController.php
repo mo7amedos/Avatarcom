@@ -199,24 +199,22 @@ class AuthController extends Controller
 
 public function login_social(Request $request)
 {
-    // $client = new Client();
+    $client = new Client();
 
-    // try {
-    //     $response = $client->request('GET', 'https://www.googleapis.com/oauth2/v3/userinfo', [
-    //         'headers' => [
-    //             'Authorization' => 'Bearer ' . $request->token,
-    //         ],
-    //     ]);
+    try {
+        $response = $client->request('GET', 'https://www.googleapis.com/oauth2/v3/userinfo', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $request->token,
+            ],
+        ]);
 
-    //     $userData = json_decode($response->getBody(), true);
+        $userData = json_decode($response->getBody(), true);
 
-        $user = Customer::first();
-       
-     
+        $user = Customer::where('email', $userData['email'])->first();
 
         if ($user) {
             Auth::guard('customer')->login($user);
-            
+
             $user -> social = 'true';
             $user -> save();
 
@@ -230,10 +228,10 @@ public function login_social(Request $request)
             ], 200);
         } 
             $user = new Customer();
-            // $user -> name = $userData['name'];
-            // $user -> email = $userData['email'];
-            // $user -> password = '1';
-            // $user -> avatar = $userData['picture'];
+            $user -> name = $userData['name'];
+            $user -> email = $userData['email'];
+            $user -> password = '1';
+            $user -> avatar = $userData['picture'];
             $user -> social = 'true';
             $user -> save();
 
@@ -249,9 +247,9 @@ public function login_social(Request $request)
             ], 200);
         
 
-    // } catch (\Exception $e) {
-    //     return response()->json(['error' => 'Unable to fetch user data'], 400);
-    // }
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Unable to fetch user data'], 400);
+    }
 }
 
 
