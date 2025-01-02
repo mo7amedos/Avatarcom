@@ -9,25 +9,6 @@ use App\Http\Controllers\Api\Cart\CartController;
 
 
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Artisan;
-
-Route::get('/add-social-column', function () {
-    // التحقق إذا كان العمود 'social' موجود في الجدول 'ec_customers'
-    if (!Schema::hasColumn('ec_customers', 'social')) {
-        // إضافة العمود 'social' إلى جدول 'ec_customers'
-        Schema::table('ec_customers', function (Blueprint $table) {
-            $table->string('social')->nullable();  // إضافة عمود 'social' بنوع string
-        });
-
-        // إرجاع رسالة تفيد بإتمام العملية بنجاح
-        return "تم إضافة عمود social بنجاح إلى جدول ec_customers.";
-    }
-
-    // إرجاع رسالة إذا كان العمود موجودًا بالفعل
-    return "العمود social موجود بالفعل في جدول ec_customers.";
-});
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
