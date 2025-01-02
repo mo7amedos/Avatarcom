@@ -63,7 +63,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::get('/get-coupon', [CartController::class, 'coupon']);
 
-    Route::get('/default-address', [CartController::class, 'is_default_address']);
+    Route::get('/default-address', [AuthController::class, 'is_default_address']);
 
     
 
