@@ -72,7 +72,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'data' => false,
-        'message' => trans('message.credentials_invalid'),
+                'message' => trans('message.credentials_invalid'),
                 'errors' => $errorMessages,
             ], 422);
         } catch (\Exception $e) {
