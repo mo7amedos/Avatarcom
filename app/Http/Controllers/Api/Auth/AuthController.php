@@ -463,7 +463,7 @@ public function is_default_address(Request $request)
         ]);
     }
 
-    $Address->is_default = $request->is_default;
+    $Address->is_default = intval($request->is_default);
     $Address->save();
 
     return response()->json([
