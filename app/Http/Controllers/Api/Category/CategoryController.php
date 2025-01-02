@@ -847,6 +847,27 @@ public function get_tags(Request $request)
 
 
 
+public function update_currency_default(Request $request)
+{
+    $currency = Currency::find($request->id);
+
+    if (!$currency) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Currency Not Found.',
+            'data' => [],
+        ], 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+    }
+
+    $currency->is_default = $request->is_default;
+    $currency->save();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Currency default status updated successfully.',
+        'data' => $currency,
+    ], 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+}
 
 
 }

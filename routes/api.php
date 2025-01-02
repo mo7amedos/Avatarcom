@@ -33,6 +33,7 @@ Route::post('login-social', [AuthController::class, 'login_social']);
   Route::get('/get-sliders', [CategoryController::class, 'get_sliders']);
   Route::get('/get-currency', [CategoryController::class, 'get_currency']);
   Route::get('/get-tags', [CategoryController::class, 'get_tags']);
+  Route::get('/update-currency-default', [CategoryController::class, 'update_currency_default']);
 
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -65,8 +66,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/default-address', [AuthController::class, 'is_default_address']);
 
-    
 
+  
     
     Route::get('/delete-account', [AuthController::class, 'delete_account']);
     Route::get('/logout', [AuthController::class, 'logout']);
