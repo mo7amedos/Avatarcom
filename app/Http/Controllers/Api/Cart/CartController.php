@@ -320,8 +320,7 @@ public function get_my_order(Request $request)
 
 public function coupon(Request $request)
 {
-    // حاول الحصول على الكوبون بناءً على المعرف
-    $Discount = Discount::where('code', $request->coupon_id)->first();  // تأكد من أن $coupon_id يأتي من request
+    $Discount = Discount::where('code', $request->coupon_id)->first(); 
 
     if (!$Discount) {
         return response()->json([

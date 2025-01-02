@@ -449,4 +449,28 @@ public function delete_account(Request $request)
 
 
 
+public function is_default_address(Request $request)
+{
+    $customer = auth()->user();
+
+    $Address = Address::find($id);
+    
+    if (!$Address) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Address Not Found',
+            'data' => [],
+        ]);
+    }
+    $Address -> is_default = $request->is_default;
+    $Address ->save();
+
+    return response()->json([
+        'success' => true,
+        'message' => __('Coupon Found'),
+        'data' => $Address,
+    ]);
+
+}
+
 }
