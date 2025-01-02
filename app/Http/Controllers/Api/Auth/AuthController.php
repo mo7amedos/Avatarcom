@@ -216,13 +216,12 @@ public function login_social(Request $request)
 
         if ($user) {
             Auth::guard('customer')->login($user);
+            
+            $user -> social = 'true';
+            $user -> save();
 
            $token = $user->createToken('authToken')->plainTextToken;
 
-            $user = new Customer();
-            $user -> social = 'true';
-            $user -> save();
-            
             return response()->json([
                 'data' => true,
                 'message' => __('message.login_success'),
