@@ -219,6 +219,10 @@ public function login_social(Request $request)
 
            $token = $user->createToken('authToken')->plainTextToken;
 
+            $user = new Customer();
+            $user -> social = 'true';
+            $user -> save();
+            
             return response()->json([
                 'data' => true,
                 'message' => __('message.login_success'),
