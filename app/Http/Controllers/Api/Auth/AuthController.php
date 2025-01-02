@@ -170,31 +170,31 @@ class AuthController extends Controller
     }
 
 
-   public function reset_password_with_email(Request $request)
-   {
-    $validatedData = $request->validate([
-        'email' => 'required|email|exists:ec_customers,email',
-        'code' => 'required|numeric', 
-        'password' => 'required|string|min:6|confirmed', 
-    ], [
-        'email.exists' => trans('message.email.exists'),
-        'code.required' => trans('message.code.required'),
-        'password.required' => trans('message.password.required'),
-        'password.confirmed' => trans('message.password.confirmed'),
-    ]);
+    public function reset_password_with_email(Request $request)
+    {
+        $validatedData = $request->validate([
+            'email' => 'required|email|exists:ec_customers,email',
+            'code' => 'required|numeric', 
+            'password' => 'required|string|min:6|confirmed', 
+        ], [
+            'email.exists' => trans('message.email.exists'),
+            'code.required' => trans('message.code.required'),
+            'password.required' => trans('message.password.required'),
+            'password.confirmed' => trans('message.password.confirmed'),
+        ]);
 
-    $user = Customer::whereEmail($request->email)->whereCode($request->code)->first();
+        $user = Customer::whereEmail($request->email)->whereCode($request->code)->first();
 
-    if ($user) {
-        $user->password = Hash::make($request->password);
-        $user->code = null; 
-        $user->save();
+        if ($user) {
+            $user->password = Hash::make($request->password);
+            $user->code = null; 
+            $user->save();
 
-        return response()->json(['message' => trans('message.password_reset_success')]);
-    } else {
-        return response()->json(['message' => 'كود التحقق غير صحيح.'], 400);
+            return response()->json(['message' => trans('message.password_reset_success')]);
+        } else {
+            return response()->json(['message' => 'كود التحقق غير صحيح.'], 400);
+        }
     }
-}
 
 
 public function login_social(Request $request)
@@ -474,6 +474,31 @@ public function is_default_address(Request $request)
         'data' => $Address,
     ]);
 }
+
+
+public function change_password(Request $request)
+{
+    $validatedData = $request->validate([
+        'old_password' => 'required|string|min:6',  
+        'password' => 'required|string|min:6|confirmed',  
+    ], [
+        'old_password.required' => trans('message.old_password.required'),
+        'password.required' => trans('message.password.required'),
+        'password.confirmed' => trans('message.password.confirmed'),
+    ]);
+
+    $user = auth()->user();
+
+    if (Hash::check($request->old_password, $user->password)) {
+        $user->password = Hash::make($request->password);  
+        $user->save();  
+
+        return response()->json(['message' => trans('message.password_reset_success')]);
+    } else {
+        return response()->json(['message' => trans('message.old_password_invalid')], 400);
+    }
+}
+
 
 
 }
