@@ -859,7 +859,7 @@ public function update_currency_default(Request $request)
         ], 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
     }
 
-    $currency->is_default = false;
+    $currency->is_default = boolval($request->is_default);
     $currency->save();
 
     return response()->json([
