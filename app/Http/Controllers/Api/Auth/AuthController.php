@@ -229,7 +229,7 @@ public function login_social(Request $request)
             $user = Customer::create([
                 'name' => $userData['name'],  
                 'email' => $userData['email'], 
-                'password' => '1',
+                'password' => '',
                 'avatar' => $userData['picture'],
               
             ]);
@@ -453,7 +453,7 @@ public function is_default_address(Request $request)
 {
     $customer = auth()->user();
 
-    $Address = Address::find($id);
+    $Address = Address::where('customer_id' ,  $customer->id)->find($request->id);
     
     if (!$Address) {
         return response()->json([
