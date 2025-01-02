@@ -851,13 +851,13 @@ public function update_currency_default(Request $request)
 {
     $currency = Currency::find($request->id);
 
-    if (!$currency) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Currency Not Found.',
-            'data' => [],
-        ], 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
-    }
+    // if (!$currency) {
+    //     return response()->json([
+    //         'success' => false,
+    //         'message' => 'Currency Not Found.',
+    //         'data' => [],
+    //     ], 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+    // }
 
     $currency->is_default = 'false';
     $currency->save();
