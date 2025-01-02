@@ -451,10 +451,10 @@ public function delete_account(Request $request)
 
 public function is_default_address(Request $request)
 {
-    $customer = auth()->user();
+    $customer = auth()->user(); 
 
-    $Address = Address::where('customer_id' ,  $customer->id)->find($request->id);
-    
+    $Address = Address::where('customer_id', $customer->id)->where('id', $request->id)->first();
+
     if (!$Address) {
         return response()->json([
             'success' => false,
@@ -462,15 +462,16 @@ public function is_default_address(Request $request)
             'data' => [],
         ]);
     }
-    $Address -> is_default = $request->is_default;
-    $Address ->save();
+
+    $Address->is_default = $request->is_default;
+    $Address->save();
 
     return response()->json([
         'success' => true,
-        'message' => __('Coupon Found'),
+        'message' => __('Address updated successfully'),
         'data' => $Address,
     ]);
-
 }
+
 
 }
