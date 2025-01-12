@@ -13,6 +13,7 @@ use Botble\Ecommerce\Models\OrderProduct;
 use Botble\Ecommerce\Models\Order;
 use Botble\Ecommerce\Models\Product;
 use Botble\Ecommerce\Models\Discount;
+use Botble\Ecommerce\Models\Tax;
 
 use Illuminate\Support\Facades\App;
 
@@ -338,6 +339,42 @@ public function coupon(Request $request)
 }
 
   
+
+public function get_tax(Request $request)
+{
+    $taxes = Tax::paginate(20);
+
+    $formattedTaxes = $taxes->map(function ($tax) {
+        return [
+            'id' => $tax->id,
+            'title' => $tax->title,
+            'percentage' => $tax->percentage,
+            'priority' => $tax->priority,
+            'status' => [
+                'value' => $tax->status,
+            ],
+            'created_at' => $tax->created_at,
+            'updated_at' => $tax->updated_at,
+        ];
+    });
+
+    $meta = [
+        'current_page' => $taxes->currentPage(),
+        'last_page' => $taxes->lastPage(),
+        'per_page' => $taxes->perPage(),
+        'total' => $taxes->total(),
+    ];
+
+    $customResponse = [
+        'success' => true,
+        'message' => __('Taxes Found'),
+        'data' => $formattedTaxes,
+        'pagination' => $meta,
+    ];
+
+    return response()->json($customResponse, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+}
+
 
 
 

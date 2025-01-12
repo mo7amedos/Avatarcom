@@ -67,7 +67,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/default-address', [AuthController::class, 'is_default_address']);
 
 
-  
+    Route::get('/get-tax', [CartController::class, 'get_tax']);
     
     Route::get('/delete-account', [AuthController::class, 'delete_account']);
     Route::get('/logout', [AuthController::class, 'logout']);
