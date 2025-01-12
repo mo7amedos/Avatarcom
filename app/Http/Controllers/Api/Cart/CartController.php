@@ -14,6 +14,7 @@ use Botble\Ecommerce\Models\Order;
 use Botble\Ecommerce\Models\Product;
 use Botble\Ecommerce\Models\Discount;
 use Botble\Ecommerce\Models\Tax;
+use Botble\Ecommerce\Models\ShippingRule;
 
 use Illuminate\Support\Facades\App;
 
@@ -76,7 +77,7 @@ public function update_cart(Request $request)
 
     $OrderProducts = OrderProduct::where('product_id', $request->product_id)
         ->where('user_id', auth()->user()->id)
-        ->where('order_id', '0') // افتراض أن order_id '0' يمثل السلة غير المكتملة
+        ->where('order_id', '0')  
         ->get();
 
     if ($OrderProducts->isEmpty()) {
@@ -88,7 +89,7 @@ public function update_cart(Request $request)
 
 
     $firstOrderProduct = $OrderProducts->first();
-    $remainingProducts = $OrderProducts->slice(1); // حذف كل ما عدا الأول
+    $remainingProducts = $OrderProducts->slice(1);  
 
     foreach ($remainingProducts as $orderProduct) {
         $orderProduct->delete();
@@ -376,6 +377,42 @@ public function get_tax(Request $request)
 }
 
 
+public function get_shipment_rules(Request $request)
+{
+    $shippingRules = ShippingRule::paginate(20);
+
+    $formattedRules = $shippingRules->map(function ($rule) {
+        return [
+            'id' => $rule->id,
+            'name' => $rule->name,
+            'shipping_id' => $rule->shipping_id,
+            'type' => [
+                'value' => $rule->type,
+            ],
+            'from' => $rule->from,
+            'to' => $rule->to,
+            'price' => $rule->price,
+            'created_at' => $rule->created_at,
+            'updated_at' => $rule->updated_at,
+        ];
+    });
+
+    $meta = [
+        'current_page' => $shippingRules->currentPage(),
+        'last_page' => $shippingRules->lastPage(),
+        'per_page' => $shippingRules->perPage(),
+        'total' => $shippingRules->total(),
+    ];
+
+    $customResponse = [
+        'success' => true,
+        'message' => __('Shipping Rules Found'),
+        'data' => $formattedRules,
+        'pagination' => $meta,
+    ];
+
+    return response()->json($customResponse, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+}
 
 
 }

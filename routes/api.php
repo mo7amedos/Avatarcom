@@ -68,6 +68,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
     Route::get('/get-tax', [CartController::class, 'get_tax']);
+    Route::get('/get-shimpent-rules', [CartController::class, 'get_shipment_rules']);
     
     Route::get('/delete-account', [AuthController::class, 'delete_account']);
     Route::get('/logout', [AuthController::class, 'logout']);
