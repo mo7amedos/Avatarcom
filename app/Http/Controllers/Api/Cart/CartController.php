@@ -114,7 +114,7 @@ public function update_cart(Request $request)
 public function get_my_cart(Request $request)
 {
     $OrderProduct = OrderProduct::query()
-        ->with(['product.translations', 'product.wishlists.customer'])
+        ->with(['product.translations', 'product.wishlists.customer' , 'product.categories'])
         ->orderBy('id')
         ->orderByDesc('created_at')
         ->whereUser_id(auth()->user()->id)
@@ -212,6 +212,14 @@ public function get_my_cart(Request $request)
                         "customer_name" => $wishlist->customer->name,
                         "created_at" => $wishlist->created_at,
                         "updated_at" => $wishlist->updated_at,
+                    ];
+                }),
+                "categories" => $product->categories->map(function ($category) {
+                    return [
+                        "id" => $category->id,
+                        "name" => $category->name,
+                        "created_at" => $category->created_at,
+                        "updated_at" => $category->updated_at,
                     ];
                 }),
             ];
