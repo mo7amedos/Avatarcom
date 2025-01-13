@@ -338,8 +338,8 @@ public function coupon(Request $request)
         'products' => fn (BelongsToMany $query) => $query->where('is_variation', false),  
         'productVariants.variationInfo.variationItems.attribute',  
     ])
-    ->where('code', $request->coupon_id) 
-    ->first();  
+    // ->where('code', $request->coupon_id) 
+    ->get();  
 
     if (!$Discount) {
         return response()->json([
