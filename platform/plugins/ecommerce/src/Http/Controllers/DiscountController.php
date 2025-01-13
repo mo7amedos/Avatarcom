@@ -139,7 +139,7 @@ class DiscountController extends BaseController
 
     public function edit(Discount $discount)
     {
-      return  $discount->load([
+        $discount->load([
             'customers',
             'productCollections',
             'productCategories',
@@ -164,7 +164,6 @@ class DiscountController extends BaseController
         $discount->customers->each(function ($customer) {
             $customer->avatar_url = RvMedia::getImageUrl($customer->avatar, 'thumb', false, RvMedia::getDefaultImage());
         });
-
 
         $this->pageTitle(trans('plugins/ecommerce::discount.edit'));
 

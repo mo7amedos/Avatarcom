@@ -15,6 +15,7 @@ use Botble\Ecommerce\Models\Product;
 use Botble\Ecommerce\Models\Discount;
 use Botble\Ecommerce\Models\Tax;
 use Botble\Ecommerce\Models\ShippingRule;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 use Illuminate\Support\Facades\App;
 
@@ -330,7 +331,15 @@ public function get_my_order(Request $request)
 
 public function coupon(Request $request)
 {
-    $Discount = Discount::where('code', $request->coupon_id)->first(); 
+    $Discount = Discount::with([
+        'customers',  
+        'productCollections', 
+        'productCategories',  
+        'products' => fn (BelongsToMany $query) => $query->where('is_variation', false),  
+        'productVariants.variationInfo.variationItems.attribute',  
+    ])
+    ->where('code', $request->coupon_id) 
+    ->first();  
 
     if (!$Discount) {
         return response()->json([
