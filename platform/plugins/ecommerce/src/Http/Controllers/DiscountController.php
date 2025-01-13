@@ -165,6 +165,8 @@ class DiscountController extends BaseController
             $customer->avatar_url = RvMedia::getImageUrl($customer->avatar, 'thumb', false, RvMedia::getDefaultImage());
         });
 
+        dd($discount);
+
         $this->pageTitle(trans('plugins/ecommerce::discount.edit'));
 
         Assets::usingVueJS()
