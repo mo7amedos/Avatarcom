@@ -364,9 +364,6 @@ class OrderController extends BaseController
         HandleShippingFeeService $shippingFeeService,
         Request $request
     ) {
-
-        return  'getShipmentForm';
-
         if ($request->has('weight')) {
             $weight = $request->input('weight');
         } else {
@@ -948,7 +945,6 @@ class OrderController extends BaseController
 
     public function checkDataBeforeCreateOrder(Request $request)
     {
-        return  'checkDataBeforeCreateOrder';
         $data = $this->getDataBeforeCreateOrder($request);
 
         return $this
@@ -960,9 +956,6 @@ class OrderController extends BaseController
 
     protected function getDataBeforeCreateOrder(Request $request): array
     {
-
-        return  'getDataBeforeCreateOrder';
-
         if ($customerId = $request->input('customer_id')) {
             Discount::getFacadeRoot()->setCustomerId($customerId);
         }
