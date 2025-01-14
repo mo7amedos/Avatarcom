@@ -11,7 +11,8 @@ class CheckoutSettingController extends SettingController
     {
         $this->pageTitle(trans('plugins/ecommerce::setting.checkout.name'));
 
-        return CheckoutSettingForm::create()->renderForm();
+         dd('nxcjh');
+         CheckoutSettingForm::create()->renderForm();
     }
 
     public function update(CheckoutSettingRequest $request)
