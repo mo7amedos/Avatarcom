@@ -32,7 +32,7 @@ class ShipmentController extends BaseController
     {
         $this->pageTitle(trans('plugins/ecommerce::shipping.shipments'));
 
-        return $dataTable->renderTable();
+        dd($dataTable->renderTable());
     }
 
     public function edit(int|string $id)
