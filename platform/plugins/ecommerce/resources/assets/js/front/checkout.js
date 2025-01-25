@@ -260,6 +260,9 @@ class MainCheckout {
             const _self = $(event.currentTarget)
             const $form = _self.closest('form')
 
+            console.log($form);
+            
+
             $.ajax({
                 type: 'POST',
                 cache: false,
