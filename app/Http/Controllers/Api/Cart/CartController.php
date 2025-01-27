@@ -114,7 +114,7 @@ public function update_cart(Request $request)
 
 public function get_my_cart(Request $request)
 {
-    $OrderProduct = OrderProduct::query()
+  return  $OrderProduct = OrderProduct::query()
         ->with(['product.translations', 'product.wishlists.customer' , 'product.categories'])
         ->orderBy('id')
         ->orderByDesc('created_at')
