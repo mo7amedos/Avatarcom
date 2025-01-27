@@ -136,17 +136,17 @@ public function get_my_cart(Request $request)
                 "name" => $product->name,
                 "description" => $product->description,
                 "content" => $product->content,
-                // "status" => [
-                //     "value" => $product->status,
-                //     "label" => ucfirst($product->status)
-                // ],
-                // 'images' => array_map(function ($image) {
-                //     return url('storage/' . $image);
-                // }, $product->images ?? []),
-                // "video_media" => $product->video_media,
-                // "sku" => $product->sku,
-                // "order" => $product->order,
-                // "quantity" => $product->quantity,
+                "status" => [
+                    "value" => $product->status,
+                    "label" => ucfirst($product->status)
+                ],
+                'images' => array_map(function ($image) {
+                    return url('storage/' . $image);
+                }, $product->images ?? []),
+                "video_media" => $product->video_media,
+                "sku" => $product->sku,
+                "order" => $product->order,
+                "quantity" => $product->quantity,
                 // "allow_checkout_when_out_of_stock" => $product->allow_checkout_when_out_of_stock,
                 // "with_storehouse_management" => $product->with_storehouse_management,
                 // "is_featured" => $product->is_featured,
