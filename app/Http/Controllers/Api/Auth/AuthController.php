@@ -38,14 +38,13 @@ class AuthController extends Controller
     
             return response()->json([
                 'data' => true,
-                'message' => __('message.login_success'),
+                'message' => 'Guest Token',
                 'token' => $token,
-                'user' => $user,
             ], 201);
     }
 
 
-    
+
     public function register(Request $request)
     {
         try {
