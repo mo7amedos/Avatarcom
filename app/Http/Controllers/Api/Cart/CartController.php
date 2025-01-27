@@ -114,7 +114,7 @@ public function update_cart(Request $request)
 
 public function get_my_cart(Request $request)
 {
-  return  $OrderProduct = OrderProduct::query()
+    $OrderProduct = OrderProduct::query()
         ->with(['product.translations', 'product.wishlists.customer' , 'product.categories'])
         ->orderBy('id')
         ->orderByDesc('created_at')
@@ -206,23 +206,7 @@ public function get_my_cart(Request $request)
                     "updated_at" => $tags->updated_at,
                 ];
             }),
-                "qty" => $orderProduct->qty, 
-                  "wishlists" => $product->wishlists->map(function ($wishlist) {
-                    return [
-                        "customer_id" => $wishlist->customer_id,
-                        "customer_name" => $wishlist->customer->name,
-                        "created_at" => $wishlist->created_at,
-                        "updated_at" => $wishlist->updated_at,
-                    ];
-                }),
-                "categories" => $product->categories->map(function ($category) {
-                    return [
-                        "id" => $category->id,
-                        "name" => $category->name,
-                        "created_at" => $category->created_at,
-                        "updated_at" => $category->updated_at,
-                    ];
-                }),
+               
             ];
         }
     }
