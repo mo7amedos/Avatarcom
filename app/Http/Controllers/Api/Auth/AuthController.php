@@ -16,6 +16,36 @@ use GuzzleHttp\Client;
 
 class AuthController extends Controller
 {
+
+    public function generateGuestToken()
+    {
+            $user = Customer::where('email', 'Guest@gmail.com')
+                            ->where('type_user', 'Guest-Mobil')
+                            ->where('name', 'Guest')
+                            ->first();
+    
+            if (!$user) {
+                $user = new Customer();
+                $user->name = 'Guest';
+                $user->email = 'Guest@gmail.com';
+                $user->phone = '01055887878';
+                $user->password = bcrypt("Guest");   
+                $user->type_user = 'Guest-Mobil';
+                $user->save();
+            }
+    
+            $token = $user->createToken('GuestToken')->plainTextToken;
+    
+            return response()->json([
+                'data' => true,
+                'message' => __('message.login_success'),
+                'token' => $token,
+                'user' => $user,
+            ], 201);
+    }
+
+
+    
     public function register(Request $request)
     {
         try {

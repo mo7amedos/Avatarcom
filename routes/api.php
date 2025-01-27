@@ -15,6 +15,7 @@ Route::post('login', [AuthController::class, 'login']);
 Route::get('send-email-otp', [AuthController::class, 'send_email_otp']);
 Route::post('reset-password-email', [AuthController::class, 'reset_password_with_email']);
 Route::post('login-social', [AuthController::class, 'login_social']);
+Route::get('guest-token', [AuthController::class, 'generateGuestToken']);
 
 
 
