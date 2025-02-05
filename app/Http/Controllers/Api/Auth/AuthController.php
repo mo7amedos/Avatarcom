@@ -523,4 +523,56 @@ public function change_password(Request $request)
 
 
 
+public function update_vergin(Request $request)
+{
+    $validated = $request->validate([
+        'ios_version' => 'required|integer',
+        'android_version' => 'required|integer',
+        'android' => 'required',
+        'ios' => 'required',
+        'android_link' => 'nullable|url',
+        'ios_link' => 'nullable|url',
+    ]);
+
+    $data = [
+        'ios_version' => $validated['ios_version'],
+        'android_version' => $validated['android_version'],
+        'android' => $validated['android'],
+        'ios' => $validated['ios'],
+        'android_link' => $validated['android_link'] ?? null,
+        'ios_link' => $validated['ios_link'] ?? null,
+    ];
+
+    $filePath = storage_path('app/public/check_update.json');
+
+    file_put_contents($filePath, json_encode([$data], JSON_PRETTY_PRINT));
+
+    return response()->json([
+        'message' => 'Data saved successfully!',
+        'data' => $data
+    ], 201);
+}
+
+public function get_vergin()
+{
+    $filePath = storage_path('app/public/check_update.json');
+
+    if (file_exists($filePath)) {
+        $data = json_decode(file_get_contents($filePath), true);
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ], 200);
+    }
+
+    return response()->json([
+        'success' => false,
+        'message' => 'Data not found',
+    ], 404);
+}
+
+
+
+
 }
