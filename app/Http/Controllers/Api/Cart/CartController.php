@@ -17,8 +17,9 @@ use Botble\Ecommerce\Models\Tax;
 use Botble\Ecommerce\Models\ShippingRule;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Botble\Ecommerce\Models\Address;
-
+use Botble\Payment\Models\Payment;
 use Illuminate\Support\Facades\App;
+
 
 class CartController extends Controller
 {
@@ -472,5 +473,42 @@ public function get_shipment_rules(Request $request)
     return response()->json($customResponse, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
 }
 
+
+
+public function add_payment(Request $request)
+{
+    $validated = $request->validate([
+        'currency' => 'required|string', 
+        'charge_Id' => 'required|string|max:255',
+        'payment_channel' => 'required|string|max:255',
+        'description' => 'nullable|string|max:255',
+        'amount' => 'required|numeric',  
+        'order_id' => 'required|integer',  
+        'status' => 'required',  
+        'payment_type' => 'required|string|max:255',
+    ]);
+    
+
+    $payment = new Payment;
+    $payment->currency = $validated['currency'];
+    $payment->charge_Id = $validated['charge_Id'];
+    $payment->payment_channel = $validated['payment_channel'];
+    $payment->description = $validated['description'] ?? '';  
+    $payment->amount = $validated['amount'];
+    $payment->order_id = $validated['order_id'];
+    $payment->status = $validated['status'];
+    $payment->payment_type = $validated['payment_type'];
+    $payment->customer_id = auth()->user()->type_user == 'Guest-Mobil' ? null : auth()->user()->id;
+    $payment->save();
+
+
+   $customResponse = [
+        'success' => true,
+        'message' => 'Payment added successfully!',
+        'data' => $payment,
+    ];
+
+  return response()->json($customResponse, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+}
 
 }

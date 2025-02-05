@@ -63,6 +63,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/add-order', [CartController::class, 'add_order']);
     Route::get('/get-my-order', [CartController::class, 'get_my_order']);
     
+    Route::post('/add-payment', [CartController::class, 'add_payment']);
+
     Route::get('/get-coupon', [CartController::class, 'coupon']);
 
     Route::get('/default-address', [AuthController::class, 'is_default_address']);
