@@ -327,7 +327,7 @@ public function add_order(Request $request)
 
 public function get_my_order(Request $request)
 { 
-    return $MyOrders = Order::with(['getMyOrderProducts','payment'])
+    return $MyOrders = Order::with(['getMyOrderProducts','payment' ,'addresses'])
             ->whereUser_id(auth()->user()->id)
             ->paginate(20);
 
