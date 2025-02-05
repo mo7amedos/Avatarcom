@@ -16,6 +16,7 @@ use Botble\Ecommerce\Models\Discount;
 use Botble\Ecommerce\Models\Tax;
 use Botble\Ecommerce\Models\ShippingRule;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Botble\Ecommerce\Models\Address;
 
 use Illuminate\Support\Facades\App;
 
@@ -338,9 +339,9 @@ public function get_my_order(Request $request)
 
     $formattedOrders = $myOrders->map(function($order) {
         return [
-            // 'order_id' => $order->id,
-            // 'code' => $order->code,
-            // 'status' => $order->status,
+            'order_id' => $order->id,
+            'code' => $order->code,
+            'status' => $order->status,
             'amount' => $order->amount,
             'tax_amount' => $order->tax_amount,
             'shipping_amount' => $order->shipping_amount,
