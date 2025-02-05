@@ -16,7 +16,7 @@ use Botble\Ecommerce\Models\Discount;
 use Botble\Ecommerce\Models\Tax;
 use Botble\Ecommerce\Models\ShippingRule;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Botble\Ecommerce\Models\Address;
+
 use Illuminate\Support\Facades\App;
 
 class CartController extends Controller
@@ -321,46 +321,16 @@ public function add_order(Request $request)
 }
 
 
-   
 
 
 public function get_my_order(Request $request)
-{
-    // استرجاع الطلبات مع المنتجات والمدفوعات
-    $myOrders = Order::with(['getMyOrderProducts'])
-        ->where('user_id', auth()->user()->id)
-        ->paginate(20);
+{ 
+    return $MyOrders = Order::with(['getMyOrderProducts'])
+            ->whereUser_id(auth()->user()->id)
+            ->paginate(20);
 
-    // استرجاع العناوين الخاصة بالمستخدم الحالي
-    $addresses = Address::where('user_id', auth()->user()->id)->get();
-
-    // دمج العناوين مع كل طلب بناءً على نفس المستخدم
-    $myOrders->getCollection()->transform(function ($order) use ($addresses) {
-        // إضافة العناوين إلى كل طلب
-        $order->addresses = $addresses;
-        return $order;
-    });
-
-    // بيانات الميتا
-    $meta = [
-        'current_page' => $myOrders->currentPage(),
-        'last_page' => $myOrders->lastPage(),
-        'per_page' => $myOrders->perPage(),
-        'total' => $myOrders->total(),
-    ];
-
-    // بناء الاستجابة المخصصة
-    $customResponse = [
-        'success' => true,
-        'message' => __('Reports Found'),
-        'data' => $myOrders->items(),  // البيانات هي الطلبات المدمجة
-        'pagination' => $meta,
-    ];
-
-    // إرجاع الاستجابة
-    return response()->json($customResponse, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+ 
 }
-
 
 
 public function coupon(Request $request)
