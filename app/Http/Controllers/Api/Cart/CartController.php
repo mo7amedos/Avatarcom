@@ -324,12 +324,11 @@ public function add_order(Request $request)
 
 public function get_my_order(Request $request)
 {
-    // Retrieve the orders of the authenticated user, including related order products
     $myOrders = Order::with(['getMyOrderProducts'])
         ->whereUser_id(auth()->user()->id)
         ->paginate(20);
 
-    // Pagination metadata
+    $addresses = Address::where('customer_id', auth()->user()->id)->get();
     $meta = [
         'current_page' => $myOrders->currentPage(),
         'last_page' => $myOrders->lastPage(),
@@ -337,12 +336,11 @@ public function get_my_order(Request $request)
         'total' => $myOrders->total(),
     ];
 
-    // Formatting the order data
     $formattedOrders = $myOrders->map(function($order) {
         return [
             'order_id' => $order->id,
             'code' => $order->code,
-            'status' => $order->status->label,
+            'status' => $order->status,
             'amount' => $order->amount,
             'tax_amount' => $order->tax_amount,
             'shipping_amount' => $order->shipping_amount,
@@ -353,27 +351,21 @@ public function get_my_order(Request $request)
             'updated_at' => $order->updated_at->toDateTimeString(),
             'is_confirmed' => $order->is_confirmed,
             'is_finished' => $order->is_finished,
-            'products' => $order->getMyOrderProducts->map(function($product) {
-                return [
-                    'product_id' => $product->id,
-                    'product_name' => $product->name,
-                    'quantity' => $product->quantity,
-                    'price' => $product->price,
-                ];
-            }),
+            
         ];
     });
 
-    // Custom response with success flag and pagination metadata
     $customResponse = [
         'success' => true,
         'message' => __('Orders Retrieved Successfully'),
         'data' => $formattedOrders,
+        'addresses' => $addresses,
         'pagination' => $meta,
     ];
 
     return response()->json($customResponse, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
 }
+
 
 
 
