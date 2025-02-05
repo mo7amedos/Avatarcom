@@ -275,7 +275,6 @@ public function add_order(Request $request)
         'amount' => 'required|numeric|min:0',
         'tax_amount' => 'required|numeric|min:0',
         'shipping_amount' => 'required|numeric|min:0',
-        'description' => 'required|string|max:500',
         'coupon_code' => 'required|string|max:120',
         'discount_amount' => 'required|numeric|min:0',
         'sub_total' => 'required|numeric|min:0',
