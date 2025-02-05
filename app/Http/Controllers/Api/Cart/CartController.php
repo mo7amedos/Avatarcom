@@ -295,20 +295,20 @@ public function add_order(Request $request)
     $Order->is_finished = 0;
     $Order->save();
 
-    // $Product = Product::find($request->product_id);
+    $Product = Product::find($request->product_id);
 
-    // $OrderProduct = new OrderProduct();
-    // $OrderProduct->product_id = $request->product_id;
-    // $OrderProduct->order_id = $Order->id;
-    // $OrderProduct->qty = $request->qty;
-    // $OrderProduct->tax_amount	 = '0';
-    // $OrderProduct->product_id = $Product->id;
-    // $OrderProduct->product_image = $Product->image;
-    // $OrderProduct->product_name = $Product->name;
-    // $OrderProduct->price = $Product->price;
-    // $OrderProduct->user_id = auth()->user()->id;
+    $OrderProduct = new OrderProduct();
+    $OrderProduct->product_id = $Product->id;
+    $OrderProduct->order_id = $Order->id;
+    $OrderProduct->qty = $request->qty;
+    $OrderProduct->tax_amount	 = '0';
+    $OrderProduct->product_id = $Product->id;
+    $OrderProduct->product_image = $Product->image;
+    $OrderProduct->product_name = $Product->name;
+    $OrderProduct->price = $Product->price;
+    $OrderProduct->user_id = auth()->user()->id;
     
-    // $OrderProduct->save();
+    $OrderProduct->save();
     
 
     $customResponse = [
