@@ -273,15 +273,13 @@ public function add_order(Request $request)
 {
     $validated = $request->validate([
         'amount' => 'required|numeric|min:0',
-        'tax_amount' => 'nullable|numeric|min:0',
-        'shipping_amount' => 'nullable|numeric|min:0',
-        'description' => 'nullable|string|max:500',
-        'coupon_code' => 'nullable|string|max:120',
-        'discount_amount' => 'nullable|numeric|min:0',
+        'tax_amount' => 'required|numeric|min:0',
+        'shipping_amount' => 'required|numeric|min:0',
+        'description' => 'required|string|max:500',
+        'coupon_code' => 'required|string|max:120',
+        'discount_amount' => 'required|numeric|min:0',
         'sub_total' => 'required|numeric|min:0',
-        // 'cancellation_reason' => 'nullable|string|max:191',
-        // 'cancellation_reason_description' => 'nullable|string|max:500',
-        // 'payment_id' => 'nullable|exists:payments,id',  
+        'product_id' => 'required|exists:ec_products,id',
     ]);
 
     $Order = new Order();
@@ -296,8 +294,23 @@ public function add_order(Request $request)
     $Order->sub_total = $request->sub_total;
     $Order->is_confirmed = 0;
     $Order->is_finished = 0;
-
     $Order->save();
+
+    $Product = Product::find($request->product_id);
+
+    $OrderProduct = new OrderProduct();
+    $OrderProduct->product_id = $request->product_id;
+    $OrderProduct->order_id = '0';
+    $OrderProduct->qty = $request->qty;
+    $OrderProduct->tax_amount	 = '0';
+    $OrderProduct->product_id = $Product->id;
+    $OrderProduct->product_image = $Product->image;
+    $OrderProduct->product_name = $Product->name;
+    $OrderProduct->price = $Product->price;
+    $OrderProduct->user_id = auth()->user()->id;
+    
+    $OrderProduct->save();
+    
 
     $customResponse = [
         'success' => true,

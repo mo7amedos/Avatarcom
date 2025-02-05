@@ -19,12 +19,11 @@ class AuthController extends Controller
 
     public function generateGuestToken()
     {
-    
         $user = new Customer();
-        $user->name = 'Guest';
-        $user->email = 'Guest@gmail.com';
-        $user->phone = '01055887878';
-        $user->password = bcrypt("Guest");   
+        $user->name = 'Guest_' . \Str::random(8);
+        $user->email = 'guest_' . \Str::random(8) . '@gmail.com';
+        $user->phone = '010' . \Str::random(8);
+        $user->password = bcrypt("Guest12");   
         $user->type_user = 'Guest-Mobil';
         $user->save();
 
