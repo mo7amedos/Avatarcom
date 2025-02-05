@@ -272,8 +272,6 @@ public function delete_my_cart(Request $request)
 public function add_order(Request $request)
 {
     $validated = $request->validate([
-        'shipping_option' => 'nullable|string|max:60',
-        'shipping_method' => 'required|string|max:60',
         'amount' => 'required|numeric|min:0',
         'tax_amount' => 'nullable|numeric|min:0',
         'shipping_amount' => 'nullable|numeric|min:0',
@@ -289,19 +287,15 @@ public function add_order(Request $request)
     $Order = new Order();
     $Order->code = rand(100000, 999999);
     $Order->user_id = auth()->user()->id;
-    $Order->shipping_option = $request->shipping_option;
-    $Order->shipping_method = $request->shipping_method;
     $Order->status = 'pending';
     $Order->amount = $request->amount;
     $Order->tax_amount = $request->tax_amount ?? 0;
     $Order->shipping_amount = $request->shipping_amount ?? 0;
-    $Order->description = $request->description;
     $Order->coupon_code = $request->coupon_code;
     $Order->discount_amount = $request->discount_amount ?? 0;
     $Order->sub_total = $request->sub_total;
     $Order->is_confirmed = 0;
     $Order->is_finished = 0;
-    $Order->payment_id = $request->payment_id;
 
     $Order->save();
 
