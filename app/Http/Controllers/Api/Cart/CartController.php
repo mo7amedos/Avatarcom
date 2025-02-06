@@ -280,7 +280,6 @@ public function add_order(Request $request)
         'coupon_code' => 'required|string|max:120',
         'discount_amount' => 'required|numeric|min:0',
         'sub_total' => 'required|numeric|min:0',
-        'product_id' => 'required|exists:ec_products,id',
         'product_ids' => 'required|array',
         'product_ids.*' => 'exists:ec_products,id',
         'qty' => 'required|array',
