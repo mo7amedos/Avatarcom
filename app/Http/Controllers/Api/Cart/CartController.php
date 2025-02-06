@@ -281,6 +281,10 @@ public function add_order(Request $request)
         'discount_amount' => 'required|numeric|min:0',
         'sub_total' => 'required|numeric|min:0',
         'product_id' => 'required|exists:ec_products,id',
+        'product_ids' => 'required|array',
+        'product_ids.*' => 'exists:ec_products,id',
+        'qty' => 'required|array',
+        'qty.*' => 'integer|min:1',
     ]);
 
     $Order = new Order();
@@ -297,21 +301,28 @@ public function add_order(Request $request)
     $Order->is_finished = 0;
     $Order->save();
 
-    $Product = Product::find($request->product_id);
+    $productIds = $request->product_ids; 
+    $quantities = $request->qty;  
 
-    $OrderProduct = new OrderProduct();
-    $OrderProduct->product_id = $Product->id;
-    $OrderProduct->order_id = $Order->id;
-    $OrderProduct->qty = $request->qty;
-    $OrderProduct->tax_amount	 = '0';
-    $OrderProduct->product_id = $Product->id;
-    $OrderProduct->product_image = $Product->image;
-    $OrderProduct->product_name = $Product->name;
-    $OrderProduct->price = $Product->price;
-    $OrderProduct->user_id = auth()->user()->id;
-    
-    $OrderProduct->save();
-    
+    foreach ($productIds as $index => $productId) {
+        $Product = Product::find($productId);
+
+        if ($Product) {
+            $OrderProduct = new OrderProduct();
+            $OrderProduct->product_id = $Product->id;
+            $OrderProduct->order_id = $Order->id;
+             $OrderProduct->qty = (int) $quantities[$index];
+             $OrderProduct->tax_amount = '0';  
+            $OrderProduct->product_image = $Product->image;
+            $OrderProduct->product_name = $Product->name;
+            $OrderProduct->price = $Product->price;
+            $OrderProduct->user_id =  auth()->user()->id;
+
+            $OrderProduct->save();
+        }
+    }
+
+
 
     $customResponse = [
         'success' => true,
