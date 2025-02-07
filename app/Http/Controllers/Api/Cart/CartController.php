@@ -493,7 +493,7 @@ public function add_payment(Request $request)
         'payment_channel' => 'required|string|max:255',
         'description' => 'nullable|string|max:255',
         'amount' => 'required|numeric',  
-        'order_id' => 'required|integer',  
+        'order_id' => 'required|integer|exists:ec_orders,id',  
         'status' => 'required',  
         'payment_type' => 'required|string|max:255',
     ]);
@@ -511,6 +511,12 @@ public function add_payment(Request $request)
     $payment->customer_id = auth()->user()->type_user == 'Guest-Mobil' ? null : auth()->user()->id;
     $payment->save();
 
+   return $myOrders = Order::find($validated['order_id'])->update([
+        'status' => "completed" , 
+        'payment_id' => $payment->id,
+        'is_finished' => 1,
+        'is_confirmed' => 1,    
+   ]);
 
    $customResponse = [
         'success' => true,
