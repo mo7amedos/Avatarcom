@@ -499,19 +499,24 @@ public function add_payment(Request $request)
     ]);
     
 
-    // $payment = new Payment;
-    // $payment->currency = $validated['currency'];
-    // $payment->charge_Id = $validated['charge_Id'];
-    // $payment->payment_channel = $validated['payment_channel'];
-    // $payment->description = $validated['description'] ?? '';  
-    // $payment->amount = $validated['amount'];
-    // $payment->order_id = $validated['order_id'];
-    // $payment->status = $validated['status'];
-    // $payment->payment_type = $validated['payment_type'];
-    // $payment->customer_id = auth()->user()->type_user == 'Guest-Mobil' ? null : auth()->user()->id;
-    // $payment->save();
+    $payment = new Payment;
+    $payment->currency = $validated['currency'];
+    $payment->charge_Id = $validated['charge_Id'];
+    $payment->payment_channel = $validated['payment_channel'];
+    $payment->description = $validated['description'] ?? '';  
+    $payment->amount = $validated['amount'];
+    $payment->order_id = $validated['order_id'];
+    $payment->status = $validated['status'];
+    $payment->payment_type = $validated['payment_type'];
+    $payment->customer_id = auth()->user()->type_user == 'Guest-Mobil' ? null : auth()->user()->id;
+    $payment->save();
 
- return   $myOrders = Order::find($validated['order_id']);
+    $myOrders = Order::find($validated['order_id'])->update([
+        'status' => "completed" , 
+        'payment_id' => $payment->id,
+        'is_finished' => 1,
+        'is_confirmed' => 1,    
+   ]);
 
    $customResponse = [
         'success' => true,
