@@ -511,7 +511,7 @@ public function add_payment(Request $request)
     $payment->customer_id = auth()->user()->type_user == 'Guest-Mobil' ? null : auth()->user()->id;
     $payment->save();
 
-   return $myOrders = Order::find($validated['order_id'])->update([
+    $myOrders = Order::find($validated['order_id'])->update([
         'status' => "completed" , 
         'payment_id' => $payment->id,
         'is_finished' => 1,
