@@ -19,7 +19,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Botble\Ecommerce\Models\Address;
 use Botble\Payment\Models\Payment;
 use Illuminate\Support\Facades\App;
-
+use Botble\Ecommerce\Models\OrderAddress;
+use Botble\Ecommerce\Models\Shipment;
 
 class CartController extends Controller
 {
@@ -284,6 +285,10 @@ public function add_order(Request $request)
         'product_ids.*' => 'exists:ec_products,id',
         'qty' => 'required|array',
         'qty.*' => 'integer|min:1',
+        'address_id' => 'required|exists:ec_customer_addresses,id',
+        'price' => 'required|numeric|min:0',
+        'weight' => 'required|numeric|min:0',
+        'cod_amount' => 'required|numeric|min:0',
     ]);
 
     $Order = new Order();
@@ -321,6 +326,32 @@ public function add_order(Request $request)
         }
     }
 
+
+    $Address = Address::findOrFail($request->address_id);
+     
+    $OrderAddress = OrderAddress::create([
+            "name" =>$Address->name,
+            "email"=>$Address->email,
+            "phone"=>$Address->phone,
+            "country" => $Address->country,
+            "state" => $Address->state,
+            "city" => $Address->city,
+            "address" => $Address->address,
+            "order_id"  => $Order->id,
+            "zip_code"  => $Address->zip_code,
+            "type" => "shipping_address",
+    ]);
+    
+    $Shipment = Shipment::create([
+        'order_id'  => $Order->id,
+        'status' => "pending",
+        'cod_status' => "pending",
+        'cross_checking_status' => "pending",
+        'price' => $request->price,
+        'weight' => $request->weight,
+        'cod_amount' => $request->cod_amount,
+     ]);
+     
 
 
     $customResponse = [
