@@ -525,20 +525,18 @@ public function add_payment(Request $request)
         'description' => 'nullable|string|max:255',
         'amount' => 'required|numeric',  
         'order_id' => 'required|integer|exists:ec_orders,id',  
-        'status' => 'required',  
-        'payment_type' => 'required|string|max:255',
     ]);
     
 
     $payment = new Payment;
     $payment->currency = $validated['currency'];
     $payment->charge_Id = $validated['charge_Id'];
-    $payment->payment_channel = $validated['payment_channel'];
+    $payment->payment_channel = $request->payment_channel;
     $payment->description = $validated['description'] ?? '';  
     $payment->amount = $validated['amount'];
     $payment->order_id = $validated['order_id'];
-    $payment->status = $validated['status'];
-    $payment->payment_type = $validated['payment_type'];
+    $payment->status = "completed";
+    $payment->payment_type = "confirm";
     $payment->customer_id = auth()->user()->type_user == 'Guest-Mobil' ? null : auth()->user()->id;
     $payment->save();
 
