@@ -367,7 +367,7 @@ public function add_order(Request $request)
 
 public function get_my_order(Request $request)
 {
-    $myOrders = Order::with(['getMyOrderProducts'])
+    $myOrders = Order::with(['getMyOrderProducts','shipment'])
         ->whereUser_id(auth()->user()->id)
         ->paginate(20);
 
@@ -417,6 +417,16 @@ public function get_my_order(Request $request)
                     'user_id' => $product->user_id,
                 ];
             }),
+            'shipment' => $order->shipment ? [
+                'id' => $order->shipment->id,
+                'order_id' => $order->shipment->order_id,
+                'user_id' => $order->shipment->user_id,
+                'status' => $order->shipment->status,
+                'cod_amount' => $order->shipment->cod_amount,
+                'cod_status' => $order->shipment->cod_status,
+                'cross_checking_status' => $order->shipment->cross_checking_status,
+            ] : null,
+
             ];
     });
 
