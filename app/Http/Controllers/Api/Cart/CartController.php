@@ -425,7 +425,7 @@ public function get_my_order(Request $request)
                 'cod_amount' => $order->shipment->cod_amount,
                 'cod_status' => $order->shipment->cod_status,
                 'cross_checking_status' => $order->shipment->cross_checking_status,
-            ] : null,
+            ] : [],
 
             ];
     });
