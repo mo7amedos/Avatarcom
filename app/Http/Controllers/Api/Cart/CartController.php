@@ -394,64 +394,8 @@ public function get_my_order(Request $request)
             'updated_at' => $order->updated_at->toDateTimeString(),
             'is_confirmed' => $order->is_confirmed,
             'is_finished' => $order->is_finished,
-            'getMyOrderProducts' => $order->getMyOrderProducts->map(function($product) {
-                return [
-                    "id" => $product->id,
-                    "name" => $product->name,
-                    "description" => $product->description,
-                    "content" => $product->content,
-                    "status" => [
-                        "value" => $product->status,
-                        "label" => ucfirst($product->status)
-                    ],
-                    'images' => array_map(function ($image) {
-                        return url('storage/' . $image);
-                    }, $product->images ?? []),
-                    "video_media" => $product->video_media,
-                    "sku" => $product->sku,
-                    "order" => $product->order,
-                    "quantity" => $product->quantity,
-                    "allow_checkout_when_out_of_stock" => $product->allow_checkout_when_out_of_stock,
-                    "with_storehouse_management" => $product->with_storehouse_management,
-                    "is_featured" => $product->is_featured,
-                    "brand_id" => $product->brand_id,
-                    "is_variation" => $product->is_variation,
-                    "sale_type" => $product->sale_type,
-                    "price" => $product->price ,
-                    "sale_price" => $product->sale_price,
-                    "start_date" => $product->start_date,
-                    "end_date" => $product->end_date,
-                    "length" => $product->length,
-                    "wide" => $product->wide,
-                    "height" => $product->height,
-                    "weight" => $product->weight,
-                    "tax_id" => $product->tax_id,
-                    "views" => $product->views,
-                    "created_at" => $product->created_at->toDateTimeString(),
-                    "updated_at" => $product->updated_at->toDateTimeString(),
-                    "stock_status" => [
-                        "value" => $product->stock_status,
-                        "label" => ucfirst($product->stock_status)
-                    ],
-                    "created_by_id" => $product->created_by_id,
-                    "created_by_type" => $product->created_by_type,
-                    "image" => url('storage/' . $product->image),
-                    "product_type" => [
-                        "value" => $product->product_type,
-                        "label" => ucfirst($product->product_type)
-                    ],
-                    "barcode" => $product->barcode,
-                    "cost_per_item" => $product->cost_per_item,
-                    "generate_license_code" => $product->generate_license_code,
-                    "minimum_order_quantity" => $product->minimum_order_quantity,
-                    "maximum_order_quantity" => $product->maximum_order_quantity,
-                    "notify_attachment_updated" => $product->notify_attachment_updated,
-                    "specification_table_id" => $product->specification_table_id,
-                    "original_price" => $product->original_price,
-                    "front_sale_price" => $product->front_sale_price,
-                    ];
-            }),    
-            ];
+            'getMyOrderProducts' => $order->getMyOrderProducts,
+        ];
     });
 
     $customResponse = [
