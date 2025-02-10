@@ -417,7 +417,7 @@ public function get_my_order(Request $request)
                     'user_id' => $product->user_id,
                 ];
             }),
-            'shipment' => $order->shipment ? [
+            'shipment' => $order->shipment && $order->shipment->id ? [
                 'id' => $order->shipment->id,
                 'order_id' => $order->shipment->order_id,
                 'user_id' => $order->shipment->user_id,
