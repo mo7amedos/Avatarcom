@@ -417,7 +417,7 @@ public function get_my_order(Request $request)
                     "brand_id" => $product->brand_id,
                     "is_variation" => $product->is_variation,
                     "sale_type" => $product->sale_type,
-                    "price" => $orderProduct->price ,
+                    "price" => $product->price ,
                     "sale_price" => $product->sale_price,
                     "start_date" => $product->start_date,
                     "end_date" => $product->end_date,
