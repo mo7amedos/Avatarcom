@@ -278,7 +278,7 @@ public function add_order(Request $request)
         'amount' => 'required|numeric|min:0',
         'tax_amount' => 'required|numeric|min:0',
         'shipping_amount' => 'required|numeric|min:0',
-        'coupon_code' => 'required|string|max:120',
+        'coupon_code' => 'nullable|string|max:120',
         'discount_amount' => 'required|numeric|min:0',
         'sub_total' => 'required|numeric|min:0',
         'product_ids' => 'required|array',
@@ -394,7 +394,7 @@ public function get_my_order(Request $request)
             'updated_at' => $order->updated_at->toDateTimeString(),
             'is_confirmed' => $order->is_confirmed,
             'is_finished' => $order->is_finished,
-            
+            'getMyOrderProducts' => $order->getMyOrderProducts,
         ];
     });
 
