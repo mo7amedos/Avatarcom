@@ -394,8 +394,30 @@ public function get_my_order(Request $request)
             'updated_at' => $order->updated_at->toDateTimeString(),
             'is_confirmed' => $order->is_confirmed,
             'is_finished' => $order->is_finished,
-            'getMyOrderProducts' => $order->getMyOrderProducts,
-        ];
+            'getMyOrderProducts' => $order->getMyOrderProducts->map(function($product) {
+                return [
+                    'id' => $product->id,
+                    'order_id' => $product->order_id,
+                    'qty' => $product->qty,
+                    'price' => $product->price,
+                    'tax_amount' => $product->tax_amount,
+                    'options' => $product->options,
+                    'product_options' => $product->product_options,
+                    'product_id' => $product->product_id,
+                    'product_name' => $product->product_name,
+                    'product_image' =>  url('storage/' . $product->product_image),
+                    'weight' => $product->weight,
+                    'restock_quantity' => $product->restock_quantity,
+                    'created_at' => $product->created_at->toDateTimeString(),
+                    'updated_at' => $product->updated_at->toDateTimeString(),
+                    'product_type' => $product->product_type,
+                    'times_downloaded' => $product->times_downloaded,
+                    'license_code' => $product->license_code,
+                    'downloaded_at' => $product->downloaded_at,
+                    'user_id' => $product->user_id,
+                ];
+            }),
+            ];
     });
 
     $customResponse = [
