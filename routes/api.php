@@ -77,7 +77,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/delete-account', [AuthController::class, 'delete_account']);
     Route::get('/logout', [AuthController::class, 'logout']);
     Route::get('/change-password', [AuthController::class, 'change_password']);
-    
+    Route::post('/create-payment-intent', [CartController::class, 'payment_intent']);
+
     
     Route::get('/profile', [AuthController::class, 'getProfile']);
 

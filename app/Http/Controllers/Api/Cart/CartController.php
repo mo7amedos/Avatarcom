@@ -590,4 +590,28 @@ public function add_payment(Request $request)
   return response()->json($customResponse, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
 }
 
+
+public function payment_intent(Request $request)
+{
+    $validated = $request->validate([
+        'amount' => 'required', 
+        'currency' => 'required',
+    ]);
+
+    $secretKey = config('payment.secret_key');
+
+    $response = \Http::withHeaders([
+        'Authorization' => 'Bearer ' . $secretKey,
+        'Content-Type' => 'application/x-www-form-urlencoded',
+    ])
+    ->asForm()  
+    ->post('https://api.stripe.com/v1/payment_intents', [
+    'amount' => $request->amount, 
+    'currency' => $request->currency,  
+    'automatic_payment_methods' => ['enabled' => true], 
+    ]);
+
+    return $response->json(); 
+}
+
 }
