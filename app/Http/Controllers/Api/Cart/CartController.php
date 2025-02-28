@@ -608,7 +608,7 @@ public function payment_intent(Request $request)
     ->post('https://api.stripe.com/v1/payment_intents', [
     'amount' => $request->amount, 
     'currency' => $request->currency,  
-    'automatic_payment_methods' => ['enabled' => true], 
+    // 'automatic_payment_methods' => ['enabled' => true], 
     ]);
 
     return $response->json(); 
