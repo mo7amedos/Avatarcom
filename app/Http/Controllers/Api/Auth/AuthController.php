@@ -388,15 +388,17 @@ public function add_address(Request $request)
         'city' => 'required|string|max:255',
         'address' => 'required|string|max:255',
         'zip_code' => 'required|string|max:10',
+        'name' => 'required|string',
+        'phone' => 'required',
     ]);
 
     $customer = auth()->user();
 
     $address = Address::create([
         'customer_id' => $customer->id,
-        'name' => $customer->name,
+        'name' => $validatedData['name'],
         'email' => $customer->email,
-        'phone' => $customer->phone,
+        'phone' => $validatedData['phone'],
         'country' => $validatedData['country'],
         'state' => $validatedData['state'],
         'city' => $validatedData['city'],
