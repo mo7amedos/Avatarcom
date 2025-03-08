@@ -598,7 +598,30 @@ public function payment_intent(Request $request)
         'currency' => 'required',
     ]);
 
-    $secretKey = config('payment.secret_key');
+    $secretKey = config('payment.secret_key_live');
+
+    $response = \Http::withHeaders([
+        'Authorization' => 'Bearer ' . $secretKey,
+        'Content-Type' => 'application/x-www-form-urlencoded',
+    ])
+    ->asForm()  
+    ->post('https://api.stripe.com/v1/payment_intents', [
+    'amount' => $request->amount, 
+    'currency' => $request->currency,  
+    // 'automatic_payment_methods' => ['enabled' => true], 
+    ]);
+
+    return $response->json(); 
+}
+
+public function payment_intent_test(Request $request)
+{
+    $validated = $request->validate([
+        'amount' => 'required', 
+        'currency' => 'required',
+    ]);
+
+    $secretKey = config('payment.secret_key_test');
 
     $response = \Http::withHeaders([
         'Authorization' => 'Bearer ' . $secretKey,
