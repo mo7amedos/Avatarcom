@@ -626,8 +626,11 @@ public function sign_in_apple(Request $request) {
             ], 200);
         } 
 
+        $email = $claims['email'] ?? null;
+        $name = $email ? explode('@', $email)[0] : null;
+
         $user = new Customer();
-            $user -> name = $claims['email'];
+            $user -> name = $name;
             $user -> email = $claims['email'];
             $user -> password = '1';
             $user -> avatar = 'avatar';
