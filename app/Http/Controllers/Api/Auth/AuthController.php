@@ -13,6 +13,10 @@ use Illuminate\Support\Facades\Storage;
 use App\Mail\UserPasswordReset;
 use Illuminate\Support\Facades\Mail;
 use GuzzleHttp\Client;
+use Firebase\JWT\JWT;
+use Illuminate\Support\Facades\Log;
+use Firebase\JWT\JWK;
+use Firebase\JWT\Key;
 
 class AuthController extends Controller
 {
@@ -574,6 +578,81 @@ public function get_vergin()
     ], 404);
 }
 
+
+
+
+public function sign_in_apple(Request $request) {
+    $firebaseToken = $request->token;
+
+    if (!$firebaseToken) {
+        return response()->json(['error' => 'Missing Firebase Token'], 400);
+    }
+
+    try {
+        // Extract 'kid' from JWT header
+        $segments = explode('.', $firebaseToken);
+        $header = json_decode(base64_decode($segments[0]), true);
+        $kid = $header['kid'] ?? null;
+
+        // ✅ Use Firebase's official x509 endpoint
+        $client = new Client();
+        $response = $client->get('https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com');
+        $certs = json_decode($response->getBody(), true);
+
+        if (!isset($certs[$kid])) {
+            return response()->json(['error' => 'Unable to verify token - certificate not found'], 401);
+        }
+
+        // Decode JWT using the matching public key
+        $decoded = JWT::decode($firebaseToken, new Key($certs[$kid], 'RS256'));
+        $claims = (array) $decoded;
+
+
+        $user = Customer::where('email', $claims['email'])->first();
+
+        if ($user) {
+            Auth::guard('customer')->login($user);
+
+            $user -> social = 'true';
+            $user -> save();
+
+           $token = $user->createToken('authToken')->plainTextToken;
+
+            return response()->json([
+                'data' => true,
+                'message' => __('message.login_success'),
+                'token' => $token,
+                'user' => $user,
+            ], 200);
+        } 
+
+        $user = new Customer();
+            $user -> name = $claims['email'];
+            $user -> email = $claims['email'];
+            $user -> password = '1';
+            $user -> avatar = 'avatar';
+            $user -> social = 'true';
+            $user -> save();
+
+            Auth::guard('customer')->login($user);
+            
+           $token = $user->createToken('authToken')->plainTextToken;
+
+            return response()->json([
+                'data' => true,
+                'message' => __('message.login_success'),
+                'token' => $token,
+                'user' => $user,
+            ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Firebase token verification failed: ' . $e->getMessage());
+        return response()->json([
+            'error' => 'Invalid Firebase Token',
+            'details' => $e->getMessage(),
+        ], 401);
+    }
+}
 
 
 

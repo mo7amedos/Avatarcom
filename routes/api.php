@@ -17,6 +17,10 @@ Route::post('reset-password-email', [AuthController::class, 'reset_password_with
 Route::post('login-social', [AuthController::class, 'login_social']);
 Route::get('guest-token', [AuthController::class, 'generateGuestToken']);
 
+Route::post('signin-apple', [AuthController::class, 'sign_in_apple']);
+
+
+
 Route::post('update-verision', [AuthController::class, 'update_vergin']);
 Route::get('/get-update', [AuthController::class, 'get_vergin']);
 
