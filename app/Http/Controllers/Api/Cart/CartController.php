@@ -567,7 +567,7 @@ public function add_payment(Request $request)
     $payment->description = $validated['description'] ?? '';  
     $payment->amount = $validated['amount'];
     $payment->order_id = $validated['order_id'];
-    $payment->status = "pending";
+    $payment->status = "completed";
     $payment->payment_type = "confirm";
     $payment->customer_id = auth()->user()->type_user == 'Guest-Mobil' ? null : auth()->user()->id;
     $payment->save();
