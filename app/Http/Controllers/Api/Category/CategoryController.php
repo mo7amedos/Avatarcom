@@ -887,7 +887,7 @@ public function is_feature_products(Request $request)
             ->when($request->has('id'), function ($query) use ($request) {
                 return $query->where('id', $request->input('id'));
             })
-            ->where('is_featured' , 1)->paginate(20);
+            ->where('is_featured' , true)->paginate(20);
     }else{
         $customerId = 0000;
         $products = Product::query()
@@ -899,7 +899,7 @@ public function is_feature_products(Request $request)
             ->when($request->has('id'), function ($query) use ($request) {
                 return $query->where('id', $request->input('id'));
             })
-            ->where('is_featured' , 1)->paginate(20);
+            ->where('is_featured' , true)->paginate(20);
     }
 
  
