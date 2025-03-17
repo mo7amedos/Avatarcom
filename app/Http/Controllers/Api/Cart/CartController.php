@@ -558,7 +558,7 @@ public function add_payment(Request $request)
         'amount' => 'required|numeric',  
         'order_id' => 'required|integer|exists:ec_orders,id',  
     ]);
-    
+    	
 
     $payment = new Payment;
     $payment->currency = $validated['currency'];
@@ -567,14 +567,14 @@ public function add_payment(Request $request)
     $payment->description = $validated['description'] ?? '';  
     $payment->amount = $validated['amount'];
     $payment->order_id = $validated['order_id'];
-    $payment->status = "completed";
+    $payment->status = "pending";
     $payment->payment_type = "confirm";
     $payment->customer_id = auth()->user()->type_user == 'Guest-Mobil' ? null : auth()->user()->id;
     $payment->save();
 
 
     $myOrders = Order::find($validated['order_id']);
-    $myOrders->status = "completed";
+    $myOrders->status = "pending";
     $myOrders->payment_id = $payment->id;
     $myOrders->is_finished = 1;
     $myOrders->is_confirmed = 1;

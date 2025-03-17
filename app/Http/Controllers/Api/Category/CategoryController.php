@@ -870,4 +870,149 @@ public function update_currency_default(Request $request)
 }
 
 
+
+public function is_feature_products(Request $request)
+{
+   $token = PersonalAccessToken::findToken($request->bearerToken());
+
+  if ($token) {
+        $customerId = $token->tokenable_id; 
+    
+         $products = Product::query()
+            ->with(['translations','tags' , 'wishlists' => function ($query) use ($customerId) {
+                $query->where('customer_id', $customerId);
+            }])
+            ->orderBy('order')
+            ->orderByDesc('created_at')
+            ->when($request->has('id'), function ($query) use ($request) {
+                return $query->where('id', $request->input('id'));
+            })
+            ->where('is_featured' , 1)->paginate(20);
+    }else{
+        $customerId = 0000;
+        $products = Product::query()
+            ->with(['translations','tags' , 'wishlists' => function ($query) use ($customerId) {
+                $query->where('customer_id', $customerId);
+            }])
+            ->orderBy('order')
+            ->orderByDesc('created_at')
+            ->when($request->has('id'), function ($query) use ($request) {
+                return $query->where('id', $request->input('id'));
+            })
+            ->where('is_featured' , 1)->paginate(20);
+    }
+
+ 
+
+
+    $formattedProducts = $products->getCollection()->map(function ($product) {
+        return [
+            "id" => $product->id,
+            "name" => $product->name,
+            "description" => $product->description,
+            "content" => $product->content,
+            "status" => [
+                "value" => $product->status,
+                "label" => ucfirst($product->status)
+            ],
+            'images' => array_map(function ($image) {
+                return url('storage/' . $image);
+            }, $product->images ?? []),
+
+            "video_media" => $product->video_media,
+            "sku" => $product->sku,
+            "order" => $product->order,
+            "quantity" => $product->quantity,
+            "allow_checkout_when_out_of_stock" => $product->allow_checkout_when_out_of_stock,
+            "with_storehouse_management" => $product->with_storehouse_management,
+            "is_featured" => $product->is_featured,
+            "brand_id" => $product->brand_id,
+            "is_variation" => $product->is_variation,
+            "sale_type" => $product->sale_type,
+            "price" => $product->price,
+            "sale_price" => $product->sale_price,
+            "start_date" => $product->start_date,
+            "end_date" => $product->end_date,
+            "length" => $product->length,
+            "wide" => $product->wide,
+            "height" => $product->height,
+            "weight" => $product->weight,
+            "tax_id" => $product->tax_id,
+            "views" => $product->views,
+            "created_at" => $product->created_at->toDateTimeString(),
+            "updated_at" => $product->updated_at->toDateTimeString(),
+            "stock_status" => [
+                "value" => $product->stock_status,
+                "label" => ucfirst($product->stock_status)
+            ],
+            "created_by_id" => $product->created_by_id,
+            "created_by_type" => $product->created_by_type,
+            "image" => url('storage/' . $product->image),
+            "product_type" => [
+                "value" => $product->product_type,
+                "label" => ucfirst($product->product_type)
+            ],
+            "barcode" => $product->barcode,
+            "cost_per_item" => $product->cost_per_item,
+            "generate_license_code" => $product->generate_license_code,
+            "minimum_order_quantity" => $product->minimum_order_quantity,
+            "maximum_order_quantity" => $product->maximum_order_quantity,
+            "notify_attachment_updated" => $product->notify_attachment_updated,
+            "specification_table_id" => $product->specification_table_id,
+            "original_price" => $product->original_price,
+            "front_sale_price" => $product->front_sale_price,
+            "translations" => $product->translations->filter(function ($translation) {
+                return $translation->lang_code === app()->getLocale();
+            })->map(function ($translation) {
+                return [
+                    "lang_code" => $translation->lang_code,
+                    "ec_products_id" => $translation->ec_products_id,
+                    "name" => $translation->name,
+                    "description" => $translation->description,
+                    "content" => $translation->content,
+                ];
+            }),
+            
+            "wishlists" => $product->wishlists->map(function ($wishlist) {
+                return [
+                    "customer_id" => $wishlist->customer_id,
+                    "customer_name" => $wishlist->customer->name,     
+                    "created_at" => $wishlist->created_at,
+                    "updated_at" => $wishlist->updated_at,
+                ];
+            }),
+              "tags" => $product->tags->map(function ($tags) {
+                return [
+                    "id" => $tags->id,
+                    "name" => $tags->name,
+                    "status" => $tags->status, 
+                    "pivot" => $tags->pivot,    
+                    "created_at" => $tags->created_at,
+                    "updated_at" => $tags->updated_at,
+                ];
+            }),
+        ];
+    });
+
+    $meta = [
+        'current_page' => $products->currentPage(),
+        'last_page' => $products->lastPage(),
+        'per_page' => $products->perPage(),
+        'total' => $products->total(),
+    ];
+
+    $customResponse = [
+        'success' => true,
+        'message' => __('Reports Found'),
+        'data' => $formattedProducts,
+        'pagination' => $meta,
+    ];
+
+    return response()->json($customResponse, 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+}
+
+
+
+
+
 }

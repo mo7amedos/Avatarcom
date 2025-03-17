@@ -29,6 +29,8 @@ Route::get('/get-update', [AuthController::class, 'get_vergin']);
   Route::get('/get-sub-categories', [CategoryController::class, 'get_sub_categories']);
     
   Route::get('/get-products', [CategoryController::class, 'get_products']);
+  Route::get('/is-feature-products', [CategoryController::class, 'is_feature_products']);
+  
   
   Route::get('/get-top-selling-products', [CategoryController::class, 'get_top_selling_products']);
 
