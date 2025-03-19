@@ -578,7 +578,7 @@ public function add_payment(Request $request)
 
 
     $myOrders = Order::find($validated['order_id']);
-    $myOrders->status = "completed";
+    $myOrders->status = "pending";
     $myOrders->payment_id = $payment->id;
     $myOrders->is_finished = 1;
     $myOrders->is_confirmed = 1;
