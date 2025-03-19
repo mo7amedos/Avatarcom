@@ -580,6 +580,28 @@ public function add_payment(Request $request)
     $myOrders->is_confirmed = 1;
     $myOrders->save();
           
+    $productIds = $request->product_ids; 
+    $quantities = $request->qty;  
+
+    foreach ($productIds as $index => $productId) {
+        $Product = Product::find($productId);
+
+        if ($Product) {
+            $OrderProduct = new OrderProduct();
+            $OrderProduct->product_id = $Product->id;
+            $OrderProduct->order_id = $myOrders->id;
+            $OrderProduct->qty = (int) $quantities[$index];
+            $OrderProduct->tax_amount = '0';  
+            $OrderProduct->product_image = $Product->image;
+            $OrderProduct->product_name = $Product->name;
+            $OrderProduct->price = $Product->price;
+            $OrderProduct->weight = 1000;
+            $OrderProduct->user_id =  auth()->user()->id;
+            $OrderProduct->save();
+        }
+    }
+
+
 
    $customResponse = [
         'success' => true,
