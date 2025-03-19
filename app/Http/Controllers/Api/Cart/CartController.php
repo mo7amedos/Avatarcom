@@ -557,6 +557,10 @@ public function add_payment(Request $request)
         'description' => 'nullable|string|max:255',
         'amount' => 'required|numeric',  
         'order_id' => 'required|integer|exists:ec_orders,id',  
+        'product_ids' => 'required|array',
+        'product_ids.*' => 'exists:ec_products,id',
+        'qty' => 'required|array',
+        'qty.*' => 'integer|min:1',
     ]);
     	
 
