@@ -550,6 +550,7 @@ public function get_shipment_rules(Request $request)
 
 public function add_payment(Request $request)
 {
+    return $request;
     $validated = $request->validate([
         'currency' => 'required|string', 
         'charge_Id' => 'required|string|max:255',
