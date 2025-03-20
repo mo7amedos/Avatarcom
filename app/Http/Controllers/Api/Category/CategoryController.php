@@ -1015,43 +1015,46 @@ public function is_feature_products(Request $request)
 
 public function saveCategoryIdsToFile(Request $request)
 {
-    $request->validate([
-        'category_ids' => 'required|array',  
-        'category_ids.*' => 'integer',  
+    $validated = $request->validate([
+        'category_ids' => 'required|array',
+        'category_ids.*' => 'integer',
     ]);
 
-     $categoryIds = $request->input('category_ids');
+    $data = [
+        'category_ids' => $validated['category_ids']
+    ];
 
-     $filePath = storage_path('app/category_ids.txt');
+    $filePath = storage_path('app/public/category_ids.json');
 
-     if (file_exists($filePath)) {
-        file_put_contents($filePath, '');  
-    }
+    file_put_contents($filePath, json_encode([$data], JSON_PRETTY_PRINT));
 
-    $categoryIdsString = implode("\n", $categoryIds);  
-
-    Storage::put('category_ids.txt', $categoryIdsString);
-
-    return response()->json(['message' => 'Category IDs have been saved successfully.']);
+    return response()->json([
+        'message' => 'Category IDs saved successfully!',
+        'data' => $data
+    ], 201);
 }
+
 
 
 public function getCategoryIdsFromFile()
 {
-    // مسار الملف داخل الـ storage
-    $filePath = 'category_ids.txt';
+    $filePath = storage_path('app/public/category_ids.json');
 
-    if (Storage::exists($filePath)) {
-        // قراءة محتويات الملف باستخدام Storage
-        $categoryIdsString = Storage::get($filePath);
+    if (file_exists($filePath)) {
+        $data = json_decode(file_get_contents($filePath), true);
 
-        // تحويل النص إلى array من خلال سطر سطر
-        $categoryIds = explode("\n", $categoryIdsString); // كل سطر يبقى عنصر في الـ array
-
-        return $categoryIds;
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ], 200);
     }
 
-    return []; // لو الملف مش موجود أو فاضي
+    return response()->json([
+        'success' => false,
+        'message' => 'Category IDs not found',
+    ], 404);
 }
+
+
 
 }
