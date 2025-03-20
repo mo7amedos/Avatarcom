@@ -590,7 +590,6 @@ public function add_payment(Request $request)
 
     foreach ($productIds as $index => $productId) {
         $Product = Product::find($productId);
-      return  $weight = $request->qty * $Product->weight;
 
         if ($Product) {
             $OrderProduct = new OrderProduct();
@@ -601,7 +600,7 @@ public function add_payment(Request $request)
             $OrderProduct->product_image = $Product->image;
             $OrderProduct->product_name = $Product->name;
             $OrderProduct->price = $Product->price;
-            $OrderProduct->weight = $weight;
+            $OrderProduct->weight = 1000;
             $OrderProduct->user_id =  auth()->user()->id;
             $OrderProduct->save();
         }
