@@ -1035,4 +1035,19 @@ public function saveCategoryIdsToFile(Request $request)
     return response()->json(['message' => 'Category IDs have been saved successfully.']);
 }
 
+
+public function getCategoryIdsFromFile()
+{
+    // استرجاع محتويات الملف
+    $filePath = storage_path('app/category_ids.txt');
+
+    if (file_exists($filePath)) {
+        $categoryIds = file($filePath, FILE_IGNORE_NEW_LINES); // قراءة كل سطر من الملف وتحويله إلى array
+        return $categoryIds;
+    }
+
+    return []; // لو الملف مش موجود أو فاضي
+}
+
+
 }

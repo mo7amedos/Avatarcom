@@ -27,6 +27,8 @@ Route::get('/get-update', [AuthController::class, 'get_vergin']);
 Route::get('/get-categories', [CategoryController::class, 'get_categories']);
 Route::post('/save-category-ids-to-file', [CategoryController::class, 'saveCategoryIdsToFile']);
   
+Route::get('/get-category-ids-to-file', [CategoryController::class, 'getCategoryIdsToFile']);
+
 
   
   Route::get('/get-sub-categories', [CategoryController::class, 'get_sub_categories']);
