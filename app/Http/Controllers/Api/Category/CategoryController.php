@@ -1038,16 +1038,20 @@ public function saveCategoryIdsToFile(Request $request)
 
 public function getCategoryIdsFromFile()
 {
-    // استرجاع محتويات الملف
-    $filePath = storage_path('app/category_ids.txt');
+    // مسار الملف داخل الـ storage
+    $filePath = 'category_ids.txt';
 
-    if (file_exists($filePath)) {
-        $categoryIds = file($filePath, FILE_IGNORE_NEW_LINES); // قراءة كل سطر من الملف وتحويله إلى array
+    if (Storage::exists($filePath)) {
+        // قراءة محتويات الملف باستخدام Storage
+        $categoryIdsString = Storage::get($filePath);
+
+        // تحويل النص إلى array من خلال سطر سطر
+        $categoryIds = explode("\n", $categoryIdsString); // كل سطر يبقى عنصر في الـ array
+
         return $categoryIds;
     }
 
     return []; // لو الملف مش موجود أو فاضي
 }
-
 
 }
