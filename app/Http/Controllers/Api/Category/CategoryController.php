@@ -1015,9 +1015,9 @@ public function is_feature_products(Request $request)
 
 public function saveCategoryIdsToFile(Request $request)
 {
-     $request->validate([
+    $request->validate([
         'category_ids' => 'required|array',  
-        'category_ids.*' => 'integer', 
+        'category_ids.*' => 'integer',  
     ]);
 
      $categoryIds = $request->input('category_ids');
@@ -1028,17 +1028,11 @@ public function saveCategoryIdsToFile(Request $request)
         file_put_contents($filePath, '');  
     }
 
-     $categoryIdsString = implode("\n", $categoryIds);  
+    $categoryIdsString = implode("\n", $categoryIds);  
 
-     Storage::put('category_ids.txt', $categoryIdsString);
+    Storage::put('category_ids.txt', $categoryIdsString);
 
-     $savedCategoryIds = file($filePath, FILE_IGNORE_NEW_LINES);  
-
-    return response()->json([
-        'message' => 'Category IDs have been saved successfully.',
-        'saved_category_ids' => $savedCategoryIds,  
-    ]);
+    return response()->json(['message' => 'Category IDs have been saved successfully.']);
 }
-
 
 }
