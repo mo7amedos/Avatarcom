@@ -1,98 +1,124 @@
-<div class="product-thumbnail">
-    <a
-        class="product-loop__link img-fluid-eq"
-        href="{{ $product->url }}"
-        tabindex="0"
-    >
-        <div class="img-fluid-eq__dummy"></div>
-        <div class="img-fluid-eq__wrap">
-            <img
-                class="lazyload product-thumbnail__img"
-                data-src="{{ RvMedia::getImageUrl($product->image, 'small', false, RvMedia::getDefaultImage()) }}"
-                src="{{ image_placeholder($product->image, 'small') }}"
-                alt="{{ $product->name }}"
-            >
-        </div>
-        <span class="ribbons">
-            @if ($product->isOutOfStock())
-                <span class="ribbon out-stock">{{ __('Out Of Stock') }}</span>
-            @else
-                @if ($product->productLabels->isNotEmpty())
-                    @foreach ($product->productLabels as $label)
-                        <span
-                            class="ribbon"
-                            @if ($label->color) style="background-color: {{ $label->color }}" @endif
-                        >{{ $label->name }}</span>
-                    @endforeach
-                @else
-                    @if ($product->front_sale_price !== $product->price)
-                        <div
-                            class="featured ribbon"
-                            dir="ltr"
-                        >{{ get_sale_percentage($product->price, $product->front_sale_price) }}</div>
-                    @endif
-                @endif
-            @endif
-        </span>
-    </a>
-    {!! Theme::partial(
-        'ecommerce.product-loop-buttons',
-        compact('product') + (!empty($wishlistIds) ? compact('wishlistIds') : []),
-    ) !!}
-</div>
-<div class="product-details position-relative">
-    <div class="product-content-box">
-        @if (is_plugin_active('marketplace') && $product->store->id)
-            <div class="sold-by-meta">
-                <a
-                    href="{{ $product->store->url }}"
-                    tabindex="0"
-                >{{ $product->store->name }}</a>
+<section class="content-page single-product-content pt-50 pb-50" id="product-detail-page">
+    @include(EcommerceHelper::viewPath('includes.product-detail'))
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6">
+                <!-- Product Image -->
+                <div class="product-image">
+                    <img class="img-fluid"
+                        src="{{ RvMedia::getImageUrl($product->image, 'large', false, RvMedia::getDefaultImage()) }}"
+                        alt="{{ $product->name }}">
+                </div>
             </div>
-        @endif
-        <h3 class="product__title">
-            <a
-                href="{{ $product->url }}"
-                tabindex="0"
-            >{{ $product->name }}</a>
-        </h3>
-        @if (EcommerceHelper::isReviewEnabled())
-            {!! Theme::partial('star-rating', ['avg' => $product->reviews_avg, 'count' => $product->reviews_count]) !!}
-        @endif
-        {!! Theme::partial('ecommerce.product-price', compact('product')) !!}
-        @if (!empty($isFlashSale))
-            <div class="deal-sold row mt-2">
-                @if (Botble\Ecommerce\Facades\FlashSale::isShowSaleCountLeft())
-                    <div class="deal-text col-auto">
-                        <span class="sold fw-bold">
-                            @if ($product->pivot->quantity > $product->pivot->sold)
-                                <span class="text">{{ __('Sold') }}: </span>
-                                <span class="value">{{ (int) $product->pivot->sold }} /
-                                    {{ (int) $product->pivot->quantity }}</span>
-                            @else
-                                <span class="text text-danger">{{ __('Sold out') }}</span>
-                            @endif
-                        </span>
+
+            <div class="col-lg-6">
+                <div class="product-summary">
+                    <!-- Product Name -->
+                    <h1 class="product-title">{{ $product->name }}</h1>
+
+                    <!-- Product Weight (added here) -->
+                    <p class="product-weight"><strong>{{ __('Weight') }}:</strong> {{ $product->weight }} kg</p>
+
+                    <!-- Product Price -->
+                    <div class="product-price">
+                        <span class="current-price">${{ $product->front_sale_price }}</span>
+                        @if ($product->front_sale_price !== $product->price)
+                            <span class="old-price"><del>${{ $product->price }}</del></span>
+                        @endif
                     </div>
-                @endif
-                <div class="deal-progress col">
-                    <div class="progress">
-                        <div
-                            class="progress-bar"
-                            role="progressbar"
-                            aria-label="{{ __('Sold out') }}"
-                            aria-valuenow="{{ $product->pivot->quantity > 0 ? ($product->pivot->sold / $product->pivot->quantity) * 100 : 0 }}"
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                            style="width: {{ $product->pivot->quantity > 0 ? ($product->pivot->sold / $product->pivot->quantity) * 100 : 0 }}%"
-                        >
-                        </div>
+
+                    <!-- Availability -->
+                    <p class="availability">
+                        <strong>{{ __('Availability') }}:</strong> 
+                        @if($product->isOutOfStock())
+                            <span class="text-danger">{{ __('Out of Stock') }}</span>
+                        @else
+                            <span class="text-success">{{ __('In stock') }}</span>
+                        @endif
+                    </p>
+
+                    <!-- Quantity and Cart Button -->
+                    <div class="product-cart">
+                        <form action="{{ route('cart.add', $product->id) }}" method="POST">
+                            @csrf
+                            <label for="quantity">{{ __('Quantity') }}:</label>
+                            <div class="input-group quantity">
+                                <input type="number" name="quantity" value="1" min="1" max="{{ $product->stock_quantity }}" class="form-control">
+                            </div>
+                            <button type="submit" class="btn btn-primary">{{ __('Add to Cart') }}</button>
+                        </form>
+                    </div>
+
+                    <!-- Wishlist and Compare -->
+                    <div class="wishlist-compare mt-3">
+                        <a href="{{ route('wishlist.add', $product->id) }}" class="btn btn-outline-secondary">{{ __('Wishlist') }}</a>
+                        <a href="{{ route('compare.add', $product->id) }}" class="btn btn-outline-secondary">{{ __('Compare') }}</a>
                     </div>
                 </div>
             </div>
-        @endisset
-</div>
-<div class="product-bottom-box">
-    {!! Theme::partial('ecommerce.product-cart-form', compact('product')) !!}
-</div>
-</div>
+        </div>
+    </div>
+
+    <!-- Product Tabs -->
+    <div class="card product-detail-tabs mt-5">
+        <ul class="nav nav-pills nav-fill bb-product-content-tabs p-4 pb-0">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#tab-description">{{ __('Description') }}</a>
+            </li>
+            @if (EcommerceHelper::isProductSpecificationEnabled() && $product->specificationAttributes->where('pivot.hidden', false)->isNotEmpty())
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#tab-specification">{{ __('Specification') }}</a>
+                </li>
+            @endif
+            @if (EcommerceHelper::isReviewEnabled())
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#tab-reviews">
+                        {{ __('Reviews') }} ({{ $product->reviews_count }})
+                    </a>
+                </li>
+            @endif
+        </ul>
+
+        <div class="tab-content container p-4">
+            <!-- Description Tab -->
+            <div class="tab-pane fade show active" id="tab-description">
+                <div class="ck-content">
+                    {!! BaseHelper::clean($product->content) !!}
+                </div>
+            </div>
+
+            <!-- Specification Tab -->
+            @if (EcommerceHelper::isProductSpecificationEnabled() && $product->specificationAttributes->where('pivot.hidden', false)->isNotEmpty())
+                <div class="tab-pane fade" id="tab-specification">
+                    <div class="tp-product-details-additional-info">
+                        @include(EcommerceHelper::viewPath('includes.product-specification'))
+                    </div>
+                </div>
+            @endif
+
+            <!-- Reviews Tab -->
+            @if (EcommerceHelper::isReviewEnabled())
+                <div class="tab-pane fade" id="tab-reviews">
+                    <div class="tp-product-details-review-wrapper pt-60" id="product-reviews">
+                        @include(EcommerceHelper::viewPath('includes.reviews'))
+                    </div>
+                </div>
+            @endif
+        </div>
+    </div>
+
+    <!-- Related Products -->
+    @php
+        $relatedProducts = get_related_products($product);
+    @endphp
+
+    @if ($relatedProducts->isNotEmpty())
+        <div class="container mt-5">
+            <h2>{{ __('Related products') }}</h2>
+            <div class="row">
+                @include(EcommerceHelper::viewPath('includes.product-items'), ['products' => $relatedProducts])
+            </div>
+        </div>
+    @endif
+</section>
