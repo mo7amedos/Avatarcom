@@ -1015,27 +1015,30 @@ public function is_feature_products(Request $request)
 
 public function saveCategoryIdsToFile(Request $request)
 {
-    $request->validate([
-        'category_ids' => 'required|array', // التأكد أن البيانات هي array من الـ IDs
-        'category_ids.*' => 'integer', // التأكد أن كل ID هو عدد صحيح
+     $request->validate([
+        'category_ids' => 'required|array',  
+        'category_ids.*' => 'integer', 
     ]);
 
-    // استلام الـ category IDs من request
-    $categoryIds = $request->input('category_ids');
+     $categoryIds = $request->input('category_ids');
 
-    // اسم الملف اللي هتحفظ فيه الـ IDs
-    $filePath = storage_path('app/category_ids.txt');
+     $filePath = storage_path('app/category_ids.txt');
 
-    // مسح محتويات الملف القديم (لو موجود)
-    if (file_exists($filePath)) {
-        file_put_contents($filePath, ''); // مسح الملف
+     if (file_exists($filePath)) {
+        file_put_contents($filePath, '');  
     }
 
-    $categoryIdsString = implode("\n", $categoryIds); // تحويل الـ array إلى string مفصول بفواصل (كل ID في سطر)
+     $categoryIdsString = implode("\n", $categoryIds);  
 
-    Storage::put('category_ids.txt', $categoryIdsString);
+     Storage::put('category_ids.txt', $categoryIdsString);
 
-    return response()->json(['message' => 'Category IDs have been saved successfully.']);
+     $savedCategoryIds = file($filePath, FILE_IGNORE_NEW_LINES);  
+
+    return response()->json([
+        'message' => 'Category IDs have been saved successfully.',
+        'saved_category_ids' => $savedCategoryIds,  
+    ]);
 }
+
 
 }
