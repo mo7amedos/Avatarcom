@@ -1038,12 +1038,10 @@ public function saveCategoryIdsToFile(Request $request)
 
 public function getCategoryIdsFromFile()
 {
-      // استرجاع الـ category_ids من الملف
-      $filePath = storage_path('app/public/category_ids.json');
+       $filePath = storage_path('app/public/category_ids.json');
 
       if (file_exists($filePath)) {
-          // قراءة الـ category_ids من الملف
-          $data = json_decode(file_get_contents($filePath), true);
+           $data = json_decode(file_get_contents($filePath), true);
           $categoryIdsFromFile = $data[0]['category_ids'] ?? [];
       } else {
           return response()->json([
@@ -1052,17 +1050,14 @@ public function getCategoryIdsFromFile()
           ], 404);
       }
 
-      // بناء الاستعلام للحصول على الفئات التي في الـ category_ids
-      $categoriesQuery = ProductCategory::query()
+       $categoriesQuery = ProductCategory::query()
           ->with(['slugable']);
 
       if ($categoryIdsFromFile) {
-          // تصفية الفئات بناءً على الـ category_ids
-          $categoriesQuery->whereIn('id', $categoryIdsFromFile);
+           $categoriesQuery->whereIn('id', $categoryIdsFromFile);
       }
 
-      // إضافة منطق pagination
-      $perPage = 5;
+       $perPage = 5;
     return  $categories = $categoriesQuery->paginate($perPage);
 
     //   // تنسيق النتائج
