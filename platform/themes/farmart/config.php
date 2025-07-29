@@ -40,20 +40,20 @@ return [
         // Before event inherit from package config and the theme that call before,
         // you can use this event to set meta, breadcrumb template or anything
         // you want inheriting.
-        'before' => function (Theme $theme) {
+        'before' => function (Theme $theme): void {
             // You can remove this line anytime.
         },
 
         // Listen on event before render a theme,
         // this event should call to assign some assets,
         // breadcrumb template.
-        'beforeRenderTheme' => function (Theme $theme) {
-            $theme->partialComposer(['header', 'footer'], function (IlluminateView $view) {
+        'beforeRenderTheme' => function (Theme $theme): void {
+            $theme->partialComposer(['header', 'footer'], function (IlluminateView $view): void {
                 $view->with('currencies', is_plugin_active('ecommerce') ? get_all_currencies() : collect());
             });
 
             // You may use this event to set up your assets.
-            $version = get_cms_version() . '.2';
+            $version = get_cms_version() . '.1';
 
             $useCDN = theme_option('use_source_assets_from', 'cdn') == 'cdn';
 
@@ -207,6 +207,13 @@ return [
                     ],
                     'container' => 'footer',
                 ],
+                'masonry-js' => [
+                    'local' => [
+                        'source' => 'plugins/masonry.pkgd.min.js',
+                        'dependencies' => ['jquery'],
+                    ],
+                    'container' => 'footer',
+                ],
                 'scrollbar-js' => [
                     'local' => [
                         'source' => 'plugins/scrollbar.js',
@@ -217,7 +224,7 @@ return [
                 'main-js' => [
                     'local' => [
                         'source' => 'js/main.js',
-                        'dependencies' => ['jquery', 'front-ecommerce-js'],
+                        'dependencies' => ['jquery', 'bootstrap-js', 'front-ecommerce-js', 'scrollbar-js'],
                         'version' => $version,
                     ],
                     'container' => 'footer',
@@ -270,7 +277,7 @@ return [
                     'ecommerce.brand',
                     'ecommerce.search',
                     'ecommerce.cart',
-                ], function (View $view) {
+                ], function (View $view): void {
                     $view->withShortcodes();
                 });
             }
@@ -284,7 +291,7 @@ return [
         // this should call to assign style, script for a layout.
         'beforeRenderLayout' => [
 
-            'default' => function (Theme $theme) {
+            'default' => function (Theme $theme): void {
                 // $theme->asset()->usePath()->add('ipad', 'css/layouts/ipad.css');
             },
         ],

@@ -384,6 +384,8 @@ abstract class RepositoriesAbstract implements RepositoryInterface
         if (! empty($item)) {
             $item->forceDelete();
         }
+
+        $this->resetModel();
     }
 
     public function restoreBy(array $condition = [])
@@ -394,6 +396,8 @@ abstract class RepositoriesAbstract implements RepositoryInterface
         if (! empty($item)) {
             $item->restore();
         }
+
+        $this->resetModel();
     }
 
     public function getFirstByWithTrash(array $condition = [], array $select = [])

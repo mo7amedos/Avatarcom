@@ -309,6 +309,7 @@
     </div>
     @if (is_plugin_active('ecommerce'))
         {!! Theme::partial('ecommerce.quick-view-modal') !!}
+        {!! Theme::partial('ecommerce.quick-shop-modal') !!}
     @endif
     {!! Theme::partial('toast') !!}
 
@@ -324,7 +325,7 @@
         </span>
     </div>
 
-    <script>
+    <script data-pagespeed-no-defer data-pagespeed-no-transform>
         'use strict';
 
         window.trans = {
@@ -351,7 +352,5 @@
 
     {!! Theme::footer() !!}
 
-    @include('packages/theme::toast-notification')
     </body>
-
-    </html>
+</html>

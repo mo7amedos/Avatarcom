@@ -23,7 +23,7 @@ class SaleCommissionHtml extends Html
             ->selectRaw('DATE(created_at) AS date, SUM(COALESCE(fee, 0)) as total_fee, SUM(COALESCE(amount, 0)) as total_amount')
             ->whereDate('created_at', '>=', $this->startDate)
             ->whereDate('created_at', '<=', $this->endDate)
-            ->where(function (Builder $query) {
+            ->where(function (Builder $query): void {
                 $query
                     ->whereNull('type')
                     ->orWhere('type', RevenueTypeEnum::ADD_AMOUNT);

@@ -48,12 +48,18 @@ return [
 
     'trash_error' => 'Error when deleting selected item(s)',
     'trash_success' => 'Moved selected item(s) to trash successfully!',
+    'move_error' => 'Error when moving selected item(s)',
+    'move_success' => 'Moved selected item(s) successfully!',
+    'selected_items_move_success' => 'Moved selected item(s) to :name successfully!',
+    'selected_items_move_error' => 'Error when moving selected item(s) to :name',
+    'destination' => 'Destination',
     'restore_error' => 'Error when restoring selected item(s)',
     'restore_success' => 'Restore selected item(s) successfully!',
     'copy_success' => 'Copied selected item(s) successfully!',
     'delete_success' => 'Deleted selected item(s) successfully!',
     'favorite_success' => 'Favorite selected item(s) successfully!',
     'remove_favorite_success' => 'Remove selected item(s) from favorites successfully!',
+    'add_recent_success' => 'Added item to recent list successfully!',
     'rename_error' => 'Error when rename item(s)',
     'rename_success' => 'Rename selected item(s) successfully!',
     'crop_success' => 'Crop image successfully!',
@@ -177,6 +183,19 @@ return [
         'width' => 'Width',
         'aspect_ratio' => 'Aspect ratio',
     ],
+
+    'validation' => [
+        'uploaded_file_required' => 'Please select a file to upload.',
+        'uploaded_file_invalid_type' => 'The file type is not allowed. Please upload a valid file format.',
+        'uploaded_file_too_large' => 'The file is too large. Please choose a smaller file.',
+        'uploaded_file_corrupted' => 'The file appears to be corrupted or invalid. Please try uploading a different file.',
+        'upload_network_error' => 'Upload failed due to network issues. Please check your connection and try again.',
+        'attributes' => [
+            'uploaded_file' => 'file',
+            'upload' => 'file',
+        ],
+    ],
+
     'unable_to_write' => 'Unable to write file. Please chmod folder ":folder" to make it writeable!',
     'unable_download_image_from' => 'Unable to download image from URL: :url',
     'rename_physical_folder' => 'Rename physical folder name on disk too',
@@ -196,4 +215,6 @@ return [
     'share_results' => 'Share Results',
     'download_image_to_local_storage' => 'Download image to local storage',
     'download_image_to_local_storage_helper' => 'If it is unchecked, the image will be displayed from the original URL',
+    'skip_trash' => 'Skip trash',
+    'skip_trash_description' => 'If it is checked, the file will be deleted permanently without moving to trash',
 ];

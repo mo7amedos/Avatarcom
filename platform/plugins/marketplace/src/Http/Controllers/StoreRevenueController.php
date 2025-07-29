@@ -27,9 +27,7 @@ class StoreRevenueController extends BaseController
         $store = Store::query()->findOrFail($id);
         $customer = $store->customer;
 
-        if (! $customer->id) {
-            abort(404);
-        }
+        abort_unless($customer->id, 404);
 
         Assets::addScriptsDirectly(['vendor/core/plugins/marketplace/js/store-revenue.js']);
         $table->setAjaxUrl(route('marketplace.store.revenue.index', $customer->id));
@@ -44,9 +42,7 @@ class StoreRevenueController extends BaseController
 
         $customer = $store->customer;
 
-        if (! $customer->id) {
-            abort(404);
-        }
+        abort_unless($customer->id, 404);
 
         $vendorInfo = $customer->vendorInfo;
 

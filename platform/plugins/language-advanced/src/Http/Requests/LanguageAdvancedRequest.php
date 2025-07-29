@@ -9,7 +9,7 @@ class LanguageAdvancedRequest extends Request
     public function rules(): array
     {
         return [
-            'model' => 'required|string|max:255',
+            'model' => ['required', 'string', 'max:255'],
         ];
     }
 }

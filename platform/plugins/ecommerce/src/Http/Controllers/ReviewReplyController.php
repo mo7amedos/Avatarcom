@@ -38,9 +38,7 @@ class ReviewReplyController extends BaseController
 
     public function update(Review $review, ReviewReply $reply, ReviewReplyRequest $request)
     {
-        if ($reply->review()->isNot($review)) {
-            abort(404);
-        }
+        abort_if($reply->review()->isNot($review), 404);
 
         $reply->update([
             'message' => $request->input('message'),

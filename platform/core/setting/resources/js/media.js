@@ -11,8 +11,10 @@ $(() => {
             .withButtonLoading(currentTarget)
             .postForm($form.prop('action'), new FormData($form[0]))
             .then(({ data }) => {
-                $('#generate-thumbnails-modal').modal('show')
-                $('#generate-thumbnails-modal').data('total-files', data.data.files_count)
+                const $modal = $('#generate-thumbnails-modal')
+
+                $modal.modal('show')
+                $modal.data('total-files', data.data.files_count)
             })
     })
 
@@ -50,7 +52,10 @@ $(() => {
                     }
                 })
                 .finally(() => {
-                    Botble.hideButtonLoading(currentTarget)
+                    if (offset > totalFiles) {
+                        Botble.hideButtonLoading(currentTarget)
+                        $modal.modal('hide')
+                    }
                 });
         }
 

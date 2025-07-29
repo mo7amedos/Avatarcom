@@ -50,7 +50,14 @@ trait HasPreferences
             $cacheKey = 'user-meta-' . $this->getKey();
 
             if ($cache->has($cacheKey)) {
-                $this->metaValues = $cache->get($cacheKey);
+                $metaValues = $cache->get($cacheKey);
+
+                if ($metaValues instanceof Collection) {
+                    $this->metaValues = $metaValues;
+                } else {
+                    $this->metaValues = $this->meta()->get();
+                    $cache->put($cacheKey, $this->metaValues);
+                }
             } else {
                 $this->metaValues = $this->meta()->get();
                 $cache->put($cacheKey, $this->metaValues);

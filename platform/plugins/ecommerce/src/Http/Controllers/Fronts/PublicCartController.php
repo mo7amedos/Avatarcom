@@ -20,15 +20,29 @@ use Botble\Theme\Facades\Theme;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Throwable;
 
 class PublicCartController extends BaseController
 {
+    protected ?array $cachedCartData = null;
+
+    protected ?object $cachedCartInstance = null;
+
     public function __construct(
         protected HandleApplyPromotionsService $applyPromotionsService,
         protected HandleApplyCouponService $handleApplyCouponService
     ) {
+    }
+
+    protected function getCartInstance()
+    {
+        if ($this->cachedCartInstance === null) {
+            $this->cachedCartInstance = Cart::instance('cart');
+        }
+
+        return $this->cachedCartInstance;
     }
 
     public function index()
@@ -48,9 +62,12 @@ class PublicCartController extends BaseController
             ) ?: new Collection();
         }
 
-        SeoHelper::setTitle(__('Shopping Cart'));
+        $title = __('Shopping Cart');
 
-        Theme::breadcrumb()->add(__('Shopping Cart'), route('public.cart'));
+        SeoHelper::setTitle(theme_option('ecommerce_cart_seo_title') ?: $title)
+            ->setDescription(theme_option('ecommerce_cart_seo_description'));
+
+        Theme::breadcrumb()->add($title, route('public.cart'));
 
         app(GoogleTagManager::class)->viewCart();
 
@@ -65,7 +82,11 @@ class PublicCartController extends BaseController
     {
         $response = $this->httpResponse();
 
-        $product = Product::query()->find($request->input('id'));
+        /**
+         * @var Product $product
+         */
+        $product = Product::query()
+            ->find($request->input('id'));
 
         if (! $product) {
             return $response
@@ -73,7 +94,7 @@ class PublicCartController extends BaseController
                 ->setMessage(__('This product is out of stock or not exists!'));
         }
 
-        if ($product->variations->count() > 0 && ! $product->is_variation) {
+        if ($product->variations->isNotEmpty() && ! $product->is_variation && $product->defaultVariation->product->id) {
             $product = $product->defaultVariation->product;
         }
 
@@ -98,39 +119,49 @@ class PublicCartController extends BaseController
                 ->setMessage($e->getMessage());
         }
 
-        $maxQuantity = $product->quantity;
+        $maxQuantity = $product->max_cart_quantity;
 
-        if (! $product->canAddToCart($request->input('qty', 1))) {
+        $requestQuantity = $request->integer('qty', 1);
+
+        $existingAddedToCart = Cart::instance('cart')->content()->firstWhere('id', $product->id);
+
+        if ($existingAddedToCart) {
+            $requestQuantity += $existingAddedToCart->qty;
+        }
+
+        if (! $product->canAddToCart($requestQuantity)) {
             return $response
                 ->setError()
-                ->setMessage(__('Maximum quantity is :max!', ['max' => $maxQuantity]));
+                ->setMessage(__('Sorry, you can only order a maximum of :quantity units of :product at a time. Please adjust the quantity and try again.', ['quantity' => $maxQuantity, 'product' => $product->name]));
         }
 
         $outOfQuantity = false;
-        foreach (Cart::instance('cart')->content() as $item) {
-            if ($item->id == $product->id) {
-                $originalQuantity = $product->quantity;
-                $product->quantity = (int) $product->quantity - $item->qty;
+        $cartContent = Cart::instance('cart')->content();
+        $existingItem = $cartContent->firstWhere('id', $product->id);
 
-                if ($product->quantity < 0) {
-                    $product->quantity = 0;
-                }
+        if ($existingItem) {
+            $originalQuantity = $product->quantity;
+            $product->quantity = (int) $product->quantity - $existingItem->qty;
 
-                if ($product->isOutOfStock()) {
-                    $outOfQuantity = true;
-
-                    break;
-                }
-
-                $product->quantity = $originalQuantity;
+            if ($product->quantity < 0) {
+                $product->quantity = 0;
             }
+
+            if ($product->isOutOfStock()) {
+                $outOfQuantity = true;
+            }
+
+            $product->quantity = $originalQuantity;
         }
 
         $product->quantity = (int) $product->quantity - $request->integer('qty', 1);
 
         if (
             EcommerceHelper::isEnabledProductOptions() &&
-            $originalProduct->options()->where('required', true)->exists()
+            DB::table('ec_options')
+                ->where('product_id', $originalProduct->id)
+                ->where('required', true)
+                ->exists()
         ) {
             if (! $request->input('options')) {
                 return $response
@@ -139,7 +170,10 @@ class PublicCartController extends BaseController
                     ->setMessage(__('Please select product options!'));
             }
 
-            $requiredOptions = $originalProduct->options()->where('required', true)->get();
+            $requiredOptions = DB::table('ec_options')
+                ->where('product_id', $originalProduct->id)
+                ->where('required', true)
+                ->get();
 
             $message = null;
 
@@ -205,6 +239,8 @@ class PublicCartController extends BaseController
             Cart::instance('cart')->refresh();
 
             $responseData['next_url'] = $nextUrl;
+
+            $this->applyAutoCouponCode();
 
             if ($request->ajax() && $request->wantsJson()) {
                 return $response->setData($responseData);
@@ -315,10 +351,81 @@ class PublicCartController extends BaseController
 
     protected function getCartData(): array
     {
-        $products = Cart::instance('cart')->products();
+        if ($this->cachedCartData !== null) {
+            return $this->cachedCartData;
+        }
 
-        $promotionDiscountAmount = $this->applyPromotionsService->execute();
+        $cartInstance = $this->getCartInstance();
+        $products = $cartInstance->products();
 
+        $cartData = [
+            'rawTotal' => $cartInstance->rawTotal(),
+            'cartItems' => $cartInstance->content(),
+            'countCart' => $cartInstance->count(),
+            'productItems' => $products,
+        ];
+
+        $promotionDiscountAmount = $this->applyPromotionsService->execute(null, $cartData);
+
+        $couponDiscountAmount = $this->applyAutoCouponCode();
+
+        $sessionData = OrderHelper::getOrderSessionData();
+
+        if (session()->has('applied_coupon_code')) {
+            $couponDiscountAmount = (float) Arr::get($sessionData, 'coupon_discount_amount', 0);
+        }
+
+        $this->cachedCartData = [$products, $promotionDiscountAmount, $couponDiscountAmount];
+
+        return $this->cachedCartData;
+    }
+
+    protected function getDataForResponse(): array
+    {
+        $cartContent = null;
+
+        $cartInstance = $this->getCartInstance();
+
+        $cartData = $this->getCartData();
+
+        [$products, $promotionDiscountAmount, $couponDiscountAmount] = $cartData;
+
+        $cartCount = $cartInstance->count();
+        $cartSubTotal = $cartInstance->rawSubTotal();
+        $cartContentData = $cartInstance->content();
+
+        if (Route::is('public.cart.*')) {
+            $crossSellProducts = collect();
+            if ($products->isNotEmpty()) {
+                $productIds = $products->pluck('original_product.id')->filter()->unique()->all();
+
+                if (! empty($productIds)) {
+                    $crossSellProducts = get_cart_cross_sale_products(
+                        $productIds,
+                        (int) theme_option('number_of_cross_sale_product', 4)
+                    ) ?: collect();
+                }
+            }
+
+            $cartContent = view(
+                EcommerceHelper::viewPath('cart'),
+                compact('products', 'promotionDiscountAmount', 'couponDiscountAmount', 'crossSellProducts')
+            )->render();
+        }
+
+        $additionalData = apply_filters('ecommerce_cart_additional_data', [], $cartData);
+
+        return apply_filters('ecommerce_cart_data_for_response', [
+            'count' => $cartCount,
+            'total_price' => format_price($cartSubTotal),
+            'content' => $cartContentData,
+            'cart_content' => $cartContent,
+            ...$additionalData,
+        ], $cartData);
+    }
+
+    protected function applyAutoCouponCode(): float
+    {
         $couponDiscountAmount = 0;
 
         if ($couponCode = session('auto_apply_coupon_code')) {
@@ -332,45 +439,11 @@ class PublicCartController extends BaseController
                 $couponData = $this->handleApplyCouponService->execute($couponCode);
 
                 if (! Arr::get($couponData, 'error')) {
-                    $couponDiscountAmount = Arr::get($couponData, 'data.discount_amount');
+                    $couponDiscountAmount = Arr::get($couponData, 'data.discount_amount', 0);
                 }
             }
         }
 
-        $sessionData = OrderHelper::getOrderSessionData();
-
-        if (session()->has('applied_coupon_code')) {
-            $couponDiscountAmount = Arr::get($sessionData, 'coupon_discount_amount', 0);
-        }
-
-        return [$products, $promotionDiscountAmount, $couponDiscountAmount];
-    }
-
-    protected function getDataForResponse(): array
-    {
-        $cartContent = null;
-
-        $cartData = $this->getCartData();
-
-        [$products, $promotionDiscountAmount, $couponDiscountAmount] = $cartData;
-
-        if (Route::is('public.cart.*')) {
-            $crossSellProducts = get_cart_cross_sale_products(
-                $products->pluck('original_product.id')->all(),
-                (int) theme_option('number_of_cross_sale_product', 4)
-            ) ?: collect();
-
-            $cartContent = view(
-                EcommerceHelper::viewPath('cart'),
-                compact('products', 'promotionDiscountAmount', 'couponDiscountAmount', 'crossSellProducts')
-            )->render();
-        }
-
-        return apply_filters('ecommerce_cart_data_for_response', [
-            'count' => Cart::instance('cart')->count(),
-            'total_price' => format_price(Cart::instance('cart')->rawSubTotal()),
-            'content' => Cart::instance('cart')->content(),
-            'cart_content' => $cartContent,
-        ], $cartData);
+        return (float) $couponDiscountAmount;
     }
 }

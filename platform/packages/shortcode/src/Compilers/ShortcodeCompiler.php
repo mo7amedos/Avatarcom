@@ -4,8 +4,10 @@ namespace Botble\Shortcode\Compilers;
 
 use Botble\Shortcode\View\View;
 use Botble\Theme\Facades\Theme;
+use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class ShortcodeCompiler
@@ -19,6 +21,12 @@ class ShortcodeCompiler
     protected array $registered = [];
 
     protected string $editLink;
+
+    protected static array $ignoredCaches = [];
+
+    protected static array $ignoredLazyLoading = [];
+
+    protected static array $loadingStates = [];
 
     public function enable(): self
     {
@@ -137,7 +145,8 @@ class ShortcodeCompiler
         $compiled = $this->compileShortcode($matches);
         $name = $compiled->getName();
 
-        if ($compiled->enable_lazy_loading === 'yes' && ! request()->ajax()) {
+        // Handle lazy loading
+        if ($compiled->enable_lazy_loading === 'yes' && ! request()->expectsJson() && ! $this->shouldIgnoreLazyLoading($name)) {
             add_filter(THEME_FRONT_FOOTER, function (?string $html) {
                 return $html . view('packages/shortcode::partials.lazy-loading-script')->render();
             }, 120);
@@ -148,12 +157,60 @@ class ShortcodeCompiler
                 $placeholderView = 'packages/shortcode::partials.lazy-loading-placeholder';
             }
 
+            $loadingView = static::getLoadingStateView($name);
+
             return view($placeholderView, [
                 'name' => $name,
                 'attributes' => Arr::except($compiled->toArray(), 'enable_lazy_loading'),
+                'loadingView' => $loadingView,
             ]);
         }
 
+        // Check if caching is enabled from settings, shortcode is not in ignore list, caching is not disabled for this specific shortcode, and there's no query string
+        if (
+            setting('shortcode_cache_enabled', false)
+            && ! request()->expectsJson()
+            && ! $this->shouldIgnoreCache($name)
+            && $compiled->enable_caching !== 'no'
+            && empty(request()->getQueryString())
+        ) {
+            // Create a cache key based on the shortcode name, attributes, content, and current locale
+            $locale = app()->getLocale();
+            $cacheKey = 'shortcode_render_' . md5($name . serialize($compiled->toArray()) . ($compiled->getContent() ?? '') . $locale);
+
+            // Check if this shortcode should be cached for longer
+            $cacheable = $this->isShortcodeCacheable($name);
+
+            // Get cache durations from settings
+            $defaultTtl = (int) setting('shortcode_cache_ttl_default', 5);
+            $cacheableTtl = (int) setting('shortcode_cache_ttl_cacheable', 1800);
+
+            // Set cache duration based on whether the shortcode is cacheable
+            $cacheDuration = $cacheable
+                ? Carbon::now()->addSeconds($cacheableTtl)
+                : Carbon::now()->addSeconds($defaultTtl);
+
+            // Get from cache or render if not cached
+            return Cache::remember($cacheKey, $cacheDuration, function () use ($compiled, $name) {
+                $callback = apply_filters('shortcode_get_callback', $this->getCallback($name), $name);
+
+                // Render the shortcode through the callback
+                return apply_filters(
+                    'shortcode_content_compiled',
+                    call_user_func_array($callback, [
+                        $compiled,
+                        $compiled->getContent(),
+                        $this,
+                        $name,
+                    ]),
+                    $name,
+                    $callback,
+                    $this
+                );
+            });
+        }
+
+        // If caching is disabled, render directly
         $callback = apply_filters('shortcode_get_callback', $this->getCallback($name), $name);
 
         // Render the shortcode through the callback
@@ -271,9 +328,6 @@ class ShortcodeCompiler
         return '\\[(\\[?)(' . $name . ')(?![\\w-])([^\\]\\/]*(?:\\/(?!\\])[^\\]\\/]*)*?)(?:(\\/)\\]|\\](?:([^\\[]*+(?:\\[(?!\\/\\2\\])[^\\[]*+)*+)\\[\\/\\2\\])?)(\\]?)';
     }
 
-    /**
-     * Remove all shortcode tags from the given content.
-     */
     public function strip(?string $content, array $except = []): ?string
     {
         if (empty($this->registered) || ! $content) {
@@ -293,6 +347,46 @@ class ShortcodeCompiler
     public function setStrip(bool $strip): void
     {
         $this->strip = $strip;
+    }
+
+    public static function ignoreCaches(array $shortcodes): void
+    {
+        static::$ignoredCaches = array_merge(static::$ignoredCaches, $shortcodes);
+    }
+
+    public static function getIgnoredCaches(): array
+    {
+        return static::$ignoredCaches;
+    }
+
+    public static function ignoreLazyLoading(array $shortcodes): void
+    {
+        static::$ignoredLazyLoading = array_merge(static::$ignoredLazyLoading, $shortcodes);
+    }
+
+    public static function getIgnoredLazyLoading(): array
+    {
+        return static::$ignoredLazyLoading;
+    }
+
+    public static function registerLoadingState(string $shortcodeName, string $view): void
+    {
+        static::$loadingStates[$shortcodeName] = $view;
+    }
+
+    public static function getLoadingStateView(string $shortcodeName): ?string
+    {
+        return static::$loadingStates[$shortcodeName] ?? null;
+    }
+
+    protected function shouldIgnoreCache(string $name): bool
+    {
+        return in_array($name, static::$ignoredCaches);
+    }
+
+    protected function shouldIgnoreLazyLoading(string $name): bool
+    {
+        return in_array($name, static::$ignoredLazyLoading);
     }
 
     protected function stripTag(array $match): ?string
@@ -337,5 +431,28 @@ class ShortcodeCompiler
     public function whitelistShortcodes(): array
     {
         return apply_filters('core_whitelist_shortcodes', ['media', 'youtube-video']);
+    }
+
+    /**
+     * Determine if a shortcode should be cached for a longer period
+     *
+     * @param string $name
+     * @return bool
+     */
+    protected function isShortcodeCacheable(string $name): bool
+    {
+        // List of shortcodes that should be cached for longer periods
+        // These are typically shortcodes that don't change frequently or don't contain dynamic content
+        $cacheableShortcodes = [
+            'static-block',
+            'featured-posts',
+            'gallery',
+            'youtube-video',
+            'google-map',
+            'contact-form',
+            'image',
+        ];
+
+        return in_array($name, $cacheableShortcodes);
     }
 }

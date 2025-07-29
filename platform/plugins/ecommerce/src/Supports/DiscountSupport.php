@@ -130,7 +130,7 @@ class DiscountSupport
             ->where('code', $couponCode)
             ->where('type', DiscountTypeEnum::COUPON)
             ->where('start_date', '<=', $now)
-            ->where(function (Builder $query) use ($now) {
+            ->where(function (Builder $query) use ($now): void {
                 $query
                     ->whereNull('end_date')
                     ->orWhere('end_date', '>', $now);
@@ -145,7 +145,7 @@ class DiscountSupport
                 $customerId = auth('customer')->check() ? auth('customer')->id() : 0;
             }
 
-            if ($discount->target === DiscountTargetEnum::ONCE_PER_CUSTOMER && $customerId) {
+            if ($discount->target == DiscountTargetEnum::ONCE_PER_CUSTOMER && $customerId) {
                 $discount->usedByCustomers()->syncWithoutDetaching([$customerId]);
             }
         }
@@ -169,7 +169,7 @@ class DiscountSupport
                 $customerId = auth('customer')->check() ? auth('customer')->id() : 0;
             }
 
-            if ($discount->target === DiscountTargetEnum::ONCE_PER_CUSTOMER && $customerId) {
+            if ($discount->target == DiscountTargetEnum::ONCE_PER_CUSTOMER && $customerId) {
                 $discount->usedByCustomers()->detach($customerId);
             }
         }

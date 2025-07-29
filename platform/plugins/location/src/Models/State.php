@@ -36,11 +36,11 @@ class State extends BaseModel
 
     protected static function booted(): void
     {
-        static::deleted(function (State $state) {
+        static::deleted(function (State $state): void {
             $state->cities()->delete();
         });
 
-        static::saving(function (self $model) {
+        static::saving(function (self $model): void {
             $model->slug = self::createSlug($model->slug ?: $model->name, $model->getKey());
         });
     }

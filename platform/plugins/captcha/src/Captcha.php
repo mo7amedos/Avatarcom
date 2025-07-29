@@ -42,14 +42,20 @@ class Captcha extends CaptchaContract
 
         $this->rendered = true;
 
+        $captchaContent = view('plugins/captcha::v2.html', ['name' => $name, 'siteKey' => $this->siteKey])->render();
+
+        if (request()->expectsJson()) {
+            $captchaContent .= $footerContent;
+        }
+
         return
             tap(
-                view('plugins/captcha::v2.html', ['name' => $name, 'siteKey' => $this->siteKey])->render(),
+                $captchaContent,
                 fn (string $rendered) => CaptchaRendered::dispatch($rendered)
             );
     }
 
-    public function verify(string $response, string $clientIp = null, array $options = []): bool
+    public function verify(string $response, ?string $clientIp = null, array $options = []): bool
     {
         if (! $this->reCaptchaEnabled()) {
             return true;

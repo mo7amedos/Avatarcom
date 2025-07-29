@@ -9,10 +9,9 @@ use Botble\Base\Supports\Core;
 use Illuminate\Console\Command;
 use Illuminate\Support\Composer;
 
-use function Laravel\Prompts\{confirm, note, progress, select};
+use function Laravel\Prompts\{confirm, note, progress};
 
 use Symfony\Component\Console\Attribute\AsCommand;
-use Symfony\Component\Process\Process;
 use Throwable;
 
 #[AsCommand('cms:update', 'Update system to latest version')]
@@ -124,20 +123,6 @@ class UpdateCommand extends Command
         event(new UpdatedEvent());
 
         $this->components->info('Your system has been updated successfully.');
-
-        if (confirm('Do you want run <comment>composer</comment> command?')) {
-            $process = new Process(array_merge($this->composer->findComposer(), [
-                select('Run <comment>composer install</comment> or <comment>composer update</comment>?', [
-                    'install',
-                    'update',
-                ], 'install'),
-            ]));
-            $process->start();
-
-            $process->wait(function ($type, $buffer) {
-                $this->components->info($buffer);
-            });
-        }
 
         return self::SUCCESS;
     }

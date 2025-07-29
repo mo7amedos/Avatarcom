@@ -2,7 +2,7 @@
 
 use Botble\Theme\Events\RenderingThemeOptionSettings;
 
-app('events')->listen(RenderingThemeOptionSettings::class, function () {
+app('events')->listen(RenderingThemeOptionSettings::class, function (): void {
     theme_option()
         ->setField([
             'id' => 'sticky_header_enabled',
@@ -271,6 +271,26 @@ app('events')->listen(RenderingThemeOptionSettings::class, function () {
             'attributes' => [
                 'name' => 'header_deliver_color',
                 'value' => '#000',
+            ],
+        ])
+        ->setField([
+            'id' => 'header_mobile_background_color',
+            'section_id' => 'opt-text-subsection-style',
+            'type' => 'customColor',
+            'label' => __('Header mobile background color'),
+            'attributes' => [
+                'name' => 'header_mobile_background_color',
+                'value' => '#fff',
+            ],
+        ])
+        ->setField([
+            'id' => 'header_mobile_icon_color',
+            'section_id' => 'opt-text-subsection-style',
+            'type' => 'customColor',
+            'label' => __('Header mobile icon color'),
+            'attributes' => [
+                'name' => 'header_mobile_icon_color',
+                'value' => '#222',
             ],
         ])
         ->setField([

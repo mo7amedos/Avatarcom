@@ -82,10 +82,10 @@ class CountryController extends BaseController
 
         $data = Country::query()
             ->where('name', 'LIKE', '%' . $keyword . '%')
-            ->select(['id', 'name'])
+            ->select(['id', 'name', 'code'])
             ->take(10)
-            ->orderBy('order')
-            ->orderBy('name')
+            ->oldest('order')
+            ->oldest('name')
             ->get();
 
         $data->prepend(new Country(['id' => 0, 'name' => trans('plugins/location::city.select_country')]));

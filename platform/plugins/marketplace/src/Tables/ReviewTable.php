@@ -73,10 +73,10 @@ class ReviewTable extends TableAbstract
             ])
             ->with(['user', 'product'])
             ->wherePublished()
-            ->whereHas('product', function (BaseQueryBuilder $query) {
+            ->whereHas('product', function (BaseQueryBuilder $query): void {
                 $query
                     ->wherePublished()
-                    ->where('store_id', auth('customer')->user()->store->id);
+                    ->where('store_id', auth('customer')->user()->store?->id);
             });
 
         return $this->applyScopes($query);

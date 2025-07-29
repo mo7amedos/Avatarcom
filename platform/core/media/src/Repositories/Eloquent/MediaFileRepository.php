@@ -32,7 +32,7 @@ class MediaFileRepository extends RepositoriesAbstract implements MediaFileInter
     }
 
     public function getFilesByFolderId(
-        int|string $folderId,
+        int|string|null $folderId,
         array $params = [],
         bool $withFolders = true,
         array $folderParams = []
@@ -69,6 +69,7 @@ class MediaFileRepository extends RepositoriesAbstract implements MediaFileInter
             'filter' => 'everything',
             'take' => null,
             'with' => [],
+            'is_favorite' => false,
         ], $params);
 
         if ($withFolders) {
@@ -95,9 +96,16 @@ class MediaFileRepository extends RepositoriesAbstract implements MediaFileInter
 
             $folder = new MediaFolder();
 
-            $folder = $folder
-                ->where('parent_id', $folderId)
-                ->select($folderParams['select']);
+            // Only apply special handling for favorites view when folder_id is 0
+            if (isset($params['is_favorite']) && $params['is_favorite'] && empty($folderId)) {
+                // In root favorites view, don't filter by parent_id
+                $folder = $folder->select($folderParams['select']);
+            } else {
+                // Normal folder view or inside a folder in favorites view
+                $folder = $folder
+                    ->where('parent_id', $folderId)
+                    ->select($folderParams['select']);
+            }
 
             $this->applyConditions($folderParams['condition'], $folder);
 
@@ -105,15 +113,21 @@ class MediaFileRepository extends RepositoriesAbstract implements MediaFileInter
                 ->union($folder);
         }
 
-        if (empty($folderId)) {
+        // Only apply special handling for favorites view when folder_id is 0
+        if (isset($params['is_favorite']) && $params['is_favorite'] && empty($folderId)) {
+            // In root favorites view, don't filter by folder_id
             $this->model = $this->model
                 ->leftJoin('media_folders', 'media_folders.id', '=', 'media_files.folder_id')
-                ->where(function ($query) use ($folderId) {
+                ->whereNull('media_files.deleted_at');
+        } elseif (empty($folderId)) {
+            $this->model = $this->model
+                ->leftJoin('media_folders', 'media_folders.id', '=', 'media_files.folder_id')
+                ->where(function ($query) use ($folderId): void {
                     /**
                      * @var Builder $query
                      */
                     $query
-                        ->where(function ($sub) use ($folderId) {
+                        ->where(function ($sub) use ($folderId): void {
                             /**
                              * @var Builder $sub
                              */
@@ -121,7 +135,7 @@ class MediaFileRepository extends RepositoriesAbstract implements MediaFileInter
                                 ->where('media_files.folder_id', $folderId)
                                 ->whereNull('media_files.deleted_at');
                         })
-                        ->orWhere(function ($sub) {
+                        ->orWhere(function ($sub): void {
                             /**
                              * @var Builder $sub
                              */
@@ -129,7 +143,7 @@ class MediaFileRepository extends RepositoriesAbstract implements MediaFileInter
                                 ->whereNull('media_files.deleted_at')
                                 ->whereNotNull('media_folders.deleted_at');
                         })
-                        ->orWhere(function ($sub) {
+                        ->orWhere(function ($sub): void {
                             /**
                              * @var Builder $sub
                              */
@@ -157,11 +171,20 @@ class MediaFileRepository extends RepositoriesAbstract implements MediaFileInter
             if (! $params['paginate']['current_paged'] || $params['paginate']['current_paged'] == 1) {
                 $currentFile = $this->originalModel;
 
-                $currentFile = $currentFile
-                    ->where('media_files.folder_id', $folderId)
-                    ->where('id', $params['selected_file_id'])
-                    ->select($params['select'])
-                    ->first();
+                // Only apply special handling for favorites view when folder_id is 0
+                if (isset($params['is_favorite']) && $params['is_favorite'] && empty($folderId)) {
+                    // In root favorites view, don't filter by folder_id
+                    $currentFile = $currentFile
+                        ->where('id', $params['selected_file_id'])
+                        ->select($params['select'])
+                        ->first();
+                } else {
+                    $currentFile = $currentFile
+                        ->where('media_files.folder_id', $folderId)
+                        ->where('id', $params['selected_file_id'])
+                        ->select($params['select'])
+                        ->first();
+                }
             }
         }
 
@@ -201,7 +224,13 @@ class MediaFileRepository extends RepositoriesAbstract implements MediaFileInter
             $this->model = $this->model->select($params['select']);
         }
 
+        $this->model = $this->model->orderBy('is_folder', 'DESC');
+
         foreach ($params['order_by'] as $column => $direction) {
+            if (! in_array($direction, ['asc', 'desc'])) {
+                $direction = 'asc';
+            }
+
             $this->model = $this->model->orderBy($column, $direction);
         }
 
@@ -322,7 +351,7 @@ class MediaFileRepository extends RepositoriesAbstract implements MediaFileInter
                     '=',
                     'media_folders.parent_id'
                 )
-                    ->where(function ($query) {
+                    ->where(function ($query): void {
                         /**
                          * @var Builder $query
                          */
@@ -344,7 +373,7 @@ class MediaFileRepository extends RepositoriesAbstract implements MediaFileInter
         if (empty($folderId)) {
             $this->model = $this->model
                 ->leftJoin('media_folders', 'media_folders.id', '=', 'media_files.folder_id')
-                ->where(function ($query) {
+                ->where(function ($query): void {
                     $query
                         ->where('media_files.folder_id', 0)
                         ->orWhereNull('media_folders.deleted_at');

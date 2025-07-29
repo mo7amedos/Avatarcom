@@ -9,7 +9,7 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasColumn('ec_invoice_items', 'price')) {
-            Schema::table('ec_invoice_items', function (Blueprint $table) {
+            Schema::table('ec_invoice_items', function (Blueprint $table): void {
                 $table->decimal('price', 15)->after('qty')->default(0);
             });
 

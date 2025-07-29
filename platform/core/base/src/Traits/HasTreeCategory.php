@@ -8,7 +8,7 @@ trait HasTreeCategory
     {
         $tree = static::flatTree($data);
 
-        static::upsert($tree, ['id', 'name'], ['parent_id', 'order']);
+        static::query()->upsert($tree, ['id', 'name'], ['parent_id', 'order']);
     }
 
     protected static function flatTree(array $data, array &$tree = [], string|int $parentId = 0): array

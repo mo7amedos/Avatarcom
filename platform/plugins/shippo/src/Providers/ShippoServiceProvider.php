@@ -33,7 +33,7 @@ class ShippoServiceProvider extends ServiceProvider
             ->loadAndPublishConfigurations(['general'])
             ->publishAssets();
 
-        $this->app['events']->listen(RouteMatched::class, function () {
+        $this->app['events']->listen(RouteMatched::class, function (): void {
             $this->app['router']->aliasMiddleware('shippo.webhook', WebhookMiddleware::class);
         });
 

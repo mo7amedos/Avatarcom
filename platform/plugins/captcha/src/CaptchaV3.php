@@ -67,10 +67,16 @@ class CaptchaV3 extends CaptchaContract
             return $html . $headContent . $footerContent;
         }, 99);
 
+        $captchaContent = view('plugins/captcha::v3.html', compact('name', 'uniqueId'))->render();
+
         $this->rendered = true;
 
+        if (request()->expectsJson()) {
+            $captchaContent .= $footerContent;
+        }
+
         return tap(
-            view('plugins/captcha::v3.html', compact('name', 'uniqueId'))->render(),
+            $captchaContent,
             fn (string $rendered) => CaptchaRendered::dispatch($rendered)
         );
     }

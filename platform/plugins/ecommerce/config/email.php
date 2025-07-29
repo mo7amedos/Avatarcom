@@ -75,33 +75,44 @@ return [
                 'product_list' => 'plugins/ecommerce::ecommerce.product_list',
             ],
         ],
-        ...(! setting('ecommerce_disable_physical_product') ? [
-            'customer_delivery_order' => [
-                'title' => 'plugins/ecommerce::email.delivery_confirmation_title',
-                'description' => 'plugins/ecommerce::email.delivery_confirmation_description',
-                'subject' => 'plugins/ecommerce::email.delivery_confirmation_subject',
-                'can_off' => true,
-                'variables' => [
-                    'customer_name' => 'plugins/ecommerce::ecommerce.customer_name',
-                    'order_id' => 'plugins/ecommerce::ecommerce.order_id',
-                    'order_delivery_notes' => 'plugins/ecommerce::email.order_delivery_notes',
-                    'product_list' => 'plugins/ecommerce::ecommerce.product_list',
-                ],
+        'order_cancellation_to_admin' => [
+            'title' => 'plugins/ecommerce::email.order_cancellation_to_admin_title',
+            'description' => 'plugins/ecommerce::email.order_cancellation_to_admin_description',
+            'subject' => 'plugins/ecommerce::email.order_cancellation_to_admin_subject',
+            'can_off' => true,
+            'enabled' => false,
+            'variables' => [
+                'customer_name' => 'plugins/ecommerce::ecommerce.customer_name',
+                'order_id' => 'plugins/ecommerce::ecommerce.order_id',
+                'cancellation_reason' => 'plugins/ecommerce::order.order_cancellation_reason',
+                'product_list' => 'plugins/ecommerce::ecommerce.product_list',
             ],
-            'customer_order_delivered' => [
-                'title' => 'plugins/ecommerce::email.order_delivered_title',
-                'description' => 'plugins/ecommerce::email.order_delivered_description',
-                'subject' => 'plugins/ecommerce::email.order_delivered_subject',
-                'can_off' => true,
-                'enabled' => false,
-                'variables' => [
-                    'customer_name' => 'plugins/ecommerce::ecommerce.customer_name',
-                    'order_id' => 'plugins/ecommerce::ecommerce.order_id',
-                    'order_delivery_notes' => 'plugins/ecommerce::email.order_delivery_notes',
-                    'product_list' => 'plugins/ecommerce::ecommerce.product_list',
-                ],
+        ],
+        'customer_delivery_order' => [
+            'title' => 'plugins/ecommerce::email.delivery_confirmation_title',
+            'description' => 'plugins/ecommerce::email.delivery_confirmation_description',
+            'subject' => 'plugins/ecommerce::email.delivery_confirmation_subject',
+            'can_off' => true,
+            'variables' => [
+                'customer_name' => 'plugins/ecommerce::ecommerce.customer_name',
+                'order_id' => 'plugins/ecommerce::ecommerce.order_id',
+                'order_delivery_notes' => 'plugins/ecommerce::email.order_delivery_notes',
+                'product_list' => 'plugins/ecommerce::ecommerce.product_list',
             ],
-        ] : []),
+        ],
+        'customer_order_delivered' => [
+            'title' => 'plugins/ecommerce::email.order_delivered_title',
+            'description' => 'plugins/ecommerce::email.order_delivered_description',
+            'subject' => 'plugins/ecommerce::email.order_delivered_subject',
+            'can_off' => true,
+            'enabled' => false,
+            'variables' => [
+                'customer_name' => 'plugins/ecommerce::ecommerce.customer_name',
+                'order_id' => 'plugins/ecommerce::ecommerce.order_id',
+                'order_delivery_notes' => 'plugins/ecommerce::email.order_delivery_notes',
+                'product_list' => 'plugins/ecommerce::ecommerce.product_list',
+            ],
+        ],
         'admin_new_order' => [
             'title' => 'plugins/ecommerce::email.admin_new_order_title',
             'description' => 'plugins/ecommerce::email.admin_new_order_description',
@@ -223,6 +234,22 @@ return [
                 'digital_products' => 'plugins/ecommerce::email.digital_products',
             ],
         ],
+        'digital_product_license_codes' => [
+            'title' => 'plugins/ecommerce::email.digital_product_license_codes_title',
+            'description' => 'plugins/ecommerce::email.digital_product_license_codes_description',
+            'subject' => 'plugins/ecommerce::email.digital_product_license_codes_subject',
+            'can_off' => false,
+            'variables' => [
+                'customer_name' => 'plugins/ecommerce::ecommerce.customer_name',
+                'customer_phone' => 'plugins/ecommerce::ecommerce.customer_phone',
+                'customer_address' => 'plugins/ecommerce::ecommerce.customer_address',
+                'payment_method' => 'plugins/ecommerce::ecommerce.payment_method',
+                'order_note' => 'plugins/ecommerce::ecommerce.order_note',
+                'order_id' => 'plugins/ecommerce::ecommerce.order_id',
+                'digital_product_list' => 'plugins/ecommerce::email.digital_product_list',
+                'digital_products' => 'plugins/ecommerce::email.digital_products',
+            ],
+        ],
         'customer-deletion-request-confirmation' => [
             'title' => 'plugins/ecommerce::email.customer_deletion_request_confirmation_title',
             'description' => 'plugins/ecommerce::email.customer_deletion_request_confirmation_description',
@@ -258,7 +285,7 @@ return [
         ],
         'payment-proof-upload-notification' => [
             'title' => 'plugins/ecommerce::email.payment_proof_upload_notification_title',
-            'description' => 'Notice to admin when customer uploads payment proof',
+            'description' => 'plugins/ecommerce::email.payment_proof_upload_notification_description',
             'subject' => 'plugins/ecommerce::email.payment_proof_upload_notification_subject',
             'can_off' => true,
             'variables' => [

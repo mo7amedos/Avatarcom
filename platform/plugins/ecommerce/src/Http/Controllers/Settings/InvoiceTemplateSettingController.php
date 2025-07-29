@@ -72,9 +72,7 @@ class InvoiceTemplateSettingController extends SettingController
         $templates = apply_filters('ecommerce_invoice_templates', InvoiceHelper::getDefaultInvoiceTemplatesFilter());
         $template = value(Arr::get($templates, $template));
 
-        if (! $template || ! Arr::has($template, 'preview')) {
-            abort(404);
-        }
+        abort_if(! $template || ! Arr::has($template, 'preview'), 404);
 
         return value($template['preview']);
     }

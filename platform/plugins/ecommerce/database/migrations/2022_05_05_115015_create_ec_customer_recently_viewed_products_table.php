@@ -9,7 +9,7 @@ return new class () extends Migration {
     {
         Schema::dropIfExists('ec_customer_recently_viewed_products');
 
-        Schema::create('ec_customer_recently_viewed_products', function (Blueprint $table) {
+        Schema::create('ec_customer_recently_viewed_products', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('customer_id');
             $table->foreignId('product_id');

@@ -3,7 +3,7 @@
 use Botble\Theme\Facades\Theme;
 use Botble\Theme\Theme as BaseTheme;
 
-app()->booted(function () {
+app()->booted(function (): void {
     if (! method_exists(BaseTheme::class, 'registerThemeIconFields')) {
         return;
     }

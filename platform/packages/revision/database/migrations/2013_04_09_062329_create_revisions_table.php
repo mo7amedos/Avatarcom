@@ -9,7 +9,7 @@ return new class () extends Migration {
     {
         Schema::dropIfExists('revisions');
 
-        Schema::create('revisions', function (Blueprint $table) {
+        Schema::create('revisions', function (Blueprint $table): void {
             $table->id();
             $table->string('revisionable_type');
             $table->foreignId('revisionable_id');

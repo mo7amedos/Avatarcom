@@ -69,7 +69,7 @@ class SimpleSliderItemTable extends TableAbstract
                         'order',
                         'created_at',
                     ])
-                    ->orderBy('order')
+                    ->oldest('order')
                     ->where('simple_slider_id', request()->route()->parameter('id'));
             });
     }

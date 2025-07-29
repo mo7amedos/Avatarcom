@@ -8,7 +8,7 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasColumn('settings', 'created_at')) {
-            Schema::table('settings', function (Blueprint $table) {
+            Schema::table('settings', function (Blueprint $table): void {
                 $table->timestamps();
             });
         }

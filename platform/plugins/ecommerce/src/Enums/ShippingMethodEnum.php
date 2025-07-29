@@ -6,6 +6,7 @@ use Botble\Base\Supports\Enum;
 
 /**
  * @method static ShippingMethodEnum DEFAULT()
+ * @method static ShippingMethodEnum NONE()
  */
 class ShippingMethodEnum extends Enum
 {

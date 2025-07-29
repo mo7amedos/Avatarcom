@@ -55,9 +55,7 @@ class AccountDeletionController extends BaseController
             ->where('status', DeletionRequestStatusEnum::WAITING_FOR_CONFIRMATION)
             ->firstOrFail();
 
-        if ($deletionRequest->customer()->isNot($request->user('customer'))) {
-            abort(403);
-        }
+        abort_if($deletionRequest->customer()->isNot($request->user('customer')), 403);
 
         $deletionRequest->update([
             'status' => DeletionRequestStatusEnum::CONFIRMED,

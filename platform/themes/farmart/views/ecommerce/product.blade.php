@@ -17,7 +17,7 @@
                             <div class="product-header-left">
                                 <h1 class="fs-5 fw-normal product_title entry-title">{{ $product->name }}</h1>
                                 <div class="product-entry-meta">
-                                    @if ($product->brand_id)
+                                    @if ($product->brand->name)
                                         <p class="mb-0 me-2 pe-2 text-secondary">{{ __('Brand') }}: <a
                                                 href="{{ $product->brand->url }}"
                                             >{{ $product->brand->name }}</a></p>

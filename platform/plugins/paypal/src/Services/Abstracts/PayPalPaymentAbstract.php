@@ -4,6 +4,7 @@ namespace Botble\PayPal\Services\Abstracts;
 
 use Botble\Payment\Models\Payment;
 use Botble\Payment\Services\Traits\PaymentErrorTrait;
+use Botble\Theme\Facades\Theme;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -182,7 +183,7 @@ abstract class PayPalPaymentAbstract
             'application_context' => [
                 'return_url' => $this->returnUrl,
                 'cancel_url' => $this->cancelUrl ?: $this->returnUrl,
-                'brand_name' => theme_option('site_title'),
+                'brand_name' => Theme::getSiteTitle(),
             ],
             'purchase_units' => [
                 0 => [

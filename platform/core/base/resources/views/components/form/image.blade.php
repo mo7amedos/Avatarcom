@@ -8,6 +8,8 @@
 @php
     $value = BaseHelper::stringify($value);
     $allowThumb = $attributes->get('allow_thumb', $attributes->get('allow-thumb', true));
+
+    $defaultImage = $attributes->get('preview_image') ?: RvMedia::getDefaultImage();
 @endphp
 
 <div {{ $attributes->merge(['class' => "image-box image-box-$name"]) }}>
@@ -20,6 +22,10 @@
     />
 
     @if (! $isInAdmin)
+        @php
+            $name = str_replace(['[', ']'], ['___', ''], $name);
+        @endphp
+
         <input
             class="media-image-input"
             type="file"

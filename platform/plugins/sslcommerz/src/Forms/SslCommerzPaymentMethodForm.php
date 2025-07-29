@@ -7,10 +7,13 @@ use Botble\Base\Forms\FieldOptions\CheckboxFieldOption;
 use Botble\Base\Forms\FieldOptions\TextFieldOption;
 use Botble\Base\Forms\Fields\OnOffCheckboxField;
 use Botble\Base\Forms\Fields\TextField;
+use Botble\Payment\Concerns\Forms\HasAvailableCountriesField;
 use Botble\Payment\Forms\PaymentMethodForm;
 
 class SslCommerzPaymentMethodForm extends PaymentMethodForm
 {
+    use HasAvailableCountriesField;
+
     public function setup(): void
     {
         parent::setup();
@@ -20,6 +23,7 @@ class SslCommerzPaymentMethodForm extends PaymentMethodForm
             ->paymentName('SslCommerz')
             ->paymentDescription(__('Customer can buy product and pay directly using Visa, Credit card via :name', ['name' => 'SslCommerz']))
             ->paymentLogo(url('vendor/core/plugins/sslcommerz/images/sslcommerz.png'))
+            ->paymentFeeField(SSLCOMMERZ_PAYMENT_METHOD_NAME)
             ->paymentUrl('https://sslcommerz.com')
             ->paymentInstructions(view('plugins/sslcommerz::instructions')->render())
             ->add(
@@ -43,6 +47,7 @@ class SslCommerzPaymentMethodForm extends PaymentMethodForm
                 CheckboxFieldOption::make()
                     ->label(trans('plugins/payment::payment.live_mode'))
                     ->value(get_payment_setting('mode', SSLCOMMERZ_PAYMENT_METHOD_NAME, true)),
-            );
+            )
+            ->addAvailableCountriesField(SSLCOMMERZ_PAYMENT_METHOD_NAME);
     }
 }

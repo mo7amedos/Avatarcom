@@ -5,9 +5,9 @@ use Botble\Ecommerce\Facades\EcommerceHelper;
 use Botble\Theme\Facades\Theme;
 use Illuminate\Support\Facades\Route;
 
-AdminHelper::registerRoutes(function () {
-    Route::group(['namespace' => 'Botble\Ecommerce\Http\Controllers', 'prefix' => 'ecommerce'], function () {
-        Route::group(['prefix' => 'orders', 'as' => 'orders.'], function () {
+AdminHelper::registerRoutes(function (): void {
+    Route::group(['namespace' => 'Botble\Ecommerce\Http\Controllers', 'prefix' => 'ecommerce'], function (): void {
+        Route::group(['prefix' => 'orders', 'as' => 'orders.'], function (): void {
             Route::resource('', 'OrderController')->parameters(['' => 'order']);
 
             Route::get('reorder', [
@@ -119,7 +119,7 @@ AdminHelper::registerRoutes(function () {
             ])->wherePrimaryKey('order');
         });
 
-        Route::group(['prefix' => 'incomplete-orders', 'as' => 'orders.'], function () {
+        Route::group(['prefix' => 'incomplete-orders', 'as' => 'orders.'], function (): void {
             Route::match(['GET', 'POST'], '', [
                 'as' => 'incomplete-list',
                 'uses' => 'OrderController@getIncompleteList',
@@ -145,7 +145,7 @@ AdminHelper::registerRoutes(function () {
             ])->wherePrimaryKey();
         });
 
-        Route::group(['prefix' => 'order-returns', 'as' => 'order_returns.'], function () {
+        Route::group(['prefix' => 'order-returns', 'as' => 'order_returns.'], function (): void {
             Route::resource('', 'OrderReturnController')->parameters(['' => 'order_return'])->except(
                 ['create', 'store']
             );
@@ -153,11 +153,11 @@ AdminHelper::registerRoutes(function () {
     });
 });
 
-Theme::registerRoutes(function () {
-    Route::group(['namespace' => 'Botble\Ecommerce\Http\Controllers\Fronts'], function () {
+Theme::registerRoutes(function (): void {
+    Route::group(['namespace' => 'Botble\Ecommerce\Http\Controllers\Fronts'], function (): void {
         Route::group(
             ['prefix' => sprintf('%s/{token}', EcommerceHelper::getPageSlug('checkout')), 'as' => 'public.checkout.'],
-            function () {
+            function (): void {
                 Route::get('/', [
                     'as' => 'information',
                     'uses' => 'PublicCheckoutController@getCheckout',

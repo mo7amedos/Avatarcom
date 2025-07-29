@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * @mixin \Eloquent
+ * @mixin \Illuminate\Database\Eloquent\Builder
  */
 trait LocationTrait
 {
@@ -30,7 +30,7 @@ trait LocationTrait
             }
         }
 
-        return $value;
+        return EcommerceHelper::getCountryNameById($value);
     }
 
     public function locationCountry(): BelongsTo
@@ -86,7 +86,7 @@ trait LocationTrait
         return $value;
     }
 
-    public function fullAddress(): Attribute
+    protected function fullAddress(): Attribute
     {
         return Attribute::make(
             get: fn () => implode(', ', array_filter([

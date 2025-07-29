@@ -5,18 +5,18 @@ use Botble\Ecommerce\Http\Controllers\ExportProductInventoryController;
 use Botble\Ecommerce\Http\Controllers\ImportProductInventoryController;
 use Illuminate\Support\Facades\Route;
 
-AdminHelper::registerRoutes(function () {
+AdminHelper::registerRoutes(function (): void {
     Route::group(
         [
             'namespace' => 'Botble\Ecommerce\Http\Controllers',
             'prefix' => 'ecommerce',
             'as' => 'ecommerce.',
         ],
-        function () {
+        function (): void {
             Route::group([
                 'prefix' => 'product-inventory',
                 'as' => 'product-inventory.',
-            ], function () {
+            ], function (): void {
                 Route::match(['GET', 'POST'], '', [
                     'uses' => 'ProductInventoryController@index',
                     'as' => 'index',
@@ -32,14 +32,14 @@ AdminHelper::registerRoutes(function () {
         }
     );
 
-    Route::group(['prefix' => 'tools/data-synchronize/import/product-inventory', 'as' => 'ecommerce.product-inventory.import.', 'permission' => 'ecommerce.product-inventory.import'], function () {
+    Route::group(['prefix' => 'tools/data-synchronize/import/product-inventory', 'as' => 'ecommerce.product-inventory.import.', 'permission' => 'ecommerce.product-inventory.import'], function (): void {
         Route::get('/', [ImportProductInventoryController::class, 'index'])->name('index');
         Route::post('validate', [ImportProductInventoryController::class, 'validateData'])->name('validate');
         Route::post('import', [ImportProductInventoryController::class, 'import'])->name('store');
         Route::post('download-example', [ImportProductInventoryController::class, 'downloadExample'])->name('download-example');
     });
 
-    Route::group(['prefix' => 'tools/data-synchronize/export/product-inventory', 'as' => 'ecommerce.product-inventory.export.', 'permission' => 'ecommerce.product-inventory.export'], function () {
+    Route::group(['prefix' => 'tools/data-synchronize/export/product-inventory', 'as' => 'ecommerce.product-inventory.export.', 'permission' => 'ecommerce.product-inventory.export'], function (): void {
         Route::post('export', [ExportProductInventoryController::class, 'store'])->name('store');
     });
 });

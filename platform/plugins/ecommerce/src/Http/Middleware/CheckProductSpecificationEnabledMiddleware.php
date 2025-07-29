@@ -10,9 +10,7 @@ class CheckProductSpecificationEnabledMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (! EcommerceHelper::isProductSpecificationEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isProductSpecificationEnabled(), 404);
 
         return $next($request);
     }

@@ -11,14 +11,14 @@ return new class () extends Migration {
             return;
         }
 
-        Schema::table('media_folders', function (Blueprint $table) {
+        Schema::table('media_folders', function (Blueprint $table): void {
             $table->string('color')->nullable()->after('name');
         });
     }
 
     public function down(): void
     {
-        Schema::table('media_folders', function (Blueprint $table) {
+        Schema::table('media_folders', function (Blueprint $table): void {
             $table->dropColumn('color');
         });
     }

@@ -18,9 +18,4 @@ class Wishlist extends BaseModel
     {
         return $this->hasOne(Product::class, 'id', 'product_id')->withDefault();
     }
-    
-    public function customer(): HasOne
-    {
-        return $this->hasOne(Customer::class, 'id', 'customer_id');
-    }
 }

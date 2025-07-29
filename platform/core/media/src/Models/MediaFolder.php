@@ -34,9 +34,9 @@ class MediaFolder extends BaseModel
 
     protected static function booted(): void
     {
-        static::deleted(function (MediaFolder $folder) {
+        static::deleted(function (MediaFolder $folder): void {
             if ($folder->isForceDeleting()) {
-                $folder->files()->onlyTrashed()->each(fn (MediaFile $file) => $file->forceDelete());
+                $folder->files()->withTrashed()->each(fn (MediaFile $file) => $file->forceDelete());
 
                 if (Storage::directoryExists($folder->slug)) {
                     Storage::deleteDirectory($folder->slug);
@@ -46,11 +46,11 @@ class MediaFolder extends BaseModel
             }
         });
 
-        static::restoring(function (MediaFolder $folder) {
+        static::restoring(function (MediaFolder $folder): void {
             $folder->files()->each(fn (MediaFile $file) => $file->restore());
         });
 
-        static::addGlobalScope('ownMedia', function (Builder $query) {
+        static::addGlobalScope('ownMedia', function (Builder $query): void {
             if (RvMedia::canOnlyViewOwnMedia()) {
                 $query->where('media_folders.user_id', auth()->id());
             }

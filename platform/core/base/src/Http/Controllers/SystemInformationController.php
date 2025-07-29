@@ -4,14 +4,15 @@ namespace Botble\Base\Http\Controllers;
 
 use Botble\Base\Facades\Assets;
 use Botble\Base\Facades\BaseHelper;
+use Botble\Base\Supports\Core;
 use Botble\Base\Supports\SystemManagement;
 use Botble\Base\Tables\InfoTable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 
-class SystemInformationController extends BaseController
+class SystemInformationController extends BaseSystemController
 {
-    public function index(Request $request, InfoTable $infoTable)
+    public function index(Request $request, InfoTable $infoTable, Core $core)
     {
         $this->pageTitle(trans('core/base::system.info.title'));
 
@@ -33,6 +34,8 @@ class SystemInformationController extends BaseController
 
         $matchPHPRequirement = version_compare(phpversion(), $requiredPhpVersion, '>=') > 0;
 
+        $serverIp = $core->getServerIP();
+
         return view(
             'core/base::system.info',
             compact(
@@ -42,6 +45,7 @@ class SystemInformationController extends BaseController
                 'serverEnv',
                 'matchPHPRequirement',
                 'requiredPhpVersion',
+                'serverIp',
             )
         );
     }

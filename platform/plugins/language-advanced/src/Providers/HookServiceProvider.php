@@ -24,6 +24,8 @@ class HookServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        LanguageAdvancedManager::registerImportersAndExporters();
+
         if (! $this->app->runningInConsole()) {
             add_action(BASE_ACTION_META_BOXES, [$this, 'addLanguageBox'], 1134, 2);
             add_action(BASE_ACTION_TOP_FORM_CONTENT_NOTIFICATION, [$this, 'addCurrentLanguageEditingAlert'], 1134, 3);
@@ -35,12 +37,13 @@ class HookServiceProvider extends ServiceProvider
             add_filter(BASE_FILTER_BEFORE_GET_FRONT_PAGE_ITEM, [$this, 'checkItemLanguageBeforeShow'], 1134, 2);
             add_filter(BASE_FILTER_BEFORE_GET_ADMIN_LIST_ITEM, [$this, 'checkItemLanguageBeforeGetAdminListItem'], 50, 2);
             add_filter('setting_permalink_meta_boxes', [$this, 'addPermalinkMetaBox'], 1134, 2);
+
+            add_filter(BASE_FILTER_BEFORE_RENDER_FORM, [$this, 'changeFormDataBeforeRendering'], 1134);
         }
 
         add_filter('stored_meta_box_key', [$this, 'storeMetaBoxKey'], 1134, 2);
         add_filter('slug_helper_get_slug_query', [$this, 'getSlugQuery'], 1134, 2);
         add_filter(['model_after_execute_get', 'model_after_execute_paginate'], function ($data, BaseModel $model) {
-
             if ($model instanceof LanguageModel) {
                 return $data;
             }
@@ -56,8 +59,6 @@ class HookServiceProvider extends ServiceProvider
 
             return $data;
         }, 1134, 2);
-
-        add_filter(BASE_FILTER_BEFORE_RENDER_FORM, [$this, 'changeFormDataBeforeRendering'], 1134);
     }
 
     public function addLanguageBox(string $priority, array|Model|string|null $object = null): void
@@ -65,6 +66,7 @@ class HookServiceProvider extends ServiceProvider
         if (
             $priority == 'top' &&
             ! empty($object) &&
+            $object instanceof Model &&
             $object->getKey() &&
             LanguageAdvancedManager::isSupported($object) &&
             Language::getActiveLanguage([
@@ -77,7 +79,7 @@ class HookServiceProvider extends ServiceProvider
                 'language_advanced_wrap',
                 trans('plugins/language::language.name'),
                 [$this, 'languageMetaField'],
-                get_class($object),
+                $object::class,
                 'top'
             );
         }
@@ -276,7 +278,7 @@ class HookServiceProvider extends ServiceProvider
         LanguageAdvancedManager::initModelRelations();
 
         return $query->with([
-            'translations' => function ($query) use ($model, $currentLocale) {
+            'translations' => function ($query) use ($model, $currentLocale): void {
                 $query->where($model->getTable() . '_translations' . '.lang_code', $currentLocale);
             },
         ]);

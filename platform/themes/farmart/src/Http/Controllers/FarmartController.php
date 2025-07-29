@@ -49,9 +49,7 @@ class FarmartController extends PublicController
 
     public function ajaxGetRecentlyViewedProducts(ProductInterface $productRepository)
     {
-        if (! EcommerceHelper::isEnabledCustomerRecentlyViewedProducts()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isEnabledCustomerRecentlyViewedProducts(), 404);
 
         $queryParams = [
             'with' => ['slugable'],

@@ -94,7 +94,9 @@
                                             @endif
                                         </div>
                                     </div>
-                                @elseif (is_plugin_active('payment') && $order->payment->id)
+                                @endif
+
+                                @if (is_plugin_active('payment') && $order->payment->id && $order->payment->status != \Botble\Payment\Enums\PaymentStatusEnum::REFUNDED)
                                     <div class="text-uppercase">
                                         @if (!$order->payment->status || $order->payment->status == Botble\Payment\Enums\PaymentStatusEnum::PENDING)
                                             <x-core::icon name="ti ti-credit-card" />
@@ -174,7 +176,7 @@
 
                             @if(! EcommerceHelper::isDisabledPhysicalProduct())
                                 @if (! $order->shipment->id)
-                                    <div class="shipment-create-wrap" style="display: none;"></div>
+                                    <div class="p-3 shipment-create-wrap" style="display: none;"></div>
                                 @else
                                     @include('plugins/ecommerce::orders.shipment-detail', [
                                         'shipment' => $order->shipment,
@@ -187,7 +189,8 @@
 
                 @include('plugins/ecommerce::orders.partials.digital-product-downloads-info', compact('order'))
 
-                <x-core::card>
+                @if ($order->histories()->exists())
+                    <x-core::card>
                     <x-core::card.header>
                         <x-core::card.title>
                             {{ trans('plugins/ecommerce::order.history') }}
@@ -205,10 +208,10 @@
                                                 data-target="#history-line-{{ $history->id }}"
                                                 href="javascript:void(0)"
                                             >
-                                                {{ OrderHelper::processHistoryVariables($history) }}
+                                                {!! OrderHelper::processHistoryVariables($history) !!}
                                             </a>
                                         @else
-                                            {{ OrderHelper::processHistoryVariables($history) }}
+                                            {!! OrderHelper::processHistoryVariables($history) !!}
                                         @endif
                                     </div>
                                     <div class="text-secondary">{{ BaseHelper::formatDateTime($history->created_at) }}</div>
@@ -384,6 +387,7 @@
                         </ul>
                     </x-core::card.body>
                 </x-core::card>
+                @endif
             </div>
 
             <div class="col-md-3">
@@ -409,7 +413,7 @@
                             @if ($userInfo->id)
                                 <p class="mb-1">
                                     <x-core::icon name="ti ti-inbox" />
-                                    {{ $userInfo->orders()->count() }}
+                                    {{ $userInfo->completedOrders()->count() }}
                                     {{ trans('plugins/ecommerce::order.orders') }}
                                 </p>
                             @endif
@@ -612,38 +616,38 @@
         </x-core::modal>
     @endif
 
-    @if (is_plugin_active('payment'))
-        <x-core::modal.action
-            id="confirm-payment-modal"
-            type="info"
-            :title="trans('plugins/ecommerce::order.confirm_payment')"
-            :description="trans('plugins/ecommerce::order.confirm_payment_confirmation_description', [
-                'method' => $order->payment->payment_channel->label(),
-            ])"
-            :submit-button-attrs="['id' => 'confirm-payment-order-button']"
-            :submit-button-label="trans('plugins/ecommerce::order.confirm_payment')"
-        />
-
-        <x-core::modal
-            id="confirm-refund-modal"
-            :title="trans('plugins/ecommerce::order.refund')"
-            button-id="confirm-refund-payment-button"
-            size="lg"
-        >
-            <x-slot:button-label>
-                {{ trans('plugins/ecommerce::order.confirm_payment') }}
-                <span class="refund-amount-text ms-1">{{ format_price($order->payment->amount - $order->payment->refunded_amount) }}</span>
-            </x-slot:button-label>
-            @include('plugins/ecommerce::orders.refund.modal', [
-                'order' => $order,
-                'url' => route('orders.refund', $order->id),
-            ])
-        </x-core::modal>
-    @endif
-
     @if (! EcommerceHelper::isDisabledPhysicalProduct() && $order->shipment && $order->shipment->id)
         @include('plugins/ecommerce::shipments.partials.update-status-modal', [
             'shipment' => $order->shipment,
         ])
     @endif
+@endpushif
+
+@pushif(is_plugin_active('payment') && $order->payment->id && $order->payment->status != \Botble\Payment\Enums\PaymentStatusEnum::REFUNDED, 'footer')
+    <x-core::modal.action
+        id="confirm-payment-modal"
+        type="info"
+        :title="trans('plugins/ecommerce::order.confirm_payment')"
+        :description="trans('plugins/ecommerce::order.confirm_payment_confirmation_description', [
+            'method' => $order->payment->payment_channel->label(),
+        ])"
+        :submit-button-attrs="['id' => 'confirm-payment-order-button']"
+        :submit-button-label="trans('plugins/ecommerce::order.confirm_payment')"
+    />
+
+    <x-core::modal
+        id="confirm-refund-modal"
+        :title="trans('plugins/ecommerce::order.refund')"
+        button-id="confirm-refund-payment-button"
+        size="lg"
+    >
+        <x-slot:button-label>
+            {{ trans('plugins/ecommerce::order.confirm_payment') }}
+            <span class="refund-amount-text ms-1">{{ format_price($order->payment->amount - $order->payment->refunded_amount) }}</span>
+        </x-slot:button-label>
+        @include('plugins/ecommerce::orders.refund.modal', [
+            'order' => $order,
+            'url' => route('orders.refund', $order->id),
+        ])
+    </x-core::modal>
 @endpushif

@@ -15,6 +15,7 @@ class SocialLoginSettingRequest extends Request
 
         $rules = [
             'social_login_style' => ['required', Rule::in(['minimal', 'default', 'basic'])],
+            'social_login_google_use_google_button' => ['nullable', new OnOffRule()],
         ];
 
         foreach (array_keys($providers) as $provider) {

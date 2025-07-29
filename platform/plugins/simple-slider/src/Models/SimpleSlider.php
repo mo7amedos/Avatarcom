@@ -27,13 +27,13 @@ class SimpleSlider extends BaseModel
 
     protected static function booted(): void
     {
-        static::deleted(function (SimpleSlider $slider) {
+        static::deleted(function (SimpleSlider $slider): void {
             $slider->sliderItems()->each(fn (SimpleSliderItem $item) => $item->delete());
         });
     }
 
     public function sliderItems(): HasMany
     {
-        return $this->hasMany(SimpleSliderItem::class)->orderBy('simple_slider_items.order');
+        return $this->hasMany(SimpleSliderItem::class)->oldest('simple_slider_items.order');
     }
 }

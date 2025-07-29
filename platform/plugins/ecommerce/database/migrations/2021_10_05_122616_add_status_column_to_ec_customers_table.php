@@ -9,7 +9,7 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasColumn('ec_customers', 'status')) {
-            Schema::table('ec_customers', function (Blueprint $table) {
+            Schema::table('ec_customers', function (Blueprint $table): void {
                 $table->string('status', 60)->default(CustomerStatusEnum::ACTIVATED);
             });
         }
@@ -18,7 +18,7 @@ return new class () extends Migration {
     public function down(): void
     {
         if (Schema::hasColumn('ec_customers', 'status')) {
-            Schema::table('ec_customers', function (Blueprint $table) {
+            Schema::table('ec_customers', function (Blueprint $table): void {
                 $table->dropColumn('status');
             });
         }

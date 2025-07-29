@@ -28,6 +28,7 @@ class Invoice extends BaseModel
         'sub_total',
         'tax_amount',
         'shipping_amount',
+        'payment_fee',
         'discount_amount',
         'amount',
         'payment_id',
@@ -44,6 +45,7 @@ class Invoice extends BaseModel
         'sub_total' => 'float',
         'tax_amount' => 'float',
         'shipping_amount' => 'float',
+        'payment_fee' => 'float',
         'discount_amount' => 'float',
         'amount' => 'float',
         'status' => InvoiceStatusEnum::class,
@@ -52,11 +54,11 @@ class Invoice extends BaseModel
 
     protected static function booted(): void
     {
-        static::creating(function (Invoice $invoice) {
+        static::creating(function (Invoice $invoice): void {
             $invoice->code = static::generateUniqueCode();
         });
 
-        static::deleted(function (Invoice $invoice) {
+        static::deleted(function (Invoice $invoice): void {
             $invoice->items()->delete();
         });
     }

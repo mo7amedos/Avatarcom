@@ -10,9 +10,7 @@ class CheckCartEnabledMiddleware
 {
     public function handle(Request $request, Closure $closure)
     {
-        if (! EcommerceHelper::isCartEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isCartEnabled(), 404);
 
         return $closure($request);
     }

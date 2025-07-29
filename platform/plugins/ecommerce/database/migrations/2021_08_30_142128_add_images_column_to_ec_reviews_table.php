@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('ec_reviews', function (Blueprint $table) {
+        Schema::table('ec_reviews', function (Blueprint $table): void {
             if (! Schema::hasColumn('ec_reviews', 'images')) {
                 $table->text('images')->nullable();
             }
@@ -16,7 +16,7 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::table('ec_reviews', function (Blueprint $table) {
+        Schema::table('ec_reviews', function (Blueprint $table): void {
             if (Schema::hasColumn('ec_reviews', 'images')) {
                 $table->dropColumn('images');
             }

@@ -1,12 +1,14 @@
 <div class="customer-address-payment-form">
     <input type="hidden" name="update-tax-url" id="update-checkout-tax-url" value="{{ route('public.ajax.checkout.update-tax') }}">
-    <div class="mb-3 form-group">
-        @if (auth('customer')->check())
-            <p>{{ __('Account') }}: <strong>{{ auth('customer')->user()->name }}</strong> - {!! Html::email(auth('customer')->user()->email) !!} (<a href="{{ route('customer.logout') }}">{{ __('Logout') }})</a></p>
-        @else
-            <p>{{ __('Already have an account?') }} <a href="{{ route('customer.login') }}">{{ __('Login') }}</a></p>
-        @endif
-    </div>
+    @if (!EcommerceHelper::isHideCustomerInfoAtCheckout())
+        <div class="mb-3 form-group">
+            @if (auth('customer')->check())
+                <p>{{ __('Account') }}: <strong>{{ auth('customer')->user()->name }}</strong> - {!! Html::email(auth('customer')->user()->email) !!} (<a href="{{ route('customer.logout') }}">{{ __('Logout') }})</a></p>
+            @else
+                <p>{{ __('Already have an account?') }} <a href="{{ route('customer.login') }}">{{ __('Login') }}</a></p>
+            @endif
+        </div>
+    @endif
 
     {!! apply_filters('ecommerce_checkout_address_form_before') !!}
 
@@ -201,8 +203,8 @@
                                     required
                                 >
                                     <option value="">{{ __('Select state...') }}</option>
-                                    @if (old('address.country', Arr::get($sessionCheckoutData, 'country')) || !EcommerceHelper::isUsingInMultipleCountries())
-                                        @foreach (EcommerceHelper::getAvailableStatesByCountry(old('address.country', Arr::get($sessionCheckoutData, 'country'))) as $stateId => $stateName)
+                                    @if (old('address.country', Arr::get($sessionCheckoutData, 'country') ?: EcommerceHelper::getDefaultCountryId()) || !EcommerceHelper::isUsingInMultipleCountries())
+                                        @foreach (EcommerceHelper::getAvailableStatesByCountry(old('address.country', Arr::get($sessionCheckoutData, 'country') ?: EcommerceHelper::getDefaultCountryId())) as $stateId => $stateName)
                                             <option
                                                 value="{{ $stateId }}"
                                                 @if (old('address.state', Arr::get($sessionCheckoutData, 'state')) == $stateId) selected @endif
@@ -280,6 +282,8 @@
             @endif
         </div>
 
+        {!! apply_filters('ecommerce_checkout_address_form_after_city_field', null, $sessionCheckoutData) !!}
+
         @if (!in_array('address', EcommerceHelper::getHiddenFieldsAtCheckout()))
             <div class="form-group mb-3 @error('address.address') has-error @enderror">
                 <div class="form-input-wrapper">
@@ -319,18 +323,20 @@
 
     @if (!auth('customer')->check())
         <div id="register-an-account-wrapper">
-            <div class="mb-3 form-group">
-                <input
-                    id="create_account"
-                    name="create_account"
-                    type="checkbox"
-                    value="1"
-                    @if (old('create_account') == 1) checked @endif
-                >
-                <label
-                    class="form-label"
-                    for="create_account"
-                >{{ __('Register an account with above information?') }}</label>
+            <div class="mb-3">
+                <label class="form-check">
+                    <input
+                        id="create_account"
+                        name="create_account"
+                        type="checkbox"
+                        value="1"
+                        class="form-check-input"
+                        @if (old('create_account') == 1) checked @endif
+                    >
+                    <span
+                        class="form-check-label"
+                    >{{ __('Register an account with above information?') }}</span>
+                </label>
             </div>
 
             <div class="password-group @if (!$errors->has('password') && !$errors->has('password_confirmation')) d-none @endif">

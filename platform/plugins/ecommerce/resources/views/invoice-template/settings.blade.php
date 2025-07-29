@@ -76,6 +76,6 @@
         :submit-button-label="trans('plugins/ecommerce::invoice-template.continue')"
         :submit-button-attrs="['id' => 'reset-template-to-default-button', 'data-target' => route('ecommerce.settings.invoice-template.reset', $currentTemplate)]"
     >
-        {!! trans('plugins/ecommerce::invoice-template.confirm_message') !!}
+        {!! BaseHelper::clean(trans('plugins/ecommerce::invoice-template.confirm_message')) !!}
     </x-core::modal.action>
 @endsection

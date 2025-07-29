@@ -4,9 +4,9 @@ use Botble\Base\Facades\AdminHelper;
 use Botble\Setting\Http\Controllers\EmailRuleSettingController;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['namespace' => 'Botble\Setting\Http\Controllers'], function () {
-    AdminHelper::registerRoutes(function () {
-        Route::prefix('settings')->name('settings.')->group(function () {
+Route::group(['namespace' => 'Botble\Setting\Http\Controllers'], function (): void {
+    AdminHelper::registerRoutes(function (): void {
+        Route::prefix('settings')->name('settings.')->group(function (): void {
             Route::get('/', [
                 'as' => 'index',
                 'uses' => 'HomeSettingController@index',
@@ -18,7 +18,7 @@ Route::group(['namespace' => 'Botble\Setting\Http\Controllers'], function () {
                 'permission' => 'settings.index',
             ]);
 
-            Route::prefix('general')->group(function () {
+            Route::prefix('general')->group(function (): void {
                 Route::get('/', [
                     'as' => 'general',
                     'uses' => 'GeneralSettingController@edit',
@@ -32,7 +32,7 @@ Route::group(['namespace' => 'Botble\Setting\Http\Controllers'], function () {
                 ]);
             });
 
-            Route::prefix('admin-appearance')->group(function () {
+            Route::prefix('admin-appearance')->group(function (): void {
                 Route::get('/', [
                     'as' => 'admin-appearance',
                     'uses' => 'AdminAppearanceSettingController@index',
@@ -45,7 +45,7 @@ Route::group(['namespace' => 'Botble\Setting\Http\Controllers'], function () {
                 ]);
             });
 
-            Route::prefix('cache')->group(function () {
+            Route::prefix('cache')->group(function (): void {
                 Route::get('/', [
                     'as' => 'cache',
                     'uses' => 'CacheSettingController@edit',
@@ -58,7 +58,7 @@ Route::group(['namespace' => 'Botble\Setting\Http\Controllers'], function () {
                 ]);
             });
 
-            Route::prefix('datatables')->group(function () {
+            Route::prefix('datatables')->group(function (): void {
                 Route::get('/', [
                     'as' => 'datatables',
                     'uses' => 'DataTableSettingController@edit',
@@ -71,7 +71,7 @@ Route::group(['namespace' => 'Botble\Setting\Http\Controllers'], function () {
                 ]);
             });
 
-            Route::prefix('media')->group(function () {
+            Route::prefix('media')->group(function (): void {
                 Route::get('/', [
                     'as' => 'media',
                     'uses' => 'MediaSettingController@edit',
@@ -92,7 +92,7 @@ Route::group(['namespace' => 'Botble\Setting\Http\Controllers'], function () {
                 ]);
             });
 
-            Route::prefix('license')->name('license.')->group(function () {
+            Route::prefix('license')->name('license.')->group(function (): void {
                 /**
                  * @deprecated
                  */
@@ -130,7 +130,7 @@ Route::group(['namespace' => 'Botble\Setting\Http\Controllers'], function () {
                 ]);
             });
 
-            Route::group(['prefix' => 'email', 'permission' => 'settings.email'], function () {
+            Route::group(['prefix' => 'email', 'permission' => 'settings.email'], function (): void {
                 Route::get('/', [
                     'as' => 'email',
                     'uses' => 'EmailSettingController@edit',
@@ -147,7 +147,7 @@ Route::group(['namespace' => 'Botble\Setting\Http\Controllers'], function () {
                     'uses' => 'EmailTestController@__invoke',
                 ]);
 
-                Route::prefix('templates')->name('email.')->group(function () {
+                Route::prefix('templates')->name('email.')->group(function (): void {
                     Route::get('/', [
                         'as' => 'template',
                         'uses' => 'EmailTemplateSettingController@index',
@@ -158,7 +158,7 @@ Route::group(['namespace' => 'Botble\Setting\Http\Controllers'], function () {
                         'uses' => 'EmailTemplateSettingController@update',
                     ]);
 
-                    Route::prefix('{type}/{module}/{template}')->name('template.')->group(function () {
+                    Route::prefix('{type}/{module}/{template}')->name('template.')->group(function (): void {
                         Route::post('status', [
                             'as' => 'status.update',
                             'uses' => 'EmailTemplateStatusController@__invoke',

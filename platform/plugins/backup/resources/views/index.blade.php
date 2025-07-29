@@ -9,7 +9,7 @@
     @endif
 
     @if ($driver === 'mysql')
-        <x-core::alert type="warning">
+        <x-core::alert type="warning" :important="true">
             <p>- {!! BaseHelper::clean(trans('plugins/backup::backup.important_message1')) !!}</p>
             <p>- {!! BaseHelper::clean(trans('plugins/backup::backup.important_message2')) !!}</p>
             <p>- {!! BaseHelper::clean(trans('plugins/backup::backup.important_message3')) !!}</p>
@@ -90,6 +90,13 @@
                 name="description"
                 :placeholder="trans('core/base::forms.description')"
                 data-counter="400"
+            />
+
+            <x-core::form.on-off.checkbox
+                :label="trans('plugins/backup::backup.backup_only_db')"
+                :helperText="trans('plugins/backup::backup.backup_only_db_helper')"
+                name="backup_only_db"
+                :checked="false"
             />
 
             <x-slot:footer>

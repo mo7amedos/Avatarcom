@@ -15,9 +15,7 @@ class WithdrawalInvoiceController extends BaseController
         Request $request,
         GeneratePayoutInvoiceService $generateWithdrawalInvoiceService
     ) {
-        if ($withdrawal->status != WithdrawalStatusEnum::COMPLETED) {
-            abort(404);
-        }
+        abort_if($withdrawal->status != WithdrawalStatusEnum::COMPLETED, 404);
 
         $generateWithdrawalInvoiceService->withdrawal($withdrawal->loadMissing('customer'));
 

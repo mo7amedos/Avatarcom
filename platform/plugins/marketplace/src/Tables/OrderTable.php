@@ -114,7 +114,7 @@ class OrderTable extends TableAbstract
                 'payment_id',
             ])
             ->where('is_finished', 1)
-            ->where('store_id', auth('customer')->user()->store->id);
+            ->where('store_id', auth('customer')->user()->store?->id);
 
         return $this->applyScopes($query);
     }
@@ -171,6 +171,6 @@ class OrderTable extends TableAbstract
 
     public function getDefaultButtons(): array
     {
-        return array_merge(['export'], parent::getDefaultButtons());
+        return array_unique(array_merge(['export'], parent::getDefaultButtons()));
     }
 }

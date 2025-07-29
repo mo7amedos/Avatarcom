@@ -4,13 +4,17 @@ namespace Botble\Marketplace\Forms\Settings;
 
 use Botble\Base\Facades\Assets;
 use Botble\Base\Forms\FieldOptions\CheckboxFieldOption;
+use Botble\Base\Forms\FieldOptions\MultiChecklistFieldOption;
 use Botble\Base\Forms\FieldOptions\NumberFieldOption;
 use Botble\Base\Forms\FieldOptions\OnOffFieldOption;
+use Botble\Base\Forms\Fields\MultiCheckListField;
 use Botble\Base\Forms\Fields\NumberField;
 use Botble\Base\Forms\Fields\OnOffCheckboxField;
+use Botble\Marketplace\Enums\WithdrawalFeeTypeEnum;
 use Botble\Marketplace\Facades\MarketplaceHelper;
 use Botble\Marketplace\Http\Requests\MarketPlaceSettingFormRequest;
 use Botble\Marketplace\Models\Store;
+use Botble\Media\Facades\RvMedia;
 use Botble\Setting\Forms\SettingForm;
 
 class MarketplaceSettingForm extends SettingForm
@@ -31,6 +35,9 @@ class MarketplaceSettingForm extends SettingForm
         if (MarketplaceHelper::isCommissionCategoryFeeBasedEnabled()) {
             $commissionEachCategory = Store::getCommissionEachCategory();
         }
+
+        $allowedMimeTypes = RvMedia::getConfig('allowed_mime_types');
+        $allowedMimeTypes = explode(',', $allowedMimeTypes);
 
         $this
             ->setSectionTitle(trans('plugins/marketplace::marketplace.settings.title'))
@@ -60,8 +67,13 @@ class MarketplaceSettingForm extends SettingForm
                 )->render(),
             ])
             ->add('fee_withdrawal', 'number', [
-                'label' => trans('plugins/marketplace::marketplace.settings.fee_withdrawal'),
+                'label' => trans('plugins/marketplace::marketplace.settings.fee_withdrawal_amount'),
                 'value' => MarketplaceHelper::getSetting('fee_withdrawal', 0),
+            ])
+            ->add('withdrawal_fee_type', 'customSelect', [
+                'label' => trans('plugins/marketplace::marketplace.settings.withdrawal_fee_type'),
+                'selected' => MarketplaceHelper::getSetting('withdrawal_fee_type', WithdrawalFeeTypeEnum::FIXED),
+                'choices' => WithdrawalFeeTypeEnum::labels(),
             ])
             ->add('check_valid_signature', OnOffCheckboxField::class, [
                 'label' => trans('plugins/marketplace::marketplace.settings.check_valid_signature'),
@@ -95,6 +107,15 @@ class MarketplaceSettingForm extends SettingForm
                     'step' => 1,
                 ],
             ])
+            ->add(
+                'media_mime_types_allowed[]',
+                MultiCheckListField::class,
+                MultiChecklistFieldOption::make()
+                    ->label(trans('plugins/marketplace::marketplace.settings.media_file_types_can_be_uploaded_by_vendor'))
+                    ->helperText(trans('plugins/marketplace::marketplace.settings.media_file_types_can_be_uploaded_by_vendor_helper'))
+                    ->choices(array_combine($allowedMimeTypes, $allowedMimeTypes))
+                    ->selected(MarketplaceHelper::mediaMimeTypesAllowed())
+            )
             ->add(
                 'enabled_vendor_registration',
                 OnOffCheckboxField::class,
@@ -170,6 +191,14 @@ class MarketplaceSettingForm extends SettingForm
                     ->helperText(trans('plugins/marketplace::marketplace.settings.allow_vendor_manage_shipping_description'))
             )
             ->add(
+                'charge_shipping_per_vendor',
+                OnOffCheckboxField::class,
+                OnOffFieldOption::make()
+                    ->label(trans('plugins/marketplace::marketplace.settings.charge_shipping_per_vendor'))
+                    ->value(MarketplaceHelper::isChargeShippingPerVendor())
+                    ->helperText(trans('plugins/marketplace::marketplace.settings.charge_shipping_per_vendor_description'))
+            )
+            ->add(
                 'enabled_messaging_system',
                 OnOffCheckboxField::class,
                 OnOffFieldOption::make()
@@ -205,6 +234,22 @@ class MarketplaceSettingForm extends SettingForm
                     ->label(trans('plugins/marketplace::marketplace.settings.single_vendor_checkout'))
                     ->value(MarketplaceHelper::isSingleVendorCheckout())
                     ->helperText(trans('plugins/marketplace::marketplace.settings.single_vendor_checkout_help'))
+            )
+            ->add(
+                'display_order_total_info_for_each_store',
+                OnOffCheckboxField::class,
+                OnOffFieldOption::make()
+                    ->label(trans('plugins/marketplace::marketplace.settings.display_order_total_info_for_each_store'))
+                    ->value(MarketplaceHelper::getSetting('display_order_total_info_for_each_store', false))
+                    ->helperText(trans('plugins/marketplace::marketplace.settings.display_order_total_info_for_each_store_helper'))
+            )
+            ->add(
+                'show_vendor_info_at_checkout',
+                OnOffCheckboxField::class,
+                OnOffFieldOption::make()
+                    ->label(trans('plugins/marketplace::marketplace.settings.show_vendor_info_at_checkout'))
+                    ->value(MarketplaceHelper::getSetting('show_vendor_info_at_checkout', true))
+                    ->helperText(trans('plugins/marketplace::marketplace.settings.show_vendor_info_at_checkout_helper'))
             );
     }
 }

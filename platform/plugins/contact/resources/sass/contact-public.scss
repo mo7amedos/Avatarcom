@@ -138,7 +138,7 @@
         .form-check-input {
             float: left;
             margin-left: -1.5em;
-            
+
             flex-shrink: 0;
             width: 1em;
             height: 1em;
@@ -259,16 +259,16 @@
         -ms-user-select: none;
         user-select: none;
         background-image: none;
-        border: 1px solid #2e6da4;
+        border: 1px solid var(--primary-color);
         border-radius: 4px;
         color: #ffffff;
-        background-color: #337ab7;
+        background-color: var(--primary-color);
 
         &:hover,
         &:focus {
             color: #ffffff;
-            background-color: #286090;
-            border-color: #204d74;
+            background-color: var(--primary-color-hover);
+            border-color: var(--primary-color-hover);
         }
     }
 
@@ -302,5 +302,17 @@
     to {
         -webkit-transform: rotate(360deg);
         transform: rotate(360deg);
+    }
+}
+
+body[dir=rtl] {
+    .contact-form {
+        .form-check {
+            .form-check-input {
+                float: right;
+                margin-right: -1.5em;
+                margin-left: auto;
+            }
+        }
     }
 }

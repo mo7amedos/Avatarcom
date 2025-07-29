@@ -7,7 +7,7 @@ Route::group([
     'controller' => SslCommerzPaymentController::class,
     'middleware' => ['core'],
     'prefix' => 'sslcommerz/payment',
-], function () {
+], function (): void {
     Route::post('/success', 'success');
     Route::post('/fail', 'fail');
     Route::post('/cancel', 'cancel');

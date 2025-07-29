@@ -6,7 +6,7 @@ Route::group([
     'middleware' => 'api',
     'prefix' => 'api/v1',
     'namespace' => 'Botble\Blog\Http\Controllers\API',
-], function () {
+], function (): void {
     Route::get('search', 'PostController@getSearch');
     Route::get('posts', 'PostController@index');
     Route::get('categories', 'CategoryController@index');

@@ -1,7 +1,6 @@
 @if ($displayBasePrice && $basePrice != null)
     <div class="small d-flex justify-content-between">
-        <span>{{ trans('plugins/ecommerce::product-option.price') }}:</span>
-        <strong>{{ format_price($basePrice) }}</strong>
+        <span>{{ trans('plugins/ecommerce::product-option.price') }}: <strong>{{ format_price($basePrice) }}</strong></span>
     </div>
 @endif
 

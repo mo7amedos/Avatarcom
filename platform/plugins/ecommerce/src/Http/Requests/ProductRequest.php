@@ -9,6 +9,8 @@ use Botble\Ecommerce\Enums\GlobalOptionEnum;
 use Botble\Ecommerce\Enums\ProductTypeEnum;
 use Botble\Ecommerce\Facades\EcommerceHelper;
 use Botble\Ecommerce\Models\Product;
+use Botble\Ecommerce\Models\ProductCategory;
+use Botble\Ecommerce\Models\ProductCollection;
 use Botble\Ecommerce\Models\SpecificationTable;
 use Botble\Media\Facades\RvMedia;
 use Botble\Support\Http\Requests\Request;
@@ -54,7 +56,7 @@ class ProductRequest extends Request
                 'nullable',
                 'min:0',
                 Rule::when($this->input('sale_price'), function () {
-                    return 'gt:sale_price';
+                    return 'gte:sale_price';
                 }),
             ],
             'sale_price' => ['numeric', 'nullable', 'min:0'],
@@ -95,11 +97,11 @@ class ProductRequest extends Request
             'cost_per_item' => ['nullable', 'numeric', 'min:0'],
             'general_license_code' => ['nullable', 'in:0,1'],
             'categories' => ['nullable', 'array'],
-            'categories.*' => ['nullable', 'exists:ec_product_categories,id'],
+            'categories.*' => ['nullable', Rule::exists((new ProductCategory())->getTable(), 'id')],
             'product_collections' => ['nullable', 'array'],
-            'product_collections.*' => ['nullable', 'exists:ec_product_collections,id'],
+            'product_collections.*' => ['nullable', Rule::exists((new ProductCollection())->getTable(), 'id')],
             'cross_sale_products' => ['nullable', 'array'],
-            'cross_sale_products.*.id' => ['nullable', 'string', 'exists:ec_products,id'],
+            'cross_sale_products.*.id' => ['nullable', 'string', Rule::exists((new Product())->getTable(), 'id')],
             'cross_sale_products.*.price' => ['nullable', 'numeric', 'min:0', 'max:100000000000'],
             'cross_sale_products.*.price_type' => ['nullable', 'string', Rule::in(CrossSellPriceType::values())],
             'minimum_order_quantity' => ['nullable', 'numeric', 'min:0'],

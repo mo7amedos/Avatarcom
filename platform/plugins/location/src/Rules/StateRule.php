@@ -30,11 +30,18 @@ class StateRule implements DataAwareRule, Rule
             'status' => BaseStatusEnum::PUBLISHED,
         ];
 
+        $query = State::query()->where($condition);
+
         if ($this->countryKey && ($countryId = Arr::get($this->data, $this->countryKey))) {
-            $condition['country_id'] = $countryId;
+            $query = $query
+                ->whereHas('country', function ($query) use ($countryId): void {
+                    $query
+                        ->where('id', $countryId)
+                        ->orWhere('code', $countryId);
+                });
         }
 
-        return State::query()->where($condition)->exists();
+        return $query->exists();
     }
 
     public function message(): string

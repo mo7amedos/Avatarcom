@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static bool isEnabledMessagingSystem()
  * @method static array getAllowedSocialLinks()
  * @method static bool isSingleVendorCheckout()
+ * @method static array mediaMimeTypesAllowed()
  *
  * @see \Botble\Marketplace\Supports\MarketplaceHelper
  */

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 return new class () extends Migration {
     public function up(): void
     {
-        rescue(function () {
+        rescue(function (): void {
             if (setting('ecommerce_enable_recaptcha_in_register_page')) {
                 DB::table('settings')->insertOrIgnore([
                     'id' => BaseModel::getTypeOfId() === 'BIGINT' ? null : (new BaseModel())->newUniqueId(),

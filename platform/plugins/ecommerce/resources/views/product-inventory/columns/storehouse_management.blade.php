@@ -7,6 +7,7 @@
         data-column="with_storehouse_management"
         data-id="storehouse-management-{{ $product->id }}"
         tabindex="-1"
+        @style(['width: 120px;' => true])
     >
         <option value="1" @selected($product->with_storehouse_management)>{{ trans('core/base::base.yes') }}</option>
         <option value="0" @selected(! $product->with_storehouse_management)>{{ trans('core/base::base.no') }}</option>

@@ -22,7 +22,7 @@ abstract class ThemeOptionField implements Arrayable
 
     protected array $attributes = [];
 
-    protected float $priority = 0;
+    protected float $priority = 999;
 
     public static function make(): static
     {

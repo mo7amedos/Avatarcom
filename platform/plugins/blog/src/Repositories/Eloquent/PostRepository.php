@@ -52,7 +52,7 @@ class PostRepository extends RepositoriesAbstract implements PostInterface
             ->limit($limit)
             ->with('slugable')
             ->orderByDesc('created_at')
-            ->whereHas('categories', function (Builder $query) use ($id) {
+            ->whereHas('categories', function (Builder $query) use ($id): void {
                 $query->whereIn('categories.id', $this->getRelatedCategoryIds($id));
             });
 
@@ -81,7 +81,7 @@ class PostRepository extends RepositoriesAbstract implements PostInterface
     ): Collection|LengthAwarePaginator {
         $data = $this->model
             ->wherePublished()
-            ->whereHas('categories', function (Builder $query) use ($categoryId) {
+            ->whereHas('categories', function (Builder $query) use ($categoryId): void {
                 $query->whereIn('categories.id', array_filter((array) $categoryId));
             })
             ->select('*')
@@ -122,7 +122,7 @@ class PostRepository extends RepositoriesAbstract implements PostInterface
         $data = $this->model
             ->with(['slugable', 'categories', 'categories.slugable', 'author'])
             ->wherePublished()
-            ->whereHas('tags', function (Builder $query) use ($tag) {
+            ->whereHas('tags', function (Builder $query) use ($tag): void {
                 $query->where('tags.id', $tag);
             })
             ->orderByDesc('created_at');
@@ -136,7 +136,7 @@ class PostRepository extends RepositoriesAbstract implements PostInterface
 
         if ($categoryId != 0) {
             $data = $data
-                ->whereHas('categories', function (Builder $query) use ($categoryId) {
+                ->whereHas('categories', function (Builder $query) use ($categoryId): void {
                     $query->where('categories.id', $categoryId);
                 });
         }
@@ -210,14 +210,14 @@ class PostRepository extends RepositoriesAbstract implements PostInterface
         if ($filters['categories'] !== null) {
             $categories = array_filter((array) $filters['categories']);
 
-            $data = $data->whereHas('categories', function (Builder $query) use ($categories) {
+            $data = $data->whereHas('categories', function (Builder $query) use ($categories): void {
                 $query->whereIn('categories.id', $categories);
             });
         }
 
         if ($filters['categories_exclude'] !== null) {
             $data = $data
-                ->whereHas('categories', function (Builder $query) use ($filters) {
+                ->whereHas('categories', function (Builder $query) use ($filters): void {
                     $query->whereNotIn('categories.id', array_filter((array) $filters['categories_exclude']));
                 });
         }
@@ -268,7 +268,7 @@ class PostRepository extends RepositoriesAbstract implements PostInterface
             Language::getCurrentLocale() != Language::getDefaultLocale()
         ) {
             return $model
-                ->whereHas('translations', function (BaseQueryBuilder $query) use ($keyword) {
+                ->whereHas('translations', function (BaseQueryBuilder $query) use ($keyword): void {
                     $query
                         ->addSearch('name', $keyword, false, false)
                         ->addSearch('description', $keyword, false);
@@ -276,7 +276,7 @@ class PostRepository extends RepositoriesAbstract implements PostInterface
         }
 
         return $model
-            ->where(function (BaseQueryBuilder $query) use ($keyword) {
+            ->where(function (BaseQueryBuilder $query) use ($keyword): void {
                 $query
                     ->addSearch('name', $keyword, false, false)
                     ->addSearch('description', $keyword, false);

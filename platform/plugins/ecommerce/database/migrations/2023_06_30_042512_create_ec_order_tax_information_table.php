@@ -8,7 +8,7 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasTable('ec_order_tax_information')) {
-            Schema::create('ec_order_tax_information', function (Blueprint $table) {
+            Schema::create('ec_order_tax_information', function (Blueprint $table): void {
                 $table->id();
                 $table->foreignId('order_id')->index();
                 $table->string('company_name', 120);

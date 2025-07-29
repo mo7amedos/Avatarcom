@@ -11,13 +11,15 @@ use Botble\Base\Traits\HasTreeCategory;
 use Botble\Ecommerce\Tables\ProductTable;
 use Botble\Media\Facades\RvMedia;
 use Botble\Support\Services\Cache\Cache;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Database\Eloquent\Collection as EloquenCollection;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
@@ -41,11 +43,13 @@ class ProductCategory extends BaseModel implements HasTreeCategoryContract
 
     protected $casts = [
         'status' => BaseStatusEnum::class,
+        'is_featured' => 'bool',
+        'order' => 'int',
     ];
 
     protected static function booted(): void
     {
-        static::deleted(function (ProductCategory $category) {
+        static::deleted(function (ProductCategory $category): void {
             $category->products()->detach();
 
             $category->children()->each(fn (ProductCategory $child) => $child->delete());
@@ -54,11 +58,11 @@ class ProductCategory extends BaseModel implements HasTreeCategoryContract
             $category->productAttributeSets()->detach();
         });
 
-        static::saved(function () {
+        static::saved(function (): void {
             Cache::make(static::class)->flush();
         });
 
-        static::deleted(function () {
+        static::deleted(function (): void {
             Cache::make(static::class)->flush();
         });
     }
@@ -128,8 +132,7 @@ class ProductCategory extends BaseModel implements HasTreeCategoryContract
     protected function badgeWithCount(): Attribute
     {
         return Attribute::get(function (): HtmlString {
-
-            $productsCount = $this->products_count;
+            $productsCount = $this->count_all_products;
 
             $link = route('products.index', [
                 'filter_table_id' => strtolower(Str::slug(Str::snake(ProductTable::class))),
@@ -139,10 +142,39 @@ class ProductCategory extends BaseModel implements HasTreeCategoryContract
                 'filter_values' => [$this->getKey()],
             ]);
 
-            return Html::link($link, sprintf('(%s)', $productsCount), [
+            return Html::link($link, sprintf('(%d)', $productsCount), [
                 'data-bs-toggle' => 'tooltip',
                 'data-bs-original-title' => trans('plugins/ecommerce::product-categories.total_products', ['total' => $productsCount]),
+                'target' => '_blank',
             ]);
+        });
+    }
+
+    protected function countAllProducts(): Attribute
+    {
+        return Attribute::get(function (): int {
+            $cache = Cache::make(static::class);
+            $cacheKey = 'count_all_products_' . $this->getKey() . app()->getLocale();
+
+            if ($cache->has($cacheKey)) {
+                return $cache->get($cacheKey);
+            }
+
+            $categoryIds = static::getChildrenIds($this->activeChildren);
+
+            $categoryIds[] = $this->getKey();
+
+            $count = DB::table('ec_product_category_product')
+                ->join('ec_products', 'ec_product_category_product.product_id', '=', 'ec_products.id')
+                ->whereIn('category_id', $categoryIds)
+                ->where('ec_products.status', BaseStatusEnum::PUBLISHED)
+                ->where('ec_products.is_variation', 0)
+                ->distinct('product_id')
+                ->count();
+
+            $cache->put($cacheKey, $count, Carbon::now()->addHours(2));
+
+            return $count;
         });
     }
 
@@ -161,7 +193,7 @@ class ProductCategory extends BaseModel implements HasTreeCategoryContract
         });
     }
 
-    public static function getChildrenIds(EloquenCollection $children, $categoryIds = []): array
+    public static function getChildrenIds(EloquentCollection $children, $categoryIds = []): array
     {
         if ($children->isEmpty()) {
             return $categoryIds;
@@ -169,7 +201,7 @@ class ProductCategory extends BaseModel implements HasTreeCategoryContract
 
         foreach ($children as $item) {
             $categoryIds[] = $item->id;
-            if ($item->children->isNotEmpty()) {
+            if ($item->activeChildren->isNotEmpty()) {
                 $categoryIds = static::getChildrenIds($item->activeChildren, $categoryIds);
             }
         }

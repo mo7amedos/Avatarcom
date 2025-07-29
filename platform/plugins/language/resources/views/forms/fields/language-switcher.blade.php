@@ -2,7 +2,7 @@
     $languages = Language::getActiveLanguage(['lang_id', 'lang_name', 'lang_code', 'lang_flag']);
 @endphp
 
-@if($languages->count() > 2)
+@if ($languages->count() > 1)
     </div>
     <x-core::card.footer>
         <div>

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\Relation as EloquentRelation;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 trait HasFilters
 {
@@ -82,6 +83,12 @@ trait HasFilters
             }
         }
 
+        if ($value) {
+            if (Str::endsWith($value, '/export')) {
+                $value = Str::beforeLast($value, '/export');
+            }
+        }
+
         switch ($key) {
             case 'created_at':
             case 'updated_at':
@@ -89,7 +96,7 @@ trait HasFilters
                     break;
                 }
 
-                $validator = Validator::make([$key => $value], [$key => 'date']);
+                $validator = Validator::make([$key => $value], [$key => ['date']]);
 
                 if (! $validator->fails()) {
                     $value = BaseHelper::formatDate($value);

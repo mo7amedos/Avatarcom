@@ -39,19 +39,19 @@ trait RevisionableTrait
      */
     public static function bootRevisionableTrait(): void
     {
-        static::saving(function ($model) {
+        static::saving(function ($model): void {
             $model->preSave();
         });
 
-        static::saved(function ($model) {
+        static::saved(function ($model): void {
             $model->postSave();
         });
 
-        static::created(function ($model) {
+        static::created(function ($model): void {
             $model->postCreate();
         });
 
-        static::deleted(function ($model) {
+        static::deleted(function ($model): void {
             $model->preSave();
             $model->postDelete();
         });

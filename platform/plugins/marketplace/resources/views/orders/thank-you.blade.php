@@ -1,6 +1,6 @@
 @extends('plugins/ecommerce::orders.master')
 
-@section('title', __('Order successfully at :site_title', ['site_title' => theme_option('site_title')]))
+@section('title', __('Order successfully at :site_title', ['site_title' => Theme::getSiteTitle()]))
 
 @section('content')
     <div class="row">
@@ -30,9 +30,64 @@
         </div>
 
         <div class="col-lg-5 col-md-6 mt-5 mt-md-0 mb-5">
+            @php
+                $isUnifiedShipping = ! MarketplaceHelper::isChargeShippingPerVendor();
+                $totalShippingAmount = $orders->sum('shipping_amount');
+                $hasShipping = $orders->filter(fn ($order) => $order->shipment->id)->count() > 0;
+            @endphp
+
             @foreach ($orders as $order)
                 <div class="bg-light p-3 pt-0">
-                    @include('plugins/ecommerce::orders.thank-you.order-info', ['isShowTotalInfo' => true])
+                    @if ($isUnifiedShipping)
+                        {{-- For unified shipping, show products only without individual shipping breakdown --}}
+                        @include('plugins/ecommerce::orders.thank-you.order-info', ['isShowTotalInfo' => false])
+
+                        {{-- Show simplified order totals for individual orders --}}
+                        <hr class="border-dark-subtle" />
+
+                        @if ($order->sub_total != $order->amount)
+                            @include('plugins/ecommerce::orders.thank-you.total-row', [
+                                'label' => __('Subtotal'),
+                                'value' => format_price($order->sub_total),
+                            ])
+                        @endif
+
+                        @if (EcommerceHelper::isTaxEnabled() && (float) $order->tax_amount)
+                            @include('plugins/ecommerce::orders.thank-you.total-row', [
+                                'label' => __('Tax'),
+                                'value' => format_price($order->tax_amount),
+                            ])
+                        @endif
+
+                        @if ((float) $order->discount_amount)
+                            @include('plugins/ecommerce::orders.thank-you.total-row', [
+                                'label' => __('Discount'),
+                                'value' => format_price($order->discount_amount) .
+                                    ($order->coupon_code ? ' <small>(' . __('Using coupon code') . ': <strong>' . $order->coupon_code . '</strong>)</small>' : ''),
+                            ])
+                        @endif
+
+                        @if ((float) $order->payment_fee)
+                            @include('plugins/ecommerce::orders.thank-you.total-row', [
+                                'label' => __('plugins/payment::payment.payment_fee'),
+                                'value' => format_price($order->payment_fee),
+                            ])
+                        @endif
+
+                        <hr class="border-dark-subtle" />
+
+                        <div class="row">
+                            <div class="col-6">
+                                <p>{{ __('Order Total') }}:</p>
+                            </div>
+                            <div class="col-6 float-end">
+                                <p class="total-text raw-total-text"> {{ format_price($order->amount) }} </p>
+                            </div>
+                        </div>
+                    @else
+                        {{-- For per-vendor shipping, show normal order info with shipping --}}
+                        @include('plugins/ecommerce::orders.thank-you.order-info', ['isShowTotalInfo' => true])
+                    @endif
                 </div>
 
                 @if (! $loop->last)
@@ -53,13 +108,13 @@
                         </div>
                     </div>
 
-                    @if ($orders->filter(fn ($order) => $order->shipment->id)->count())
+                    @if ($hasShipping && $totalShippingAmount > 0)
                         <div class="row total-price">
                             <div class="col-6">
                                 <p>{{ __('Shipping fee') }}:</p>
                             </div>
                             <div class="col-6">
-                                <p class="text-end">{{ format_price($orders->sum('shipping_amount')) }} </p>
+                                <p class="text-end">{{ format_price($totalShippingAmount) }} </p>
                             </div>
                         </div>
                     @endif
@@ -82,6 +137,17 @@
                             </div>
                             <div class="col-6">
                                 <p class="text-end">{{ format_price($orders->sum('tax_amount')) }}</p>
+                            </div>
+                        </div>
+                    @endif
+
+                    @if ($orders->sum('payment_fee'))
+                        <div class="row total-price">
+                            <div class="col-6">
+                                <p>{{ __('Payment Fee') }}:</p>
+                            </div>
+                            <div class="col-6">
+                                <p class="text-end">{{ format_price($orders->sum('payment_fee')) }}</p>
                             </div>
                         </div>
                     @endif

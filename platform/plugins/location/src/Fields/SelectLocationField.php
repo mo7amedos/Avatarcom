@@ -70,6 +70,9 @@ class SelectLocationField extends FormField
         $countryKey = Arr::get($this->locationKeys, 'country');
         $countries = Country::query()
             ->select('name', 'id')
+            ->oldest('order')
+            ->oldest('name')
+            ->latest()
             ->get()
             ->mapWithKeys(fn ($item) => [$item->getKey() => $item->name])
             ->all();
@@ -102,7 +105,11 @@ class SelectLocationField extends FormField
         $countryId = Arr::get($this->getValue(), 'country');
 
         if (! $countryId) {
-            $countries = Country::query()->select('name', 'id')
+            $countries = Country::query()
+                ->select('name', 'id')
+                ->oldest('order')
+                ->oldest('name')
+                ->latest()
                 ->get()
                 ->mapWithKeys(fn ($item) => [$item->getKey() => $item->name])
                 ->all();
@@ -117,6 +124,9 @@ class SelectLocationField extends FormField
             $states = State::query()
                 ->where('country_id', $countryId)
                 ->select('name', 'id')
+                ->oldest('order')
+                ->oldest('name')
+                ->latest()
                 ->get()
                 ->mapWithKeys(fn ($item) => [$item->getKey() => $item->name])
                 ->all();
@@ -148,6 +158,9 @@ class SelectLocationField extends FormField
         if ($stateId) {
             $cities = City::query()
                 ->where('state_id', $stateId)
+                ->oldest('order')
+                ->oldest('name')
+                ->latest()
                 ->select('name', 'id')->get()
                 ->mapWithKeys(fn ($item) => [$item->getKey() => $item->name])
                 ->all();
@@ -155,6 +168,9 @@ class SelectLocationField extends FormField
             $cities = City::query()
                 ->where('country_id', $countryId)
                 ->select('name', 'id')
+                ->oldest('order')
+                ->oldest('name')
+                ->latest()
                 ->get()
                 ->mapWithKeys(fn ($item) => [$item->getKey() => $item->name])
                 ->all();

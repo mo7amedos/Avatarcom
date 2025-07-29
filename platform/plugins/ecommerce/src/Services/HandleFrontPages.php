@@ -3,6 +3,7 @@
 namespace Botble\Ecommerce\Services;
 
 use Botble\Base\Enums\BaseStatusEnum;
+use Botble\Base\Facades\AdminHelper;
 use Botble\Base\Http\Responses\BaseHttpResponse;
 use Botble\Base\Supports\Helper;
 use Botble\Ecommerce\AdsTracking\FacebookPixel;
@@ -21,6 +22,7 @@ use Botble\Media\Facades\RvMedia;
 use Botble\SeoHelper\Entities\Twitter\Card;
 use Botble\SeoHelper\Facades\SeoHelper;
 use Botble\SeoHelper\SeoOpenGraph;
+use Botble\Shortcode\Facades\Shortcode;
 use Botble\Slug\Models\Slug;
 use Botble\Theme\Facades\AdminBar;
 use Botble\Theme\Facades\Theme;
@@ -28,7 +30,6 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Auth;
 
 class HandleFrontPages
 {
@@ -49,7 +50,7 @@ class HandleFrontPages
 
         $response = BaseHttpResponse::make();
 
-        $isPreview = Auth::guard()->check() && $request->input('preview');
+        $isPreview = AdminHelper::isPreviewing();
 
         switch ($slug->reference_type) {
             case Product::class:
@@ -75,17 +76,16 @@ class HandleFrontPages
                             'categories.slugable',
                             'options',
                             'options.values',
-                            'crossSales' => function (BelongsToMany $query) {
+                            'crossSales' => function (BelongsToMany $query): void {
                                 $query->where('ec_product_cross_sale_relations.is_variant', false);
                             },
                         ],
                         ...EcommerceHelper::withReviewsParams(),
+                        'include_out_of_stock_products' => true,
                     ]
                 );
 
-                if (! $product) {
-                    abort(404);
-                }
+                abort_if(! $product, 404);
 
                 $this->productCrossSalePriceService->applyProduct($product);
 
@@ -127,7 +127,7 @@ class HandleFrontPages
                 $category = $product->categories->sortByDesc('id')->first();
 
                 if ($category) {
-                    if ($category->parents->count()) {
+                    if ($category->parents->isNotEmpty()) {
                         foreach ($category->parents->reverse() as $parentCategory) {
                             Theme::breadcrumb()->add($parentCategory->name, $parentCategory->url);
                         }
@@ -161,11 +161,13 @@ class HandleFrontPages
                 );
 
                 if (! $product->is_variation && $productVariation) {
-                    $product = app(UpdateDefaultProductService::class)->updateColumns($product, $productVariation);
                     $selectedProductVariation = $productVariation->defaultVariation;
                     $selectedProductVariation->product_id = $productVariation->id;
-
                     $product->defaultVariation = $selectedProductVariation;
+
+                    if (! $product->defaultVariation->product->isOutOfStock()) {
+                        $product = app(UpdateDefaultProductService::class)->updateColumns($product, $productVariation);
+                    }
 
                     $product->image = $selectedProductVariation->configurableProduct->image ?: $product->image;
                 }
@@ -185,7 +187,7 @@ class HandleFrontPages
                  */
                 $category = ProductCategory::query()
                     ->where('id', $slug->reference_id)
-                    ->when(! $isPreview, function ($query) {
+                    ->when(! $isPreview, function ($query): void {
                         $query->wherePublished();
                     })
                     ->with(['slugable'])
@@ -259,7 +261,7 @@ class HandleFrontPages
             case Brand::class:
                 $brand = Brand::query()
                     ->where('id', $slug->reference_id)
-                    ->when(! $isPreview, function ($query) {
+                    ->when(! $isPreview, function ($query): void {
                         $query->wherePublished();
                     })
                     ->with(['slugable'])
@@ -269,7 +271,8 @@ class HandleFrontPages
                     $request = request();
                 }
 
-                $request->merge(['brands' => array_merge((array) request()->input('brands', []), [$brand->getKey()])]);
+                $brands = EcommerceHelper::parseFilterParams($request, 'brands');
+                $request->merge(['brands' => array_merge($brands, [$brand->getKey()])]);
 
                 $products = app(GetProductService::class)->getProduct(
                     $request,
@@ -338,8 +341,9 @@ class HandleFrontPages
 
                 $with = EcommerceHelper::withProductEagerLoadingRelations();
 
+                $tags = EcommerceHelper::parseFilterParams($request, 'tags');
                 $request->merge([
-                    'tags' => [$tag->getKey()],
+                    'tags' => array_merge($tags, [$tag->getKey()]),
                 ]);
 
                 $products = app(GetProductService::class)->getProduct($request, null, null, $with);
@@ -397,8 +401,6 @@ class HandleFrontPages
             compact('total')
         );
 
-        $data = view(EcommerceHelper::viewPath('includes.product-items'), compact('products'))->render();
-
         $breadcrumbView = Theme::getThemeNamespace('partials.breadcrumbs');
 
         if (view()->exists($breadcrumbView)) {
@@ -412,6 +414,17 @@ class HandleFrontPages
         if (view()->exists($filtersView)) {
             $additional['filters_html'] = view($filtersView, compact('category'))->render();
         }
+
+        $productListingDescriptionView = EcommerceHelper::viewPath('includes.product-listing-page-description');
+
+        if ($category && view()->exists($productListingDescriptionView)) {
+            $additional['product_listing_page_description_html'] = view($productListingDescriptionView, [
+                'pageName' => $category->name,
+                'pageDescription' => $category->description ? Shortcode::compile($category->description, true)->toHtml() : null,
+            ])->render();
+        }
+
+        $data = view(EcommerceHelper::viewPath('includes.product-items'), compact('products'))->render();
 
         return $response
             ->setData($data)

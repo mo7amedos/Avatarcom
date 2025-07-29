@@ -1,9 +1,5 @@
-@php
-    $attributes = $attributes->where('attribute_set_id', $set->id);
-@endphp
-
-@if ($attributes->isNotEmpty())
-    <div class="bb-product-filter">
+@if (($attributes = $attributes->where('attribute_set_id', $set->id)) && $attributes->isNotEmpty())
+    <div class="bb-product-filter-attribute-item">
         <h4 class="bb-product-filter-title">{{ $set->title }}</h4>
 
         <div class="bb-product-filter-content">
@@ -18,7 +14,7 @@
                             @checked(in_array($attribute->id, $selected))
                         >
                         <label for="attribute-{{ $attribute->id }}">{{ $attribute->title }}</label>
-                        <span style="{{ $attribute->getAttributeStyle() }}"></span>
+                        <span class="bb-product-attribute-swatch-display" style="{{ $attribute->getAttributeStyle() }}"></span>
                     </li>
                 @endforeach
             </ul>

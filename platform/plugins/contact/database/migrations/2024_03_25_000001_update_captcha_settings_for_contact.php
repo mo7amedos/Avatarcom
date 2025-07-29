@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 return new class () extends Migration {
     public function up(): void
     {
-        rescue(function () {
+        rescue(function (): void {
             DB::table('settings')->insertOrIgnore([
                 'id' => BaseModel::isUsingIntegerId() ? null : (new BaseModel())->newUniqueId(),
                 'key' => 'enable_recaptcha_botble_contact_forms_fronts_contact_form',

@@ -7,7 +7,11 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::create('mp_messages', function (Blueprint $table) {
+        if (Schema::hasTable('mp_messages')) {
+            return;
+        }
+
+        Schema::create('mp_messages', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('store_id');
             $table->foreignId('customer_id')->nullable();

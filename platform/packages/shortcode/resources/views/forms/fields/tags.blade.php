@@ -9,7 +9,7 @@
             @endif
 
             @php
-                if (! Arr::has($options['attr'], 'data-url')) {
+                if (Arr::get($options, 'choices')) {
                     $classAppend = 'list-tagify';
                 } else {
                     $classAppend = 'tags';

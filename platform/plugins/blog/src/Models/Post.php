@@ -4,8 +4,8 @@ namespace Botble\Blog\Models;
 
 use Botble\ACL\Models\User;
 use Botble\Base\Casts\SafeContent;
-use Botble\Base\Enums\BaseStatusEnum;
 use Botble\Base\Models\BaseModel;
+use Botble\Blog\Enums\PostStatusEnum;
 use Botble\Revision\RevisionableTrait;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -42,19 +42,19 @@ class Post extends BaseModel
 
     protected static function booted(): void
     {
-        static::deleted(function (self $post) {
+        static::deleted(function (self $post): void {
             $post->categories()->detach();
             $post->tags()->detach();
         });
 
-        static::creating(function (self $post) {
+        static::creating(function (self $post): void {
             $post->author_id = $post->author_id ?: auth()->id();
             $post->author_type = $post->author_type ?: User::class;
         });
     }
 
     protected $casts = [
-        'status' => BaseStatusEnum::class,
+        'status' => PostStatusEnum::class,
         'name' => SafeContent::class,
         'description' => SafeContent::class,
     ];

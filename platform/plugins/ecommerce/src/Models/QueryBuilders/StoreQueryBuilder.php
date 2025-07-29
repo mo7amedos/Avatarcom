@@ -11,7 +11,7 @@ class StoreQueryBuilder extends BaseQueryBuilder
         parent::wherePublished($column);
 
         $this
-            ->whereHas('customer', function ($query) {
+            ->whereHas('customer', function ($query): void {
                 $query->where('is_vendor', true)->whereNotNull('vendor_verified_at');
             });
 

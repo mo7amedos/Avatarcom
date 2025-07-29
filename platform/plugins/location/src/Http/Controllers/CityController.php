@@ -84,8 +84,8 @@ class CityController extends BaseController
             ->where('name', 'LIKE', '%' . $keyword . '%')
             ->select(['id', 'name'])
             ->take(10)
-            ->orderBy('order')
-            ->orderBy('name')
+            ->oldest('order')
+            ->oldest('name')
             ->get();
 
         $data->prepend(new City(['id' => 0, 'name' => trans('plugins/location::city.select_city')]));

@@ -30,7 +30,7 @@ class ShippingRuleItem extends BaseModel
 
     protected function adjustmentPrice(): Attribute
     {
-        return Attribute::set(fn (string $value) => (float) str_replace(',', '', $value));
+        return Attribute::set(fn (?string $value) => (float) str_replace(',', '', $value));
     }
 
     protected function nameItem(): Attribute

@@ -6,6 +6,7 @@ use Botble\Base\Facades\BaseHelper;
 use Botble\Media\Facades\RvMedia;
 use Botble\SeoHelper\Contracts\Entities\OpenGraphContract;
 use Botble\SeoHelper\Contracts\SeoOpenGraphContract;
+use Botble\Theme\Facades\Theme;
 
 class SeoOpenGraph implements SeoOpenGraphContract
 {
@@ -172,7 +173,9 @@ class SeoOpenGraph implements SeoOpenGraphContract
      */
     public function render()
     {
-        if (! $this->hasImage() && $ogImage = theme_option('seo_og_image')) {
+        if (! $this->hasImage()) {
+            $ogImage = theme_option('seo_og_image') ?: Theme::getLogo();
+
             $this->setImage(RvMedia::url($ogImage));
         }
 

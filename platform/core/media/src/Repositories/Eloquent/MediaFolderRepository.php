@@ -71,7 +71,7 @@ class MediaFolderRepository extends RepositoriesAbstract implements MediaFolderI
         $data = $this->model
             ->select('media_folders.*')
             ->where($params['where'])
-            ->orderBy('media_folders.name')
+            ->oldest('media_folders.name')
             ->onlyTrashed();
 
         /**
@@ -79,7 +79,7 @@ class MediaFolderRepository extends RepositoriesAbstract implements MediaFolderI
          */
         if (! $parentId) {
             $data->leftJoin('media_folders as mf_parent', 'mf_parent.id', '=', 'media_folders.parent_id')
-                ->where(function ($query) {
+                ->where(function ($query): void {
                     /**
                      * @var Builder $query
                      */

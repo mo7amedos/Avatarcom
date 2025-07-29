@@ -44,11 +44,11 @@ class AdsServiceProvider extends ServiceProvider
             ->loadAndPublishConfigurations(['permissions', 'general'])
             ->loadMigrations()
             ->loadAndPublishTranslations()
-            ->loadRoutes()
+            ->loadRoutes(['web', 'api'])
             ->loadHelpers()
             ->loadAndPublishViews();
 
-        DashboardMenu::beforeRetrieving(function () {
+        DashboardMenu::beforeRetrieving(function (): void {
             DashboardMenu::make()
                 ->registerItem([
                     'id' => 'cms-plugins-ads',
@@ -62,6 +62,7 @@ class AdsServiceProvider extends ServiceProvider
                     'parent_id' => 'cms-plugins-ads',
                     'priority' => 1,
                     'name' => 'plugins/ads::ads.name',
+                    'icon' => 'ti ti-list',
                     'url' => fn () => route('ads.index'),
                     'permissions' => ['ads.index'],
                 ])
@@ -70,12 +71,13 @@ class AdsServiceProvider extends ServiceProvider
                     'parent_id' => 'cms-plugins-ads',
                     'priority' => 2,
                     'name' => 'plugins/ads::ads.settings.title',
+                    'icon' => 'ti ti-settings',
                     'url' => fn () => route('ads.settings'),
                     'permissions' => ['ads.index'],
                 ]);
         });
 
-        PanelSectionManager::default()->beforeRendering(function () {
+        PanelSectionManager::default()->beforeRendering(function (): void {
             PanelSectionManager::registerItem(
                 SettingOthersPanelSection::class,
                 fn () => PanelSectionItem::make('ads')
@@ -87,7 +89,7 @@ class AdsServiceProvider extends ServiceProvider
             );
         });
 
-        $this->app['events']->listen(RouteMatched::class, function () {
+        $this->app['events']->listen(RouteMatched::class, function (): void {
             if (class_exists(Shortcode::class)) {
                 Shortcode::register('ads', __('Ads'), __('Ads'), function ($shortcode) {
                     if (! $shortcode->key) {
@@ -120,6 +122,8 @@ class AdsServiceProvider extends ServiceProvider
             LanguageAdvancedManager::registerModule(Ads::class, [
                 'name',
                 'image',
+                'tablet_image',
+                'mobile_image',
                 'url',
             ]);
         }
@@ -138,14 +142,16 @@ class AdsServiceProvider extends ServiceProvider
             add_filter(THEME_FRONT_HEADER, function ($html) {
                 $clientId = setting('ads_google_adsense_unit_client_id');
 
-                if (! $clientId) {
+                $autoAds = setting('ads_google_adsense_auto_ads');
+
+                if (! $clientId || $autoAds) {
                     return $html;
                 }
 
                 return $html . view('plugins/ads::partials.google-adsense.unit-ads-header', compact('clientId'))->render();
             }, 128);
 
-            add_filter(THEME_FRONT_HEADER, function ($html) {
+            add_filter(THEME_FRONT_FOOTER, function ($html) {
                 $clientId = setting('ads_google_adsense_unit_client_id');
 
                 if (! $clientId) {
@@ -168,7 +174,7 @@ class AdsServiceProvider extends ServiceProvider
             BaseHelper::logError($exception);
         }
 
-        AdsForm::beforeRendering(function () {
+        AdsForm::beforeRendering(function (): void {
             add_action(BASE_ACTION_TOP_FORM_CONTENT_NOTIFICATION, function ($request, $data = null) {
                 if (! $data instanceof Ads || ! in_array(Route::currentRouteName(), ['ads.create', 'ads.edit'])) {
                     return false;

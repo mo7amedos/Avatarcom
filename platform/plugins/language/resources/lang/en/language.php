@@ -53,7 +53,6 @@ return [
     'hide_languages_helper_display_hidden' => '{0} All languages are currently displayed.|{1} :language is currently hidden to visitors.|[2, Inf] :language are currently hidden to visitors.',
     'show_all' => 'Show all',
     'change_language' => 'Language',
-    'language_show_default_item_if_current_version_not_existed' => 'Show item in default language if it is not existed in current language',
     'select_flag' => 'Select a flag...',
     'delete_confirmation_message' => 'Do you really want to delete this language? It also deletes all items in this language and cannot rollback!',
     'added_already' => 'This language was added already!',
@@ -62,4 +61,7 @@ return [
     'setup_site_language' => 'To set up the site language, please go to :link page. Or go to :appearance_link to set up the admin language.',
     'no_languages' => 'There are no languages in your site!',
     'update' => 'Update',
+    'default_language_warning' => 'You should set the default language only once during the initial setup and avoid changing it later.',
+    'default_language_warning_details' => 'Changing the default language does not automatically update your existing content — all previously entered data remains tied to the original default language.',
+    'default_language_warning_action' => 'If you decide to change the default language, you will need to manually update your site content to match the new default language, as it won\'t be updated automatically.',
 ];

@@ -18,12 +18,14 @@ class WishlistController extends BaseController
 {
     public function index(Request $request, ProductInterface $productRepository, ?string $code = null)
     {
-        if ($code && ! EcommerceHelper::isWishlistSharingEnabled()) {
-            abort(404);
-        }
+        abort_if($code && ! EcommerceHelper::isWishlistSharingEnabled(), 404);
 
-        SeoHelper::setTitle(__('Wishlist'));
-        Theme::breadcrumb()->add(__('Wishlist'), route('public.wishlist'));
+        $title = __('Wishlist');
+
+        SeoHelper::setTitle(theme_option('ecommerce_wishlist_seo_title') ?: $title)
+            ->setDescription(theme_option('ecommerce_wishlist_seo_description'));
+
+        Theme::breadcrumb()->add($title, route('public.wishlist'));
 
         $queryParams = [
             'paginate' => [

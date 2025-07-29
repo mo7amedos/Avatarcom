@@ -105,7 +105,7 @@
                                 @if (!config('packages.plugin-management.general.hide_plugin_author', false) && $plugin->author)
                                     <div class="col-12 col-lg">
                                         {{ trans('packages/plugin-management::plugin.author') }}:
-                                        @if ($plugin->url)
+                                        @if (! empty($plugin->url))
                                             <a href="{{ $plugin->url }}" target="_blank" class="fw-bold">{{ $plugin->author }}</a>
                                         @else
                                             <strong>{{ $plugin->author }}</strong>

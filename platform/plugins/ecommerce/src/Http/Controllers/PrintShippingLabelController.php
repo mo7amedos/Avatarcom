@@ -21,8 +21,10 @@ use Illuminate\Support\Str;
 
 class PrintShippingLabelController extends BaseController
 {
-    public function __invoke(Shipment $shipment, Pdf $pdf): Response
+    public function __invoke(Shipment $shipment, Pdf $pdf): ?Response
     {
+        $this->pageTitle(trans('plugins/ecommerce::shipping.shipping_label.print_shipping_label'));
+
         $renderer = new ImageRenderer(
             new RendererStyle(400),
             new SvgImageBackEnd()
@@ -41,7 +43,7 @@ class PrintShippingLabelController extends BaseController
 
             $orderAddress  = $shipment->order->address;
 
-            if (EcommerceHelper::isLoginUsingPhone()) {
+            if (EcommerceHelper::isOrderTrackingUsingPhone()) {
                 $params['phone'] = $orderAddress->phone ?: $customer->phone;
             } else {
                 $params['email'] = $orderAddress->email ?: $customer->email;
@@ -58,11 +60,11 @@ class PrintShippingLabelController extends BaseController
 
         if (EcommerceHelper::loadCountriesStatesCitiesFromPluginLocation()) {
             if (is_numeric($state)) {
-                $state = State::query()->wherePublished()->where('id', $state)->value('name');
+                $state = State::query()->where('id', $state)->value('name');
             }
 
             if (is_numeric($city)) {
-                $city = City::query()->wherePublished()->where('id', $city)->value('name');
+                $city = City::query()->where('id', $city)->value('name');
             }
         }
 
@@ -120,14 +122,14 @@ class PrintShippingLabelController extends BaseController
                     'full_address' => $fullAddress,
                 ],
                 'receiver' => [
-                    'name' => $order->user_name,
+                    'name' => $order->shippingAddress->name ?: $order->user->name,
                     'full_address' => $order->full_address,
-                    'email' => $order->user->email,
-                    'phone' => $order->user->phone,
+                    'email' => $order->shippingAddress->email ?: $order->user->email,
+                    'phone' => $order->shippingAddress->phone ?: $order->user->phone,
                     'note' => Str::limit((string) $order->description, 90),
                 ],
             ], $shipment))
-            ->compile()
-            ->stream();
+            ->setProcessingLibrary(get_ecommerce_setting('invoice_processing_library', 'dompdf'))
+            ->stream('shipping-label.pdf');
     }
 }

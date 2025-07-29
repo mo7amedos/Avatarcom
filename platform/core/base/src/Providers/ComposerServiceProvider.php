@@ -12,7 +12,7 @@ class ComposerServiceProvider extends ServiceProvider
 {
     public function boot(Factory $view): void
     {
-        $view->composer(['core/media::config'], function () {
+        $view->composer(['core/media::config'], function (): void {
             $mediaPermissions = RvMedia::getConfig('permissions', []);
 
             if (Auth::guard()->check()) {

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::create('menus', function (Blueprint $table) {
+        Schema::create('menus', function (Blueprint $table): void {
             $table->id();
             $table->string('name', 120);
             $table->string('slug', 120)->unique()->nullable();
@@ -15,7 +15,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('menu_nodes', function (Blueprint $table) {
+        Schema::create('menu_nodes', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('menu_id')->index();
             $table->foreignId('parent_id')->default(0)->index();
@@ -31,7 +31,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('menu_locations', function (Blueprint $table) {
+        Schema::create('menu_locations', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('menu_id');
             $table->string('location', 120);

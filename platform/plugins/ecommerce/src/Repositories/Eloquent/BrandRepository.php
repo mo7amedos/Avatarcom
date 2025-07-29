@@ -12,8 +12,8 @@ class BrandRepository extends RepositoriesAbstract implements BrandInterface
     {
         $data = $this->model
             ->where($condition)
-            ->orderByDesc('is_featured')
-            ->orderBy('name');
+            ->latest('is_featured')
+            ->oldest('name');
 
         return $this->applyBeforeExecuteQuery($data)->get();
     }

@@ -10,7 +10,7 @@ return new class () extends Migration {
         Schema::dropIfExists('ec_options');
         Schema::dropIfExists('ec_global_options');
 
-        Schema::create('ec_options', function (Blueprint $table) {
+        Schema::create('ec_options', function (Blueprint $table): void {
             $table->id();
             $table->string('name')->comment('Name of options');
             $table->string('option_type')->nullable()->comment('option type');
@@ -20,7 +20,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_global_options', function (Blueprint $table) {
+        Schema::create('ec_global_options', function (Blueprint $table): void {
             $table->id();
             $table->string('name')->comment('Name of options');
             $table->string('option_type')->comment('option type');

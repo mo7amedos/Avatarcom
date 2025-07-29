@@ -10,7 +10,7 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasColumn('ec_products', 'image')) {
-            Schema::table('ec_products', function (Blueprint $table) {
+            Schema::table('ec_products', function (Blueprint $table): void {
                 $table->string('image')->nullable();
             });
 
@@ -24,7 +24,7 @@ return new class () extends Migration {
     public function down(): void
     {
         if (Schema::hasColumn('ec_products', 'image')) {
-            Schema::table('ec_products', function (Blueprint $table) {
+            Schema::table('ec_products', function (Blueprint $table): void {
                 $table->dropColumn('image');
             });
         }

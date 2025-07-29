@@ -13,11 +13,10 @@
             class="ps-logo"
             href="{{ route('marketplace.vendor.dashboard') }}"
         >
-            @php $logo = theme_option('logo_vendor_dashboard', theme_option('logo')); @endphp
-            @if ($logo)
+            @if ($logo = theme_option('logo_vendor_dashboard', Theme::getLogo()))
                 <img
                     src="{{ RvMedia::getImageUrl($logo) }}"
-                    alt="{{ theme_option('site_title') }}"
+                    alt="{{ Theme::getSiteTitle() }}"
                 >
             @endif
         </a>
@@ -81,7 +80,7 @@
                 <div class="ps-sidebar__footer">
                     <div class="ps-copyright">
                         @if ($logo)
-                            <a href="{{ BaseHelper::getHomepageUrl() }}" title="{{ $siteTitle = theme_option('site_title') }}">
+                            <a href="{{ BaseHelper::getHomepageUrl() }}" title="{{ $siteTitle = Theme::getSiteTitle() }}">
                                 <img
                                     src="{{ RvMedia::getImageUrl($logo) }}"
                                     alt="{{ $siteTitle }}"

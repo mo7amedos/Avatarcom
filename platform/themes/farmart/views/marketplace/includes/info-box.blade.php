@@ -1,7 +1,7 @@
 <div class="vendor-info-box">
     <div class="vendor-info-summary-wrapper">
         <div class="vendor-info-summary">
-            @php $coverImage = $store->getMetadata('background', true); @endphp
+            @php $coverImage = $store->getMetaData('background', true); @endphp
             <div
                 class="vendor-info"
                 @if ($coverImage) style="background-image: url({{ RvMedia::getImageUrl($coverImage) }}); background-repeat: no-repeat;
@@ -59,27 +59,43 @@
                         </div>
                         <div class="col-lg-5">
                             <div class="store-social-wrapper mt-4 mt-md-0 px-3">
-                                @if (!MarketplaceHelper::hideStoreSocialLinks() && ($socials = $store->getMetaData('socials', true)))
-                                    <ul class="store-social text-lg-end">
-                                        @foreach ((array) $socials as $k => $link)
-                                            <li>
-                                                <a
-                                                    class="social-{{ $k }}"
-                                                    href="{{ $link }}"
-                                                    target="_blank"
-                                                >
-                                                    <span class="svg-icon">
-                                                        <svg>
-                                                            <use
-                                                                href="#svg-icon-{{ $k }}"
-                                                                xlink:href="#svg-icon-{{ $k }}"
-                                                            ></use>
-                                                        </svg>
-                                                    </span>
-                                                </a>
-                                            </li>
-                                        @endforeach
-                                    </ul>
+                                @if (!MarketplaceHelper::hideStoreSocialLinks())
+                                    @if ($socials = $store->getMetaData('social_links', true)))
+                                        <ul class="store-social text-lg-end">
+                                            @foreach (MarketplaceHelper::getAllowedSocialLinks() as $key => $social)
+                                                @continue(! Arr::get($socials, $key))
+
+                                                <li>
+                                                    <a href="{{ Arr::get($social, 'url') . Arr::get($socials, $key) }}" target="_blank">
+                                                        @if ($icon = Arr::get($social, 'icon'))
+                                                            <x-core::icon :name="'ti ti-brand-' . $icon" />
+                                                        @endif
+                                                    </a>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    @elseif ($socials = $store->getMetaData('socials', true))
+                                        <ul class="store-social text-lg-end">
+                                            @foreach ((array) $socials as $k => $link)
+                                                <li>
+                                                    <a
+                                                        class="social-{{ $k }}"
+                                                        href="{{ $link }}"
+                                                        target="_blank"
+                                                    >
+                                                        <span class="svg-icon">
+                                                            <svg>
+                                                                <use
+                                                                    href="#svg-icon-{{ $k }}"
+                                                                    xlink:href="#svg-icon-{{ $k }}"
+                                                                ></use>
+                                                            </svg>
+                                                        </span>
+                                                    </a>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    @endif
                                 @endif
                             </div>
                             <ul class="vendor-store-info mt-4 text-lg-end px-3">

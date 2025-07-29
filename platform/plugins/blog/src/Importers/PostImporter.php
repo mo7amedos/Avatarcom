@@ -79,7 +79,7 @@ class PostImporter extends Importer implements WithMapping
             ->map(function (Post $post) { // @phpstan-ignore-line
                 return [
                     ...$post->toArray(),
-                    'slug' => $post->slugable->key,
+                    'slug' => $post->slugable?->key,
                     'description' => Str::limit($post->description, 50),
                     'content' => Str::limit($post->content),
                     'tags' => $post->tags->pluck('name')->implode(', '),

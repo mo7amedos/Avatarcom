@@ -8,7 +8,7 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasTable('ec_product_categorizables')) {
-            Schema::create('ec_product_categorizables', function (Blueprint $table) {
+            Schema::create('ec_product_categorizables', function (Blueprint $table): void {
                 $table->foreignId('category_id')->index();
                 $table->foreignId('reference_id')->index();
                 $table->string('reference_type', 120)->index();

@@ -8,6 +8,7 @@ use Botble\Base\Forms\FieldOptions\MediaImageFieldOption;
 use Botble\Base\Forms\FieldOptions\NameFieldOption;
 use Botble\Base\Forms\FieldOptions\SortOrderFieldOption;
 use Botble\Base\Forms\FieldOptions\StatusFieldOption;
+use Botble\Base\Forms\FieldOptions\TextFieldOption;
 use Botble\Base\Forms\Fields\MediaImageField;
 use Botble\Base\Forms\Fields\NumberField;
 use Botble\Base\Forms\Fields\OnOffField;
@@ -68,6 +69,13 @@ class CityForm extends FormAbstract
                         :
                         [0 => trans('plugins/location::city.select_state')]) + $states,
             ])
+            ->add(
+                'zip_code',
+                TextField::class,
+                TextFieldOption::make()
+                    ->label(trans('plugins/location::city.zip_code'))
+                    ->helperText(trans('plugins/location::city.zip_code_helper'))
+            )
             ->add('order', NumberField::class, SortOrderFieldOption::make())
             ->add('is_default', OnOffField::class, IsDefaultFieldOption::make())
             ->add('status', SelectField::class, StatusFieldOption::make())

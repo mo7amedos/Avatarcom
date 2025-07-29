@@ -16,6 +16,40 @@ class Review extends BaseModel
 {
     protected $table = 'ec_reviews';
 
+    /**
+     * Check if a customer has already reviewed a product
+     *
+     * @param int|string $customerId
+     * @param int|string $productId
+     * @return bool
+     */
+    public static function hasUserReviewed(int|string $customerId, int|string $productId): bool
+    {
+        return static::query()
+            ->where([
+                'customer_id' => $customerId,
+                'product_id' => $productId,
+            ])
+            ->exists();
+    }
+
+    /**
+     * Get a customer's review for a product
+     *
+     * @param int|string $customerId
+     * @param int|string $productId
+     * @return Review|null
+     */
+    public static function getUserReview(int|string $customerId, int|string $productId): ?Review
+    {
+        return static::query()
+            ->where([
+                'customer_id' => $customerId,
+                'product_id' => $productId,
+            ])
+            ->first();
+    }
+
     protected $fillable = [
         'product_id',
         'customer_id',
@@ -35,13 +69,13 @@ class Review extends BaseModel
 
     protected static function booted(): void
     {
-        static::creating(function (Review $review) {
+        static::creating(function (Review $review): void {
             if (! $review->images || ! is_array($review->images) || ! count($review->images)) {
                 $review->images = null;
             }
         });
 
-        static::updating(function (Review $review) {
+        static::updating(function (Review $review): void {
             if (! $review->images || ! is_array($review->images) || ! count($review->images)) {
                 $review->images = null;
             }
@@ -75,6 +109,27 @@ class Review extends BaseModel
         return Attribute::get(fn () => $this->user->name ?: $this->customer_name);
     }
 
+    protected function displayName(): Attribute
+    {
+        return Attribute::get(function () {
+            $customerName = $this->userName;
+
+            if (! get_ecommerce_setting('show_customer_full_name', true)) {
+                $customerNameCharCount = strlen($customerName);
+
+                if ($customerNameCharCount > 7) {
+                    $customerName = Str::mask($customerName, '*', $customerNameCharCount - 5, 5);
+                } elseif ($customerNameCharCount > 3) {
+                    $customerName = Str::mask($customerName, '*', $customerNameCharCount - 3, 3);
+                } else {
+                    $customerName = Str::mask($customerName, '*', 1, -1);
+                }
+            }
+
+            return $customerName;
+        });
+    }
+
     protected function orderCreatedAt(): Attribute
     {
         return Attribute::get(fn () => $this->user->orders()->first()?->created_at);
@@ -90,6 +145,10 @@ class Review extends BaseModel
         return Attribute::get(function () {
             if ($this->user->avatar) {
                 return RvMedia::getImageUrl($this->user->avatar, 'thumb');
+            }
+
+            if ($defaultAvatar = get_ecommerce_setting('customer_default_avatar')) {
+                return RvMedia::getImageUrl($defaultAvatar);
             }
 
             try {

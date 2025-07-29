@@ -38,6 +38,7 @@ use Botble\Ecommerce\Services\HandleShippingFeeService;
 use Botble\Ecommerce\Services\HandleTaxService;
 use Botble\Optimize\Facades\OptimizerHelper;
 use Botble\Payment\Enums\PaymentStatusEnum;
+use Botble\Payment\Supports\PaymentFeeHelper;
 use Botble\Payment\Supports\PaymentHelper;
 use Botble\Theme\Facades\Theme;
 use Exception;
@@ -66,9 +67,7 @@ class PublicCheckoutController extends BaseController
         HandleTaxService $handleTaxService,
         HandleCheckoutOrderData $handleCheckoutOrderData,
     ) {
-        if (! EcommerceHelper::isCartEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isCartEnabled(), 404);
 
         if (! EcommerceHelper::isEnabledGuestCheckout() && ! auth('customer')->check()) {
             return $this
@@ -91,7 +90,11 @@ class PublicCheckoutController extends BaseController
             $request->input('error') == 1 &&
             $request->input('error_type') == 'payment'
         ) {
-            $request->session()->flash('error_msg', __('Payment failed!'));
+            $message = $request->input('error_message') ?: __('Payment failed! Something wrong with your payment. Please try again.');
+
+            $request->session()->flash('error_msg', $message);
+
+            return redirect()->to(route('public.checkout.information', $token))->with('error_msg', $message);
         }
 
         $sessionCheckoutData = OrderHelper::getOrderSessionData($token);
@@ -151,6 +154,7 @@ class PublicCheckoutController extends BaseController
         $promotionDiscountAmount = $checkoutOrderData->promotionDiscountAmount;
         $couponDiscountAmount = $checkoutOrderData->couponDiscountAmount;
         $shippingAmount = $checkoutOrderData->shippingAmount;
+        $paymentFee = $checkoutOrderData->paymentFee;
 
         $data = compact(
             'token',
@@ -163,6 +167,7 @@ class PublicCheckoutController extends BaseController
             'sessionCheckoutData',
             'products',
             'isShowAddressForm',
+            'paymentFee',
         );
 
         if (auth('customer')->check()) {
@@ -195,20 +200,25 @@ class PublicCheckoutController extends BaseController
 
         $discounts = apply_filters('ecommerce_checkout_discounts_query', $discountsQuery, $products)->get();
 
-        $rawTotal = Cart::instance('cart')->rawTotal();
-        $orderAmount = max($rawTotal - $promotionDiscountAmount - $couponDiscountAmount, 0);
-        $orderAmount += (float) $shippingAmount;
+        $rawTotal = $checkoutOrderData->rawTotal;
+        $orderAmount = $checkoutOrderData->orderAmount;
 
         $data = [...$data, 'discounts' => $discounts, 'rawTotal' => $rawTotal, 'orderAmount' => $orderAmount];
 
-        app(GoogleTagManager::class)->beginCheckout($products->all(), $orderAmount);
-        app(FacebookPixel::class)->checkout($products->all(), $orderAmount);
+        $productsArray = $products->all();
+
+        app(GoogleTagManager::class)->beginCheckout($productsArray, $orderAmount);
+        app(FacebookPixel::class)->checkout($productsArray, $orderAmount);
 
         $checkoutView = Theme::getThemeNamespace('views.ecommerce.orders.checkout');
 
         if (view()->exists($checkoutView)) {
             return view($checkoutView, $data);
         }
+
+        add_filter('payment_order_total_amount', function () use ($orderAmount, $paymentFee) {
+            return $orderAmount - $paymentFee;
+        }, 120);
 
         return view(
             'plugins/ecommerce::orders.checkout',
@@ -357,6 +367,19 @@ class PublicCheckoutController extends BaseController
 
         $products = Cart::instance('cart')->products();
 
+        // Extract shipping values once to avoid repetition
+        $shippingMethod = $request->input('shipping_method');
+        $shippingOption = $request->input('shipping_option');
+
+        // Convert arrays to strings if needed
+        if (is_array($shippingMethod)) {
+            $shippingMethod = $shippingMethod[0] ?? ShippingMethodEnum::DEFAULT;
+        }
+
+        if (is_array($shippingOption)) {
+            $shippingOption = $shippingOption[0] ?? null;
+        }
+
         if (is_plugin_active('marketplace')) {
             $sessionData = apply_filters(
                 HANDLE_PROCESS_ORDER_DATA_ECOMMERCE,
@@ -380,8 +403,8 @@ class PublicCheckoutController extends BaseController
             $request->merge([
                 'amount' => Cart::instance('cart')->rawTotal(),
                 'user_id' => $currentUserId,
-                'shipping_method' => $request->input('shipping_method', ShippingMethodEnum::DEFAULT),
-                'shipping_option' => $request->input('shipping_option'),
+                'shipping_method' => $shippingMethod ?? ShippingMethodEnum::DEFAULT,
+                'shipping_option' => $shippingOption,
                 'shipping_amount' => 0,
                 'tax_amount' => Cart::instance('cart')->rawTax(),
                 'sub_total' => Cart::instance('cart')->rawSubTotal(),
@@ -432,7 +455,7 @@ class PublicCheckoutController extends BaseController
                     'order_id' => $sessionData['created_order_id'],
                     'product_id' => $cartItem->id,
                     'product_name' => $cartItem->name,
-                    'product_image' => $product->original_product->image,
+                    'product_image' => $cartItem->options['image'],
                     'qty' => $cartItem->qty,
                     'weight' => $weight,
                     'price' => $cartItem->price,
@@ -462,9 +485,7 @@ class PublicCheckoutController extends BaseController
         HandleApplyCouponService $applyCouponService,
         HandleRemoveCouponService $removeCouponService
     ) {
-        if (! EcommerceHelper::isCartEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isCartEnabled(), 404);
 
         if ($token !== session('tracked_start_checkout')) {
             $order = Order::query()->where(['token' => $token, 'is_finished' => false])->first();
@@ -496,8 +517,8 @@ class PublicCheckoutController extends BaseController
                         ->where('id', $storeData['created_order_id'])
                         ->first();
 
-                    if ($order && $order->shipping_amount != $storeData['shipping_amount']) {
-                        $order->update(['shipping_amount' => $storeData['shipping_amount']]);
+                    if ($order && $order->shipping_amount != Arr::get($storeData, 'shipping_amount', 0)) {
+                        $order->update(['shipping_amount' => Arr::get($storeData, 'shipping_amount', 0)]);
                     }
                 }
             }
@@ -516,8 +537,8 @@ class PublicCheckoutController extends BaseController
                     ->where('id', $sessionData['created_order_id'])
                     ->first();
 
-                if ($order && $order->shipping_amount != $sessionData['shipping_amount']) {
-                    $order->update(['shipping_amount' => $sessionData['shipping_amount']]);
+                if ($order && $order->shipping_amount != Arr::get($sessionData, 'shipping_amount', 0)) {
+                    $order->update(['shipping_amount' => Arr::get($sessionData, 'shipping_amount', 0)]);
                 }
             }
         }
@@ -537,9 +558,7 @@ class PublicCheckoutController extends BaseController
         HandleRemoveCouponService $removeCouponService,
         HandleApplyPromotionsService $handleApplyPromotionsService
     ) {
-        if (! EcommerceHelper::isCartEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isCartEnabled(), 404);
 
         if (! EcommerceHelper::isEnabledGuestCheckout() && ! auth('customer')->check()) {
             return $this
@@ -582,8 +601,10 @@ class PublicCheckoutController extends BaseController
                 );
         }
 
-        if (($maximumQuantity = EcommerceHelper::getMaximumOrderQuantity()) > 0
-            && $totalQuality > $maximumQuantity) {
+        if (
+            ($maximumQuantity = EcommerceHelper::getMaximumOrderQuantity()) > 0
+            && $totalQuality > $maximumQuantity
+        ) {
             return $this
                 ->httpResponse()
                 ->setError()
@@ -602,8 +623,7 @@ class PublicCheckoutController extends BaseController
                     __('Minimum order amount is :amount, you need to buy more :more to place an order!', [
                         'amount' => format_price(EcommerceHelper::getMinimumOrderAmount()),
                         'more' => format_price(
-                            EcommerceHelper::getMinimumOrderAmount() - Cart::instance('cart')
-                                ->rawSubTotal()
+                            EcommerceHelper::getMinimumOrderAmount() - Cart::instance('cart')->rawSubTotal()
                         ),
                     ])
                 );
@@ -645,7 +665,7 @@ class PublicCheckoutController extends BaseController
                     ->setMessage(
                         __('Maximum order quantity of product :product is :quantity! ', [
                             'product' => $product->original_product->name,
-                            'quantity' => $product->minimum_order_quantity,
+                            'quantity' => $product->maximum_order_quantity,
                         ])
                     );
             }
@@ -684,6 +704,12 @@ class PublicCheckoutController extends BaseController
 
         $isAvailableShipping = EcommerceHelper::isAvailableShipping($products);
         $shippingMethodInput = $request->input('shipping_method', ShippingMethodEnum::DEFAULT);
+        $shippingOption = $request->input('shipping_option');
+
+        // Convert arrays to strings if needed
+        if (is_array($shippingOption)) {
+            $shippingOption = $shippingOption[0] ?? null;
+        }
 
         $shippingAmount = 0;
         $shippingData = [];
@@ -700,7 +726,7 @@ class PublicCheckoutController extends BaseController
             $shippingMethodData = $shippingFeeService->execute(
                 $shippingData,
                 $shippingMethodInput,
-                $request->input('shipping_option')
+                $shippingOption
             );
 
             $shippingMethod = Arr::first($shippingMethodData);
@@ -736,13 +762,24 @@ class PublicCheckoutController extends BaseController
 
         $orderAmount += (float) $shippingAmount;
 
+        // Add payment fee if applicable
+        $paymentFee = 0;
+        if ($paymentMethod && is_plugin_active('payment')) {
+            $paymentFee = PaymentFeeHelper::calculateFee($paymentMethod, $orderAmount);
+            $orderAmount += $paymentFee;
+        }
+
+        // Store payment fee in request
+        $request->merge(['payment_fee' => $paymentFee]);
+
         $request->merge([
             'amount' => $orderAmount ?: 0,
             'currency' => $request->input('currency', strtoupper(get_application_currency()->title)),
             'user_id' => $currentUserId,
             'shipping_method' => $isAvailableShipping ? $shippingMethodInput : '',
-            'shipping_option' => $isAvailableShipping ? $request->input('shipping_option') : null,
+            'shipping_option' => $isAvailableShipping ? $shippingOption : null,
             'shipping_amount' => (float) $shippingAmount,
+            'payment_fee' => (float) $paymentFee,
             'tax_amount' => Cart::instance('cart')->rawTax(),
             'sub_total' => Cart::instance('cart')->rawSubTotal(),
             'coupon_code' => session('applied_coupon_code'),
@@ -764,7 +801,7 @@ class PublicCheckoutController extends BaseController
             'order_id' => $order->getKey(),
         ]);
 
-        if ($isAvailableShipping) {
+        if ($isAvailableShipping && ! Shipment::query()->where(['order_id' => $order->getKey()])->exists()) {
             Shipment::query()->create([
                 'order_id' => $order->getKey(),
                 'user_id' => 0,
@@ -806,7 +843,7 @@ class PublicCheckoutController extends BaseController
                 'order_id' => $order->getKey(),
                 'product_id' => $cartItem->id,
                 'product_name' => $cartItem->name,
-                'product_image' => $product->original_product->image,
+                'product_image' => $cartItem->options['image'],
                 'qty' => $cartItem->qty,
                 'weight' => Arr::get($cartItem->options, 'weight', 0),
                 'price' => $cartItem->price,
@@ -878,9 +915,7 @@ class PublicCheckoutController extends BaseController
 
     public function getCheckoutSuccess(string $token)
     {
-        if (! EcommerceHelper::isCartEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isCartEnabled(), 404);
 
         /**
          * @var Order $order
@@ -888,20 +923,8 @@ class PublicCheckoutController extends BaseController
         $order = Order::query()
             ->where('token', $token)
             ->with(['address', 'products', 'taxInformation'])
-            ->orderByDesc('id')
-            ->first();
-
-        if (! $order) {
-            abort(404);
-        }
-
-        if (is_plugin_active('payment') && (float) $order->amount && ! $order->payment_id) {
-            return $this
-                ->httpResponse()
-                ->setError()
-                ->setNextUrl(PaymentHelper::getCancelURL())
-                ->setMessage(__('Payment failed!'));
-        }
+            ->latest('id')
+            ->firstOrFail();
 
         if (session('tracked_start_checkout')) {
             app(GoogleTagManager::class)->purchase($order);
@@ -921,9 +944,7 @@ class PublicCheckoutController extends BaseController
 
     public function postApplyCoupon(ApplyCouponRequest $request, HandleApplyCouponService $handleApplyCouponService)
     {
-        if (! EcommerceHelper::isCartEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isCartEnabled(), 404);
 
         $result = [
             'error' => false,
@@ -953,9 +974,7 @@ class PublicCheckoutController extends BaseController
 
     public function postRemoveCoupon(Request $request, HandleRemoveCouponService $removeCouponService)
     {
-        if (! EcommerceHelper::isCartEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isCartEnabled(), 404);
 
         if (is_plugin_active('marketplace')) {
             $products = Cart::instance('cart')->products();
@@ -983,9 +1002,7 @@ class PublicCheckoutController extends BaseController
 
     public function getCheckoutRecover(string $token, Request $request)
     {
-        if (! EcommerceHelper::isCartEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isCartEnabled(), 404);
 
         if (! EcommerceHelper::isEnabledGuestCheckout() && ! auth('customer')->check()) {
             return $this
@@ -1003,11 +1020,7 @@ class PublicCheckoutController extends BaseController
                 'is_finished' => false,
             ])
             ->with(['products', 'address'])
-            ->first();
-
-        if (! $order) {
-            abort(404);
-        }
+            ->firstOrFail();
 
         if (session()->has('tracked_start_checkout') && session('tracked_start_checkout') == $token) {
             $sessionCheckoutData = OrderHelper::getOrderSessionData($token);

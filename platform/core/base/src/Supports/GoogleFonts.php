@@ -80,11 +80,18 @@ class GoogleFonts
         }
 
         if (! str_contains($localizedCss, $this->files->url('fonts'))) {
+            $uploadFolder = 'storage';
+
+            if (setting('media_customize_upload_path')) {
+                $uploadFolder = trim(setting('media_upload_path'), '/');
+            }
+
             $localizedCss = preg_replace(
-                '/(http|https):\/\/.*?\/storage\/fonts\//i',
+                '/(http|https):\/\/.*?\/' . $uploadFolder . '\/fonts\//i',
                 $this->files->url('fonts/'),
                 $localizedCss
             );
+
             $this->files->put($fontCssPath, $localizedCss);
         }
 
@@ -110,7 +117,11 @@ class GoogleFonts
 
         $localizedCss = $response->body();
 
-        $extractedFonts = $this->extractFontUrls($response);
+        try {
+            $extractedFonts = $this->extractFontUrls($response);
+        } catch (Exception) {
+            return null;
+        }
 
         $this->setDisk();
 
@@ -149,7 +160,7 @@ class GoogleFonts
         $matches = [];
         preg_match_all('/url\((https:\/\/fonts.gstatic.com\/[^)]+)\)/', $css, $matches);
 
-        return $matches[1] ?? [];
+        return $matches[1];
     }
 
     protected function localizeFontUrl(string $path): string
@@ -178,17 +189,30 @@ class GoogleFonts
         ];
     }
 
+    protected static ?array $fontsCache = null;
+
     public static function getFonts(): array
     {
+        // Lazy load fonts only when needed
+        if (static::$fontsCache !== null) {
+            return static::$fontsCache;
+        }
+
         $path = core_path('base/resources/data/google-fonts.json');
 
         try {
             if (! File::exists($path)) {
+                static::$fontsCache = [];
+
                 return [];
             }
 
-            return File::json($path);
+            static::$fontsCache = File::json($path);
+
+            return static::$fontsCache;
         } catch (Exception) {
+            static::$fontsCache = [];
+
             return [];
         }
     }

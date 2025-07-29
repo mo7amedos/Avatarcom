@@ -21,8 +21,8 @@ class GetStartedServiceProvider extends ServiceProvider
             ->loadRoutes()
             ->loadAndPublishViews();
 
-        $this->app['events']->listen(RenderingDashboardWidgets::class, function () {
-            add_action(DASHBOARD_ACTION_REGISTER_SCRIPTS, function () {
+        $this->app['events']->listen(RenderingDashboardWidgets::class, function (): void {
+            add_action(DASHBOARD_ACTION_REGISTER_SCRIPTS, function (): void {
                 if ($this->shouldShowGetStartedPopup()) {
                     Assets::addScriptsDirectly('vendor/core/packages/get-started/js/get-started.js')
                         ->addStylesDirectly('vendor/core/packages/get-started/css/get-started.css')

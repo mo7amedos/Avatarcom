@@ -1,4 +1,4 @@
-@if (!$isRendered)
+@if (! $isRendered || request()->ajax() || request()->wantsJson())
     <script
         src="{{ $url }}"
         async

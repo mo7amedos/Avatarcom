@@ -28,7 +28,7 @@ class InstallerServiceProvider extends ServiceProvider
             ->loadRoutes()
             ->publishAssets();
 
-        $this->app['events']->listen(RouteMatched::class, function () {
+        $this->app['events']->listen(RouteMatched::class, function (): void {
             if (defined('INSTALLED_SESSION_NAME')) {
                 $router = $this->app->make('router');
 
@@ -39,7 +39,7 @@ class InstallerServiceProvider extends ServiceProvider
             }
         });
 
-        $this->app['events']->listen([UpdatedEvent::class, FinishedSeederEvent::class], function () {
+        $this->app['events']->listen([UpdatedEvent::class, FinishedSeederEvent::class], function (): void {
             BaseHelper::saveFileData(storage_path(INSTALLED_SESSION_NAME), Carbon::now()->toDateTimeString());
         });
     }

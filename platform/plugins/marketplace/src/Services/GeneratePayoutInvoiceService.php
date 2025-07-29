@@ -10,6 +10,7 @@ use Botble\Marketplace\Enums\PayoutPaymentMethodsEnum;
 use Botble\Marketplace\Enums\WithdrawalStatusEnum;
 use Botble\Marketplace\Models\Withdrawal;
 use Botble\Media\Facades\RvMedia;
+use Botble\Theme\Facades\Theme;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 
@@ -27,17 +28,17 @@ class GeneratePayoutInvoiceService
         return $this;
     }
 
-    public function stream(): Response
+    public function stream($fileName = 'document.pdf'): Response
     {
-        return $this->generateInvoice()->stream();
+        return $this->generateInvoice()->stream($fileName);
     }
 
-    public function download(): Response
+    public function download($fileName = 'document.pdf'): Response
     {
-        return $this->generateInvoice()->download();
+        return $this->generateInvoice()->download($fileName);
     }
 
-    protected function generateInvoice(): \Barryvdh\DomPDF\PDF
+    protected function generateInvoice(): Pdf
     {
         return (new Pdf())
             ->templatePath($this->getTemplatePath())
@@ -48,7 +49,7 @@ class GeneratePayoutInvoiceService
             ->twigExtensions([
                 new TwigExtension(),
             ])
-            ->compile();
+            ->setProcessingLibrary(get_ecommerce_setting('invoice_processing_library', 'dompdf'));
     }
 
     protected function getInvoiceData(): array
@@ -57,7 +58,7 @@ class GeneratePayoutInvoiceService
         $state = $this->getCompanyState();
         $city = $this->getCompanyCity();
 
-        $logo = get_ecommerce_setting('company_logo_for_invoicing') ?: (theme_option('logo_in_invoices') ?: theme_option('logo'));
+        $logo = get_ecommerce_setting('company_logo_for_invoicing') ?: (theme_option('logo_in_invoices') ?: Theme::getLogo());
 
         $companyName = get_ecommerce_setting('company_name_for_invoicing') ?: get_ecommerce_setting('store_name');
         $companyAddress = get_ecommerce_setting('company_address_for_invoicing');
@@ -119,7 +120,11 @@ class GeneratePayoutInvoiceService
 
     public function getContent(): string
     {
-        return (new Pdf())->getContent($this->getTemplatePath(), $this->getCustomizedTemplatePath());
+        return (new Pdf())
+            ->twigExtensions([
+                new TwigExtension(),
+            ])
+            ->getContent($this->getTemplatePath(), $this->getCustomizedTemplatePath());
     }
 
     public function getTemplatePath(): string

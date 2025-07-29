@@ -23,11 +23,13 @@ class Brand extends BaseModel
 
     protected $casts = [
         'status' => BaseStatusEnum::class,
+        'is_featured' => 'bool',
+        'order' => 'int',
     ];
 
     protected static function booted(): void
     {
-        self::deleted(function (Brand $brand) {
+        self::deleted(function (Brand $brand): void {
             $brand->categories()->detach();
         });
     }

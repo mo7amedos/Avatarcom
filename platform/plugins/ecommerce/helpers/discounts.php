@@ -61,7 +61,7 @@ if (! function_exists('get_discount_description')) {
 
                 break;
             default:
-                if ($type === DiscountTypeOptionEnum::PERCENTAGE) {
+                if ($type == DiscountTypeOptionEnum::PERCENTAGE) {
                     $description[] = __('Discount :percentage%', ['percentage' => $value]);
                 } else {
                     $description[] = __('Discount :amount', ['amount' => format_price($value)]);

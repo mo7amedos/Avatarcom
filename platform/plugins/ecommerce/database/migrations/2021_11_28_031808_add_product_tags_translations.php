@@ -8,7 +8,7 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasTable('ec_product_tags_translations')) {
-            Schema::create('ec_product_tags_translations', function (Blueprint $table) {
+            Schema::create('ec_product_tags_translations', function (Blueprint $table): void {
                 $table->string('lang_code');
                 $table->foreignId('ec_product_tags_id');
                 $table->string('name')->nullable();

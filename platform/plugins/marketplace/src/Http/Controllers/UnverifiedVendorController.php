@@ -129,9 +129,7 @@ class UnverifiedVendorController extends BaseController
 
         $storage = Storage::disk('local');
 
-        if (! $storage->exists($vendor->store->certificate_file)) {
-            abort(404);
-        }
+        abort_unless($storage->exists($vendor->store->certificate_file), 404);
 
         return response()->file($storage->path($vendor->store->certificate_file));
     }
@@ -147,9 +145,7 @@ class UnverifiedVendorController extends BaseController
 
         $storage = Storage::disk('local');
 
-        if (! $storage->exists($vendor->store->government_id_file)) {
-            abort(404);
-        }
+        abort_unless($storage->exists($vendor->store->government_id_file), 404);
 
         return response()->file($storage->path($vendor->store->government_id_file));
     }

@@ -66,7 +66,7 @@ class ReportController extends BaseController
         $today = Carbon::now();
 
         $processingOrders = Order::query()
-            ->where(function (Builder $query) {
+            ->where(function (Builder $query): void {
                 $query
                     ->whereNotIn('status', [OrderStatusEnum::CANCELED, OrderStatusEnum::COMPLETED])
                     ->orWhereNull('completed_at');
@@ -76,7 +76,7 @@ class ReportController extends BaseController
             ->count();
 
         $completedOrders = Order::query()
-            ->where(function (Builder $query) {
+            ->where(function (Builder $query): void {
                 $query
                     ->where('status', OrderStatusEnum::COMPLETED)
                     ->orWhereNotNull('completed_at');

@@ -25,7 +25,7 @@ class ProductCrossSalePriceService extends ProductPriceHandlerService
 
             if ($crossSaleProduct->variations()->exists()) {
                 $crossSaleProduct->loadMissing('variations.product');
-                $crossSaleProduct->variations->each(function ($variation) {
+                $crossSaleProduct->variations->each(function ($variation): void {
                     $this->appliedProducts[$variation->product->getKey()] = $variation->product;
                 });
             }

@@ -13,7 +13,7 @@ class CountryRequest extends Request
     {
         return [
             'name' => ['required', 'string', 'max:250'],
-            'code' => ['nullable', 'string', 'max:120'],
+            'code' => ['required', 'string', 'max:1230'],
             'nationality' => ['nullable', 'string', 'max:120'],
             'order' => ['required', 'integer', 'min:0', 'max:127'],
             'status' => [Rule::in(BaseStatusEnum::values())],

@@ -174,7 +174,7 @@ class PanelSection implements PanelSectionContract
         return $this->view;
     }
 
-    public function withEmptyStateView(string $view = null): static
+    public function withEmptyStateView(?string $view = null): static
     {
         $this->emptyState = true;
 
@@ -266,7 +266,7 @@ class PanelSection implements PanelSectionContract
 
         $content = apply_filters('panel_section_items_content', $content, $this);
 
-        return tap($content, function (string $content) use ($items) {
+        return tap($content, function (string $content) use ($items): void {
             PanelSectionItemsRendered::dispatch($this, $items, $content);
 
             do_action('panel_section_items_rendered', $this, $items, $content);
@@ -303,7 +303,7 @@ class PanelSection implements PanelSectionContract
 
         return tap(
             $content,
-            function (string $content) {
+            function (string $content): void {
                 PanelSectionRendered::dispatch($this, $content);
 
                 do_action('panel_section_rendered', $this, $content);

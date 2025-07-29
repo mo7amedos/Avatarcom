@@ -6,12 +6,12 @@ use Botble\Ecommerce\Http\Middleware\CheckCompareEnabledMiddleware;
 use Botble\Theme\Facades\Theme;
 use Illuminate\Support\Facades\Route;
 
-Theme::registerRoutes(function () {
+Theme::registerRoutes(function (): void {
     Route::middleware(CheckCompareEnabledMiddleware::class)
         ->controller(CompareController::class)
         ->prefix(EcommerceHelper::getPageSlug('compare'))
         ->name('public.')
-        ->group(function () {
+        ->group(function (): void {
             Route::get('/', 'index')->name('compare');
             Route::post('{productId}', 'store')->name('compare.add')->wherePrimaryKey('productId');
             Route::delete('{productId}', 'destroy')->name('compare.remove')->wherePrimaryKey('productId');

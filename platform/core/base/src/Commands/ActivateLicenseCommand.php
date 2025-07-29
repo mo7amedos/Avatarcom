@@ -36,8 +36,8 @@ class ActivateLicenseCommand extends Command
                     'purchase_code' => $purchasedCode,
                 ],
                 [
-                    'buyer' => 'required|string|min:2|max:60',
-                    'purchase_code' => 'required|string|min:19|max:36',
+                    'buyer' => ['required', 'string', 'min:2', 'max:60'],
+                    'purchase_code' => ['required', 'string', 'min:19', 'max:36'],
                 ]
             )->stopOnFirstFailure();
 

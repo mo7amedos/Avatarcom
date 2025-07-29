@@ -7,9 +7,9 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        rescue(function () {
+        rescue(function (): void {
             if (! Schema::hasColumn('ec_shipments', 'metadata')) {
-                Schema::table('ec_shipments', function (Blueprint $table) {
+                Schema::table('ec_shipments', function (Blueprint $table): void {
                     $table->renameColumn('transaction', 'metadata');
                     $table->string('rate_id', 120)->after('shipment_id')->nullable();
                 });
@@ -19,7 +19,7 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::table('ec_shipments', function (Blueprint $table) {
+        Schema::table('ec_shipments', function (Blueprint $table): void {
             $table->dropColumn('rate_id');
             $table->renameColumn('metadata', 'transaction');
         });

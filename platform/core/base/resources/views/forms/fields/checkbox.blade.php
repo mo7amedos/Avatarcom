@@ -8,6 +8,12 @@
     :showError="$showError"
     :nameKey="$nameKey"
 >
+    @php
+        if (isset($options['label_attr'])) {
+            $options['attr']['label_attr'] = $options['label_attr'];
+        }
+    @endphp
+
     <x-core::form.checkbox
         :label="($showLabel && $options['label'] !== false && $options['label_show']) ? $options['label'] : null"
         :name="$name"

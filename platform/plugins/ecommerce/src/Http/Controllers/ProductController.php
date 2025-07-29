@@ -60,11 +60,12 @@ class ProductController extends BaseController
 
     public function edit(Product $product, Request $request)
     {
-        if ($product->is_variation) {
-            abort(404);
-        }
+        abort_if($product->is_variation, 404);
 
         $this->pageTitle(trans('plugins/ecommerce::products.edit', ['name' => $product->name]));
+
+        // Load license codes with their order relationships for displaying order links
+        $product->load(['licenseCodes.assignedOrderProduct.order']);
 
         event(new BeforeEditContentEvent($request, $product));
 

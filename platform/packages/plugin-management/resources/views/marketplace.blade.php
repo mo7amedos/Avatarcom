@@ -1,14 +1,18 @@
 @extends(BaseHelper::getAdminMasterLayoutTemplate())
 
 @section('content')
-    <div role="alert" class="alert alert-warning">
-        Those plugins are from our Botble community <a href="https://marketplace.botble.com/products" target="_blank">marketplace.botble.com/products</a>. We regret to inform
-        you that we cannot assume responsibility for the functionality or support of free plugins, as they are
-        developed and maintained independently. However, we are more than happy to assist with any inquiries or
-        issues related to our official products and services.
-    </div>
+    <x-core::alert
+        type="warning"
+        title="Important notes:"
+        :important="false"
+    >
+            Those plugins are from our Botble community <a href="https://marketplace.botble.com/products" target="_blank">marketplace.botble.com/products</a>. We regret to inform
+            you that we cannot assume responsibility for the functionality or support of free plugins, as they are
+            developed and maintained independently. However, we are more than happy to assist with any inquiries or
+            issues related to our official products and services.
+    </x-core::alert>
 
-    <plugin-list plugin-list-url="{{ route('plugins.marketplace.ajax.list') }}" plugin-remove-url="{{ route('plugins.remove', '__name__') }}"></plugins-list>
+    <v-plugin-list plugin-list-url="{{ route('plugins.marketplace.ajax.list') }}" plugin-remove-url="{{ route('plugins.remove', '__name__') }}"></v-plugin-list>
 @endsection
 
 @push('footer')

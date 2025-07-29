@@ -16,6 +16,7 @@ class RevenueCard extends Card
         $data = Order::query()
             ->whereDate('created_at', '>=', $this->startDate)
             ->whereDate('created_at', '<=', $this->endDate)
+            ->where('is_finished', true)
             ->select([
                 DB::raw('SUM(COALESCE(amount, 0)) as revenue'),
             ])
@@ -45,6 +46,7 @@ class RevenueCard extends Card
                 ->whereIn('payments.status', [PaymentStatusEnum::COMPLETED, PaymentStatusEnum::PENDING])
                 ->whereDate('payments.created_at', '>=', $this->startDate)
                 ->whereDate('payments.created_at', '<=', $this->endDate)
+                ->where('ec_orders.is_finished', true)
                 ->groupBy('payments.status')
                 ->first();
         } else {
@@ -56,6 +58,7 @@ class RevenueCard extends Card
                 ->where('status', OrderStatusEnum::COMPLETED)
                 ->whereDate('created_at', '>=', $this->startDate)
                 ->whereDate('created_at', '<=', $this->endDate)
+                ->where('is_finished', true)
                 ->groupBy('status')
                 ->first();
         }
@@ -70,6 +73,7 @@ class RevenueCard extends Card
             ->where('status', OrderStatusEnum::COMPLETED)
             ->whereDate('created_at', '>=', $currentPeriod->getStartDate())
             ->whereDate('created_at', '<=', $currentPeriod->getEndDate())
+            ->where('is_finished', true)
             ->select([
                 DB::raw('SUM(COALESCE(amount, 0)) as revenue'),
             ])
@@ -80,6 +84,7 @@ class RevenueCard extends Card
             ->where('status', OrderStatusEnum::COMPLETED)
             ->whereDate('created_at', '>=', $previousPeriod->getStartDate())
             ->whereDate('created_at', '<=', $previousPeriod->getEndDate())
+            ->where('is_finished', true)
             ->select([
                 DB::raw('SUM(COALESCE(amount, 0)) as revenue'),
             ])

@@ -3,7 +3,7 @@
 @php($id = $attributes->get('id', $name) ?? Str::random(8))
 
 <label @class([
-    'form-check form-switch',
+    'form-check form-switch d-inline-block',
     'form-check-single' => $single,
     $wrapperClass,
 ])>

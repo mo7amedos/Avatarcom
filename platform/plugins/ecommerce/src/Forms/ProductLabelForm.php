@@ -2,8 +2,10 @@
 
 namespace Botble\Ecommerce\Forms;
 
+use Botble\Base\Forms\FieldOptions\ColorFieldOption;
 use Botble\Base\Forms\FieldOptions\NameFieldOption;
 use Botble\Base\Forms\FieldOptions\StatusFieldOption;
+use Botble\Base\Forms\Fields\ColorField;
 use Botble\Base\Forms\Fields\SelectField;
 use Botble\Base\Forms\Fields\TextField;
 use Botble\Base\Forms\FormAbstract;
@@ -18,12 +20,20 @@ class ProductLabelForm extends FormAbstract
             ->model(ProductLabel::class)
             ->setValidatorClass(ProductLabelRequest::class)
             ->add('name', TextField::class, NameFieldOption::make())
-            ->add('color', 'customColor', [
-                'label' => trans('plugins/ecommerce::product-label.color'),
-                'attr' => [
-                    'placeholder' => trans('plugins/ecommerce::product-label.color_placeholder'),
-                ],
-            ])
+            ->add(
+                'color',
+                ColorField::class,
+                ColorFieldOption::make()
+                    ->label(trans('plugins/ecommerce::product-label.background_color'))
+            )
+            ->add(
+                'text_color',
+                ColorField::class,
+                ColorFieldOption::make()
+                    ->label(trans('plugins/ecommerce::product-label.text_color'))
+                    ->helperText(trans('plugins/ecommerce::product-label.text_color_helper'))
+                    ->defaultValue('#ffffff')
+            )
             ->add('status', SelectField::class, StatusFieldOption::make())
             ->setBreakFieldPoint('status');
     }

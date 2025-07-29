@@ -1,5 +1,5 @@
 @foreach ($products as $relatedProduct)
-    <div class="list-group-item">
+    <div class="list-group-item px-0 px-md-2">
         <div class="row align-items-center">
             <div class="col-auto">
                 <span

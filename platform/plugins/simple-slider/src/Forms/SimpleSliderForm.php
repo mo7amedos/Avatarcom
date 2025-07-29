@@ -39,7 +39,7 @@ class SimpleSliderForm extends FormAbstract
             ->add('description', TextareaField::class, DescriptionFieldOption::make())
             ->add('status', SelectField::class, StatusFieldOption::make())
             ->setBreakFieldPoint('status')
-            ->when($this->model->id, function () {
+            ->when($this->model->id, function (): void {
                 $this->addMetaBoxes([
                     'slider-items' => [
                         'title' => trans('plugins/simple-slider::simple-slider.slide_items'),

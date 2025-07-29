@@ -333,30 +333,33 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
             'attributes' => [],
             'collections' => [],
             'collection' => null,
+            'discounted_only' => false,
         ], $filters);
 
         $isUsingDefaultCurrency = get_application_currency_id() == cms_currency()->getDefaultCurrency()->getKey();
 
-        $currentExchangeRate = get_current_exchange_rate();
-
-        if ($filters['min_price'] && ! $isUsingDefaultCurrency) {
-            $filters['min_price'] = (float) $filters['min_price'] / $currentExchangeRate;
-        }
-
-        if ($filters['max_price'] && ! $isUsingDefaultCurrency) {
-            $filters['max_price'] = (float) $filters['max_price'] / $currentExchangeRate;
-        }
-
         $priceRanges = $filters['price_ranges'];
 
-        if (! empty($priceRanges)) {
-            foreach ($priceRanges as $priceRangeKey => $priceRange) {
-                if ($priceRange['from'] && ! $isUsingDefaultCurrency) {
-                    $priceRanges[$priceRangeKey]['from'] = (float) $priceRange['from'] / $currentExchangeRate;
-                }
+        if (! $isUsingDefaultCurrency) {
+            $currentExchangeRate = get_current_exchange_rate();
 
-                if ($priceRange['to'] && ! $isUsingDefaultCurrency) {
-                    $priceRanges[$priceRangeKey]['to'] = (float) $priceRange['to'] / $currentExchangeRate;
+            if ($filters['min_price']) {
+                $filters['min_price'] = (float) $filters['min_price'] / $currentExchangeRate;
+            }
+
+            if ($filters['max_price']) {
+                $filters['max_price'] = (float) $filters['max_price'] / $currentExchangeRate;
+            }
+
+            if (! empty($priceRanges)) {
+                foreach ($priceRanges as $priceRangeKey => $priceRange) {
+                    if ($priceRange['from']) {
+                        $priceRanges[$priceRangeKey]['from'] = (float) $priceRange['from'] / $currentExchangeRate;
+                    }
+
+                    if ($priceRange['to']) {
+                        $priceRanges[$priceRangeKey]['to'] = (float) $priceRange['to'] / $currentExchangeRate;
+                    }
                 }
             }
         }
@@ -378,6 +381,14 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
             'with' => [],
             'withCount' => [],
         ], $params);
+
+        $params['select'] = [
+            ...$params['select'],
+            'ec_products.with_storehouse_management',
+            'ec_products.stock_status',
+            'ec_products.quantity',
+            'ec_products.allow_checkout_when_out_of_stock',
+        ];
 
         $params['with'] = array_merge(EcommerceHelper::withProductEagerLoadingRelations(), $params['with']);
 
@@ -439,18 +450,28 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
                 return $join->on('products_with_final_price.id', '=', 'ec_products.id');
             });
 
+        // Add custom order for out-of-stock products
+        $this->model = $this->model->orderByRaw('
+                CASE
+                    WHEN ec_products.with_storehouse_management = 0 THEN
+                        CASE WHEN ec_products.stock_status = ? THEN 1 ELSE 0 END
+                    ELSE
+                        CASE WHEN ec_products.quantity <= 0 AND ec_products.allow_checkout_when_out_of_stock = 0 THEN 1 ELSE 0 END
+                END ASC
+            ', [StockStatusEnum::OUT_OF_STOCK]);
+
         if ($keyword = $filters['keyword']) {
             $searchProductsBy = EcommerceHelper::getProductsSearchBy();
             $isPartial = (int) get_ecommerce_setting('search_for_an_exact_phrase', 0) != 1;
 
             if (is_plugin_active('language') && is_plugin_active('language-advanced') && Language::getCurrentLocale() != Language::getDefaultLocale()) {
                 $this->model = $this->model
-                    ->where(function (EloquentBuilder $query) use ($keyword, $searchProductsBy, $isPartial) {
+                    ->where(function (EloquentBuilder $query) use ($keyword, $searchProductsBy, $isPartial): void {
                         $hasWhere = false;
 
                         if (in_array('sku', $searchProductsBy)) {
                             $query
-                                ->where(function (BaseQueryBuilder $subQuery) use ($keyword) { // @phpstan-ignore-line
+                                ->where(function (BaseQueryBuilder $subQuery) use ($keyword): void { // @phpstan-ignore-line
                                     $subQuery->addSearch('ec_products.sku', $keyword, false);
                                 });
 
@@ -462,8 +483,8 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
                             $hasWhere = true;
 
                             $query
-                                ->{$function}('translations', function (EloquentBuilder $query) use ($keyword, $searchProductsBy, $isPartial) {
-                                    $query->where(function (BaseQueryBuilder $subQuery) use ($keyword, $searchProductsBy, $isPartial) { // @phpstan-ignore-line
+                                ->{$function}('translations', function (EloquentBuilder $query) use ($keyword, $searchProductsBy, $isPartial): void {
+                                    $query->where(function (BaseQueryBuilder $subQuery) use ($keyword, $searchProductsBy, $isPartial): void { // @phpstan-ignore-line
                                         if (in_array('name', $searchProductsBy)) {
                                             $subQuery->addSearch('name', $keyword, $isPartial);
                                         }
@@ -479,8 +500,8 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
                             $function = $hasWhere ? 'orWhereHas' : 'whereHas';
                             $hasWhere = true;
 
-                            $query->{$function}('tags', function (EloquentBuilder $query) use ($keyword) {
-                                $query->where(function (BaseQueryBuilder $subQuery) use ($keyword) { // @phpstan-ignore-line
+                            $query->{$function}('tags', function (EloquentBuilder $query) use ($keyword): void {
+                                $query->where(function (BaseQueryBuilder $subQuery) use ($keyword): void { // @phpstan-ignore-line
                                     $subQuery->addSearch('name', $keyword, false);
                                 });
                             });
@@ -490,8 +511,8 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
                             $function = $hasWhere ? 'orWhereHas' : 'whereHas';
                             $hasWhere = true;
 
-                            $query->{$function}('brand.translations', function (EloquentBuilder $query) use ($keyword) {
-                                $query->where(function (BaseQueryBuilder $subQuery) use ($keyword) { // @phpstan-ignore-line
+                            $query->{$function}('brand.translations', function (EloquentBuilder $query) use ($keyword): void {
+                                $query->where(function (BaseQueryBuilder $subQuery) use ($keyword): void { // @phpstan-ignore-line
                                     $subQuery->addSearch('name', $keyword, false);
                                 });
                             });
@@ -500,8 +521,8 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
                         if (in_array('variation_sku', $searchProductsBy)) {
                             $function = $hasWhere ? 'orWhereHas' : 'whereHas';
 
-                            $query->{$function}('variations.product', function (EloquentBuilder $query) use ($keyword) {
-                                $query->where(function (BaseQueryBuilder $subQuery) use ($keyword) { // @phpstan-ignore-line
+                            $query->{$function}('variations.product', function (EloquentBuilder $query) use ($keyword): void {
+                                $query->where(function (BaseQueryBuilder $subQuery) use ($keyword): void { // @phpstan-ignore-line
                                     $subQuery->addSearch('sku', $keyword, false);
                                 });
                             });
@@ -509,12 +530,12 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
                     });
             } else {
                 $this->model = $this->model
-                    ->where(function (EloquentBuilder $query) use ($keyword, $searchProductsBy, $isPartial) {
+                    ->where(function (EloquentBuilder $query) use ($keyword, $searchProductsBy, $isPartial): void {
                         $hasWhere = false;
 
                         if (in_array('name', $searchProductsBy) || in_array('sku', $searchProductsBy) || in_array('description', $searchProductsBy)) {
                             $query
-                                ->where(function (BaseQueryBuilder $subQuery) use ($keyword, $searchProductsBy, $isPartial) { // @phpstan-ignore-line
+                                ->where(function (BaseQueryBuilder $subQuery) use ($keyword, $searchProductsBy, $isPartial): void { // @phpstan-ignore-line
                                     if (in_array('name', $searchProductsBy)) {
                                         $subQuery->addSearch('ec_products.name', $keyword, $isPartial);
                                     }
@@ -535,8 +556,8 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
                             $function = $hasWhere ? 'orWhereHas' : 'whereHas';
                             $hasWhere = true;
 
-                            $query->{$function}('tags', function (EloquentBuilder $query) use ($keyword) {
-                                $query->where(function (BaseQueryBuilder $subQuery) use ($keyword) { // @phpstan-ignore-line
+                            $query->{$function}('tags', function (EloquentBuilder $query) use ($keyword): void {
+                                $query->where(function (BaseQueryBuilder $subQuery) use ($keyword): void { // @phpstan-ignore-line
                                     $subQuery->addSearch('name', $keyword, false);
                                 });
                             });
@@ -546,8 +567,8 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
                             $function = $hasWhere ? 'orWhereHas' : 'whereHas';
                             $hasWhere = true;
 
-                            $query->{$function}('brand', function ($query) use ($keyword) {
-                                $query->where(function ($subQuery) use ($keyword) {
+                            $query->{$function}('brand', function ($query) use ($keyword): void {
+                                $query->where(function ($subQuery) use ($keyword): void {
                                     $subQuery->addSearch('name', $keyword, false);
                                 });
                             });
@@ -556,14 +577,28 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
                         if (in_array('variation_sku', $searchProductsBy)) {
                             $function = $hasWhere ? 'orWhereHas' : 'whereHas';
 
-                            $query->{$function}('variations.product', function ($query) use ($keyword) {
-                                $query->where(function ($subQuery) use ($keyword) {
+                            $query->{$function}('variations.product', function ($query) use ($keyword): void {
+                                $query->where(function ($subQuery) use ($keyword): void {
                                     $subQuery->addSearch('sku', $keyword, false);
                                 });
                             });
                         }
                     });
             }
+
+            $this->model = $this->model
+                ->orderByRaw('
+                            (CASE
+                                WHEN name LIKE ? THEN 4
+                                WHEN name LIKE ? THEN 3
+                                WHEN name LIKE ? THEN 2
+                                ELSE 1
+                            END) DESC
+                        ', [
+                    "{$keyword}",
+                    "%{$keyword}%",
+                    "%{$keyword}%",
+                ]);
         }
 
         // Filter product by min price and max price
@@ -587,7 +622,7 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
 
         // Filter product by price ranges
         if (! empty($priceRanges)) {
-            $this->model = $this->model->where(function (EloquentBuilder $query) use ($priceRanges) {
+            $this->model = $this->model->where(function (EloquentBuilder $query) use ($priceRanges): void {
                 foreach ($priceRanges as $priceRange) {
                     $query->orWhereBetween('products_with_final_price.final_price', [$priceRange['from'], $priceRange['to']]);
                 }
@@ -657,7 +692,7 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
 
                     $this
                         ->model
-                        ->whereExists(function (Builder $query) use ($attributeSet, $attributeIds) {
+                        ->whereExists(function (Builder $query) use ($attributeSet, $attributeIds): void {
                             $query
                                 ->select(DB::raw(1))
                                 ->from('ec_product_variations')
@@ -665,17 +700,17 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
                                 ->join('ec_product_variation_items', 'ec_product_variation_items.variation_id', 'ec_product_variations.id')
                                 ->join('ec_product_attributes', 'ec_product_attributes.id', 'ec_product_variation_items.attribute_id')
                                 ->join('ec_product_attribute_sets', 'ec_product_attribute_sets.id', 'ec_product_attributes.attribute_set_id')
-                                ->when(! EcommerceHelper::showOutOfStockProducts(), function (Builder $query) {
+                                ->when(! EcommerceHelper::showOutOfStockProducts(), function (Builder $query): void {
                                     $query
                                         ->join('ec_products as product_children', 'product_children.id', 'ec_product_variations.product_id')
-                                        ->where(function (Builder $query) {
+                                        ->where(function (Builder $query): void {
                                             $query
-                                                ->where(function ($query) {
+                                                ->where(function ($query): void {
                                                     $query
                                                         ->where('product_children.with_storehouse_management', 0)
                                                         ->whereNot('product_children.stock_status', StockStatusEnum::OUT_OF_STOCK);
                                                 })
-                                                ->orWhere(function ($query) {
+                                                ->orWhere(function ($query): void {
                                                     $query
                                                         ->where('product_children.with_storehouse_management', 1)
                                                         ->where('product_children.quantity', '>', 0);
@@ -689,8 +724,8 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
             } else {
                 $this
                     ->model
-                    ->whereHas('variations', function ($query) use ($attributes) {
-                        $query->whereHas('variationItems', function ($query) use ($attributes) {
+                    ->whereHas('variations', function ($query) use ($attributes): void {
+                        $query->whereHas('variationItems', function ($query) use ($attributes): void {
                             $query->whereIn('attribute_id', $attributes);
                         });
                     });
@@ -699,6 +734,28 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
 
         if (! Arr::get($params, 'include_out_of_stock_products')) {
             $this->exceptOutOfStockProducts();
+        }
+
+        // Filter products that are on sale when discounted_only is set to true
+        if ($filters['discounted_only']) {
+            $this->model = $this->model->where(function ($query): void {
+                $query->where(function ($subQuery): void {
+                    // Products with sale price
+                    $subQuery->where('sale_type', 0)
+                        ->where('sale_price', '>', 0)
+                        ->whereColumn('sale_price', '<', 'price');
+                })->orWhere(function ($subQuery): void {
+                    // Products with time-based sale
+                    $now = Carbon::now();
+                    $subQuery->where('sale_type', 1)
+                        ->where('start_date', '<=', $now)
+                        ->where(function ($q) use ($now): void {
+                            $q->whereNull('end_date')
+                                ->orWhere('end_date', '>=', $now);
+                        })
+                        ->whereColumn('sale_price', '<', 'price');
+                });
+            });
         }
 
         $this->model = apply_filters('ecommerce_products_filter', $this->model, $filters, $params);
@@ -799,12 +856,12 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
             ])
             ->where('ec_products.is_variation', 0)
             ->leftJoin('ec_product_variations', 'ec_product_variations.configurable_product_id', 'ec_products.id')
-            ->leftJoin('ec_order_product', function ($query) {
+            ->leftJoin('ec_order_product', function ($query): void {
                 $query
                     ->on('ec_order_product.product_id', 'ec_products.id')
                     ->orOn('ec_order_product.product_id', 'ec_product_variations.product_id');
             })
-            ->join('ec_orders', function (JoinClause $query) use ($customerId, $orderIds) {
+            ->join('ec_orders', function (JoinClause $query) use ($customerId, $orderIds): void {
                 $query
                     ->on('ec_orders.id', 'ec_order_product.order_id')
                     ->where('ec_orders.user_id', $customerId)
@@ -813,7 +870,7 @@ class ProductRepository extends RepositoriesAbstract implements ProductInterface
                     $query->whereIn('ec_orders.id', $orderIds);
                 }
             })
-            ->whereDoesntHave('reviews', function (EloquentBuilder $query) use ($customerId) {
+            ->whereDoesntHave('reviews', function (EloquentBuilder $query) use ($customerId): void {
                 $query->where('ec_reviews.customer_id', $customerId);
             })
             ->orderByDesc('order_completed_at')

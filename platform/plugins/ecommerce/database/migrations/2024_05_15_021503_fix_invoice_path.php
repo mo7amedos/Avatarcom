@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\File;
 return new class () extends Migration {
     public function up(): void
     {
-        rescue(function () {
+        rescue(function (): void {
             $file = storage_path('app/templates/invoice.tpl');
 
             if (File::exists($file)) {

@@ -19,7 +19,7 @@ class Shipping extends BaseModel
 
     protected static function booted(): void
     {
-        static::deleted(function (Shipping $shipping) {
+        static::deleted(function (Shipping $shipping): void {
             $shipping->rules()->each(fn (ShippingRule $rule) => $rule->delete());
         });
     }

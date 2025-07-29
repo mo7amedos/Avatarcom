@@ -10,7 +10,7 @@ return new class () extends Migration {
      */
     public function up(): void
     {
-        Schema::table('ads', function (Blueprint $table) {
+        Schema::table('ads', function (Blueprint $table): void {
             $table->string('ads_type')->nullable();
             $table->string('google_adsense_slot_id')->nullable();
         });
@@ -21,7 +21,7 @@ return new class () extends Migration {
      */
     public function down(): void
     {
-        Schema::table('ads', function (Blueprint $table) {
+        Schema::table('ads', function (Blueprint $table): void {
             $table->dropColumn('ads_type');
             $table->dropColumn('google_adsense_slot_id');
         });

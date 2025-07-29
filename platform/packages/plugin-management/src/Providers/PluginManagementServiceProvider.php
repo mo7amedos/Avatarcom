@@ -42,11 +42,11 @@ class PluginManagementServiceProvider extends ServiceProvider
             $this->app->register($provider);
         }
 
-        DashboardMenu::default()->beforeRetrieving(function () {
+        DashboardMenu::default()->beforeRetrieving(function (): void {
             DashboardMenu::make()
-                ->when(config('packages.plugin-management.general.enable_plugin_manager', true), function () {
+                ->when(config('packages.plugin-management.general.enable_plugin_manager', true), function (): void {
                     DashboardMenu::make()
-                        ->when(config('packages.plugin-management.general.enable_marketplace_feature', true), function () {
+                        ->when(config('packages.plugin-management.general.enable_marketplace_feature', true), function (): void {
                             DashboardMenu::make()
                                 ->registerItem(
                                     DashboardMenuItem::make()
@@ -75,7 +75,7 @@ class PluginManagementServiceProvider extends ServiceProvider
                                         ->route('plugins.new')
                                         ->permissions('plugins.marketplace')
                                 );
-                        }, function () {
+                        }, function (): void {
                             DashboardMenu::make()
                                 ->registerItem(
                                     DashboardMenuItem::make()

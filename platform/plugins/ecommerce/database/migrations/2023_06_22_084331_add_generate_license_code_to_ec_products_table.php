@@ -10,13 +10,13 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasColumn('ec_products', 'generate_license_code')) {
-            Schema::table('ec_products', function (Blueprint $table) {
+            Schema::table('ec_products', function (Blueprint $table): void {
                 $table->boolean('generate_license_code')->default(false);
             });
         }
 
         if (! Schema::hasColumn('ec_order_product', 'license_code')) {
-            Schema::table('ec_order_product', function (Blueprint $table) {
+            Schema::table('ec_order_product', function (Blueprint $table): void {
                 $table->uuid('license_code')->nullable();
             });
         }
@@ -51,13 +51,13 @@ return new class () extends Migration {
     public function down(): void
     {
         if (Schema::hasColumn('ec_products', 'generate_license_code')) {
-            Schema::table('ec_products', function (Blueprint $table) {
+            Schema::table('ec_products', function (Blueprint $table): void {
                 $table->dropColumn('generate_license_code');
             });
         }
 
         if (Schema::hasColumn('ec_order_product', 'license_code')) {
-            Schema::table('ec_order_product', function (Blueprint $table) {
+            Schema::table('ec_order_product', function (Blueprint $table): void {
                 $table->dropColumn('license_code');
             });
         }

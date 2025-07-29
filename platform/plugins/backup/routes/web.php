@@ -3,9 +3,9 @@
 use Botble\Base\Facades\AdminHelper;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['namespace' => 'Botble\Backup\Http\Controllers'], function () {
-    AdminHelper::registerRoutes(function () {
-        Route::group(['prefix' => 'system/backups'], function () {
+Route::group(['namespace' => 'Botble\Backup\Http\Controllers'], function (): void {
+    AdminHelper::registerRoutes(function (): void {
+        Route::group(['prefix' => 'system/backups'], function (): void {
             Route::get('', [
                 'as' => 'backups.index',
                 'uses' => 'BackupController@getIndex',

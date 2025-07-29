@@ -31,9 +31,7 @@ class PublicController extends BaseController
          */
         $ads = Ads::query()->where('key', $adsKey)->firstOrFail();
 
-        if (! $ads) {
-            abort(404);
-        }
+        abort_unless($ads, 404);
 
         abort_if($randomHash !== $ads->random_hash, 404);
 
@@ -45,9 +43,7 @@ class PublicController extends BaseController
             $image = $ads->image;
         }
 
-        if (! $image) {
-            abort(404);
-        }
+        abort_unless($image, 404);
 
         $realPath = RvMedia::getRealPath($image);
 
@@ -59,9 +55,7 @@ class PublicController extends BaseController
             return $response->setNextUrl($realPath);
         }
 
-        if (! File::exists($realPath)) {
-            abort(404);
-        }
+        abort_unless(File::exists($realPath), 404);
 
         return response()->file($realPath, [
             'Content-Type' => File::mimeType($realPath),

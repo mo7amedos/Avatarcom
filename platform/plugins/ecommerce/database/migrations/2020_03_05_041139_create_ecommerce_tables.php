@@ -9,7 +9,7 @@ return new class () extends Migration {
     {
         $this->down();
 
-        Schema::create('ec_brands', function (Blueprint $table) {
+        Schema::create('ec_brands', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
             $table->mediumText('description')->nullable();
@@ -21,7 +21,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_product_categories', function (Blueprint $table) {
+        Schema::create('ec_product_categories', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
             $table->foreignId('parent_id')->default(0);
@@ -33,7 +33,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_product_collections', function (Blueprint $table) {
+        Schema::create('ec_product_collections', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
             $table->string('slug');
@@ -43,7 +43,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_currencies', function (Blueprint $table) {
+        Schema::create('ec_currencies', function (Blueprint $table): void {
             $table->id();
             $table->string('title');
             $table->string('symbol', 10);
@@ -55,7 +55,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_products', function (Blueprint $table) {
+        Schema::create('ec_products', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
@@ -84,13 +84,13 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_product_category_product', function (Blueprint $table) {
+        Schema::create('ec_product_category_product', function (Blueprint $table): void {
             $table->foreignId('category_id')->index();
             $table->foreignId('product_id')->index();
             $table->primary(['product_id', 'category_id'], 'product_categories_product_primary_key');
         });
 
-        Schema::create('ec_product_tags', function (Blueprint $table) {
+        Schema::create('ec_product_tags', function (Blueprint $table): void {
             $table->id();
             $table->string('name', 120);
             $table->string('description', 400)->nullable();
@@ -98,24 +98,24 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_product_tag_product', function (Blueprint $table) {
+        Schema::create('ec_product_tag_product', function (Blueprint $table): void {
             $table->foreignId('product_id')->index();
             $table->foreignId('tag_id')->index();
 
             $table->primary(['product_id', 'tag_id']);
         });
 
-        Schema::create('ec_product_collection_products', function (Blueprint $table) {
+        Schema::create('ec_product_collection_products', function (Blueprint $table): void {
             $table->foreignId('product_collection_id')->index();
             $table->foreignId('product_id')->index();
             $table->primary(['product_id', 'product_collection_id'], 'product_collections_product_primary_key');
         });
 
-        Schema::create('ec_product_attribute_sets', function (Blueprint $table) {
+        Schema::create('ec_product_attribute_sets', function (Blueprint $table): void {
             $table->id();
             $table->string('title', 120);
             $table->string('slug', 120)->nullable();
-            $table->string('display_layout')->default('swatch_dropdown');
+            $table->string('display_layout')->default('dropdown');
             $table->tinyInteger('is_searchable')->unsigned()->default(1);
             $table->tinyInteger('is_comparable')->unsigned()->default(1);
             $table->tinyInteger('is_use_in_product_listing')->unsigned()->default(0);
@@ -124,12 +124,12 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_product_attributes', function (Blueprint $table) {
+        Schema::create('ec_product_attributes', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('attribute_set_id');
             $table->string('title', 120);
             $table->string('slug', 120)->nullable();
-            $table->string('color', 50)->nullable();
+            $table->string('color', 120)->nullable();
             $table->string('image')->nullable();
             $table->tinyInteger('is_default')->unsigned()->default(0);
             $table->tinyInteger('order')->unsigned()->default(0);
@@ -137,7 +137,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_product_with_attribute_set', function (Blueprint $table) {
+        Schema::create('ec_product_with_attribute_set', function (Blueprint $table): void {
             $table->foreignId('attribute_set_id');
             $table->foreignId('product_id');
             $table->tinyInteger('order')->unsigned()->default(0);
@@ -145,14 +145,14 @@ return new class () extends Migration {
             $table->primary(['product_id', 'attribute_set_id'], 'product_with_attribute_set_primary_key');
         });
 
-        Schema::create('ec_product_variations', function (Blueprint $table) {
+        Schema::create('ec_product_variations', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('product_id')->nullable();
             $table->foreignId('configurable_product_id');
             $table->tinyInteger('is_default')->default(0);
         });
 
-        Schema::create('ec_product_variation_items', function (Blueprint $table) {
+        Schema::create('ec_product_variation_items', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('attribute_id');
             $table->foreignId('variation_id');
@@ -160,7 +160,7 @@ return new class () extends Migration {
             $table->unique(['attribute_id', 'variation_id']);
         });
 
-        Schema::create('ec_taxes', function (Blueprint $table) {
+        Schema::create('ec_taxes', function (Blueprint $table): void {
             $table->id();
             $table->string('title')->nullable();
             $table->float('percentage', 8, 6)->nullable();
@@ -169,7 +169,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_reviews', function (Blueprint $table) {
+        Schema::create('ec_reviews', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('customer_id');
             $table->foreignId('product_id');
@@ -179,14 +179,14 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_shipping', function (Blueprint $table) {
+        Schema::create('ec_shipping', function (Blueprint $table): void {
             $table->id();
             $table->string('title')->nullable();
             $table->string('country', 120)->nullable();
             $table->timestamps();
         });
 
-        Schema::create('ec_orders', function (Blueprint $table) {
+        Schema::create('ec_orders', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id');
             $table->string('shipping_option', 60)->nullable();
@@ -208,7 +208,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_order_product', function (Blueprint $table) {
+        Schema::create('ec_order_product', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('order_id');
             $table->integer('qty');
@@ -222,7 +222,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_order_addresses', function (Blueprint $table) {
+        Schema::create('ec_order_addresses', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
             $table->string('phone', 20)->nullable();
@@ -234,7 +234,7 @@ return new class () extends Migration {
             $table->foreignId('order_id');
         });
 
-        Schema::create('ec_discounts', function (Blueprint $table) {
+        Schema::create('ec_discounts', function (Blueprint $table): void {
             $table->id();
             $table->string('title', 120)->nullable();
             $table->string('code', 20)->unique()->nullable();
@@ -253,14 +253,14 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_wish_lists', function (Blueprint $table) {
+        Schema::create('ec_wish_lists', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('customer_id');
             $table->foreignId('product_id');
             $table->timestamps();
         });
 
-        Schema::create('ec_cart', function (Blueprint $table) {
+        Schema::create('ec_cart', function (Blueprint $table): void {
             $table->string('identifier', 60);
             $table->string('instance', 60);
             $table->longText('content');
@@ -269,14 +269,14 @@ return new class () extends Migration {
             $table->primary(['identifier', 'instance'], 'ec_cart_primary');
         });
 
-        Schema::create('ec_grouped_products', function (Blueprint $table) {
+        Schema::create('ec_grouped_products', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('parent_product_id');
             $table->foreignId('product_id');
             $table->integer('fixed_qty')->default(1);
         });
 
-        Schema::create('ec_customers', function (Blueprint $table) {
+        Schema::create('ec_customers', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
@@ -288,13 +288,13 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_customer_password_resets', function (Blueprint $table) {
+        Schema::create('ec_customer_password_resets', function (Blueprint $table): void {
             $table->string('email')->index();
             $table->string('token')->index();
             $table->timestamp('created_at')->nullable();
         });
 
-        Schema::create('ec_customer_addresses', function (Blueprint $table) {
+        Schema::create('ec_customer_addresses', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
             $table->string('email', 60)->nullable();
@@ -308,26 +308,26 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_product_related_relations', function (Blueprint $table) {
+        Schema::create('ec_product_related_relations', function (Blueprint $table): void {
             $table->foreignId('from_product_id')->index();
             $table->foreignId('to_product_id')->index();
             $table->primary(['from_product_id', 'to_product_id'], 'product_related_primary_key');
         });
 
-        Schema::create('ec_product_cross_sale_relations', function (Blueprint $table) {
+        Schema::create('ec_product_cross_sale_relations', function (Blueprint $table): void {
             $table->foreignId('from_product_id')->index();
             $table->foreignId('to_product_id')->index();
 
             $table->primary(['from_product_id', 'to_product_id'], 'product_cross_sale_primary_key');
         });
 
-        Schema::create('ec_product_up_sale_relations', function (Blueprint $table) {
+        Schema::create('ec_product_up_sale_relations', function (Blueprint $table): void {
             $table->foreignId('from_product_id')->index();
             $table->foreignId('to_product_id')->index();
             $table->primary(['from_product_id', 'to_product_id'], 'product_up_sale_primary_key');
         });
 
-        Schema::create('ec_shipping_rules', function (Blueprint $table) {
+        Schema::create('ec_shipping_rules', function (Blueprint $table): void {
             $table->id();
             $table->string('name', 120);
             $table->foreignId('shipping_id');
@@ -339,7 +339,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_shipping_rule_items', function (Blueprint $table) {
+        Schema::create('ec_shipping_rule_items', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('shipping_rule_id');
             $table->string('country', 120)->nullable();
@@ -350,7 +350,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_order_histories', function (Blueprint $table) {
+        Schema::create('ec_order_histories', function (Blueprint $table): void {
             $table->id();
             $table->string('action', 120);
             $table->string('description', 400)->nullable();
@@ -360,7 +360,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_shipments', function (Blueprint $table) {
+        Schema::create('ec_shipments', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('order_id');
             $table->foreignId('user_id')->nullable();
@@ -377,7 +377,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_store_locators', function (Blueprint $table) {
+        Schema::create('ec_store_locators', function (Blueprint $table): void {
             $table->id();
             $table->string('name', 60);
             $table->string('email', 60)->nullable();
@@ -391,7 +391,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_shipment_histories', function (Blueprint $table) {
+        Schema::create('ec_shipment_histories', function (Blueprint $table): void {
             $table->id();
             $table->string('action', 120);
             $table->string('description', 400)->nullable();
@@ -401,19 +401,19 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_discount_products', function (Blueprint $table) {
+        Schema::create('ec_discount_products', function (Blueprint $table): void {
             $table->foreignId('discount_id');
             $table->foreignId('product_id');
             $table->primary(['discount_id', 'product_id']);
         });
 
-        Schema::create('ec_discount_customers', function (Blueprint $table) {
+        Schema::create('ec_discount_customers', function (Blueprint $table): void {
             $table->foreignId('discount_id');
             $table->foreignId('customer_id');
             $table->primary(['discount_id', 'customer_id']);
         });
 
-        Schema::create('ec_discount_product_collections', function (Blueprint $table) {
+        Schema::create('ec_discount_product_collections', function (Blueprint $table): void {
             $table->foreignId('discount_id');
             $table->foreignId('product_collection_id');
             $table->primary(['discount_id', 'product_collection_id'], 'discount_product_collections_primary_key');

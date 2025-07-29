@@ -9,7 +9,6 @@ use Illuminate\Console\Command;
 use Illuminate\Contracts\Console\PromptsForMissingInput;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputOption;
 
 #[AsCommand('cms:theme:activate', 'Activate a theme')]
 class ThemeActivateCommand extends Command implements PromptsForMissingInput
@@ -42,6 +41,5 @@ class ThemeActivateCommand extends Command implements PromptsForMissingInput
     protected function configure(): void
     {
         $this->addArgument('name', InputArgument::OPTIONAL, 'The theme name that you want to activate');
-        $this->addOption('path', null, InputOption::VALUE_REQUIRED, 'Path to theme directory');
     }
 }

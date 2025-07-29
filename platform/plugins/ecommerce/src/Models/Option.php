@@ -20,7 +20,7 @@ class Option extends BaseModel
 
     protected static function booted(): void
     {
-        self::deleted(function (Option $option) {
+        self::deleted(function (Option $option): void {
             $option->values()->delete();
         });
     }
@@ -29,7 +29,7 @@ class Option extends BaseModel
     {
         return $this
             ->hasMany(OptionValue::class, 'option_id')
-            ->orderBy('order');
+            ->oldest('order');
     }
 
     public function product(): BelongsTo

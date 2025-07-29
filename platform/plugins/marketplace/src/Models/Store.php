@@ -3,6 +3,7 @@
 namespace Botble\Marketplace\Models;
 
 use Botble\Base\Casts\SafeContent;
+use Botble\Base\Enums\BaseStatusEnum;
 use Botble\Base\Models\BaseModel;
 use Botble\Base\Supports\Avatar;
 use Botble\Ecommerce\Models\Customer;
@@ -60,7 +61,7 @@ class Store extends BaseModel
 
     protected static function booted(): void
     {
-        static::deleted(function (Store $store) {
+        static::deleted(function (Store $store): void {
             $store->products()->each(fn (Product $product) => $product->delete());
             $store->discounts()->delete();
             $store->orders()->update(['store_id' => null]);
@@ -71,11 +72,21 @@ class Store extends BaseModel
             }
         });
 
-        static::updating(function (Store $store) {
+        static::updating(function (Store $store): void {
             if ($store->getOriginal('status') != $store->status) {
                 $status = $store->status;
 
-                $store->products()->update(['status' => $status]);
+                if ($status == StoreStatusEnum::BLOCKED) {
+                    $store
+                        ->products()
+                        ->where('status', BaseStatusEnum::PUBLISHED)
+                        ->update(['status' => $status]);
+                } elseif ($status == StoreStatusEnum::PUBLISHED) {
+                    $store
+                        ->products()
+                        ->where('status', 'blocked')
+                        ->update(['status' => $status]);
+                }
             }
         });
     }

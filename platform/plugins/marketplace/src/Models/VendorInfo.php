@@ -32,14 +32,14 @@ class VendorInfo extends BaseModel
 
     protected static function booted(): void
     {
-        static::creating(function (VendorInfo $vendorInfo) {
+        static::creating(function (VendorInfo $vendorInfo): void {
             $vendorInfo->balance = $vendorInfo->balance ?: 0;
             $vendorInfo->total_fee = $vendorInfo->total_fee ?: 0;
             $vendorInfo->total_revenue = $vendorInfo->total_revenue ?: 0;
             $vendorInfo->signature = Hash::make($vendorInfo->getSignatureKey(false, $vendorInfo));
         });
 
-        static::updating(function (VendorInfo $vendorInfo) {
+        static::updating(function (VendorInfo $vendorInfo): void {
             $balanceOriginal = $vendorInfo->getOriginal('balance');
             $balance = $vendorInfo->balance;
             $totalFeeOriginal = $vendorInfo->getOriginal('total_fee');

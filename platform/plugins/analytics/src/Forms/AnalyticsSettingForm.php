@@ -54,7 +54,7 @@ class AnalyticsSettingForm extends SettingForm
                         )
                     )
             )
-            ->when(! BaseHelper::hasDemoModeEnabled(), function (AnalyticsSettingForm $form) {
+            ->when(! BaseHelper::hasDemoModeEnabled(), function (AnalyticsSettingForm $form): void {
                 $form
                     ->add(
                         'analytics_service_account_credentials',

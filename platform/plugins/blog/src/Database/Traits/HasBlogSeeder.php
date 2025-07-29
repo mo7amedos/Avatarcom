@@ -6,12 +6,26 @@ use Botble\ACL\Models\User;
 use Botble\Blog\Models\Category;
 use Botble\Blog\Models\Post;
 use Botble\Blog\Models\Tag;
+use Botble\Setting\Facades\Setting;
 use Botble\Slug\Facades\SlugHelper;
+use Botble\Slug\Models\Slug;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 trait HasBlogSeeder
 {
+    protected Collection $userIds;
+
+    protected function getUserIds(): Collection
+    {
+        if (! isset($this->userIds)) {
+            $this->userIds = User::query()->pluck('id');
+        }
+
+        return $this->userIds;
+    }
+
     protected function createBlogCategories(array $categories, bool $truncate = true): void
     {
         if ($truncate) {
@@ -23,7 +37,6 @@ trait HasBlogSeeder
         foreach ($categories as $index => $item) {
             $item['description'] ??= $faker->text();
             $item['is_featured'] ??= ! isset($item['parent_id']) && $index != 0;
-            $item['author_id'] ??= 1;
             $item['parent_id'] ??= 0;
 
             $category = $this->createBlogCategory(Arr::except($item, 'children'));
@@ -46,7 +59,12 @@ trait HasBlogSeeder
             Tag::query()->truncate();
         }
 
+        $userIds = $this->getUserIds();
+
         foreach ($tags as $item) {
+            $item['author_id'] ??= $userIds->random();
+            $item['author_type'] ??= User::class;
+
             /**
              * @var Tag $tag
              */
@@ -70,7 +88,7 @@ trait HasBlogSeeder
 
         $categoryIds = Category::query()->pluck('id');
         $tagIds = Tag::query()->pluck('id');
-        $userIds = User::query()->pluck('id');
+        $userIds = $this->getUserIds();
 
         foreach ($posts as $item) {
             $item['views'] ??= $faker->numberBetween(100, 2500);
@@ -115,6 +133,11 @@ trait HasBlogSeeder
 
     protected function createBlogCategory(array $item): Category
     {
+        $userIds = $this->getUserIds();
+
+        $item['author_id'] ??= $userIds->random();
+        $item['author_type'] ??= User::class;
+
         /**
          * @var Category $category
          */
@@ -125,5 +148,18 @@ trait HasBlogSeeder
         $this->createMetadata($category, $item);
 
         return $category;
+    }
+
+    public function setPostSlugPrefix(string $prefix = 'blog'): void
+    {
+        Setting::set([
+            SlugHelper::getPermalinkSettingKey(Post::class) => $prefix,
+            SlugHelper::getPermalinkSettingKey(Category::class) => $prefix,
+        ]);
+
+        Setting::save();
+
+        Slug::query()->where('reference_type', Post::class)->update(['prefix' => $prefix]);
+        Slug::query()->where('reference_type', Category::class)->update(['prefix' => $prefix]);
     }
 }

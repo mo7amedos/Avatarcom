@@ -32,7 +32,7 @@ class ProductCollectionForm extends FormAbstract
                 'name',
                 TextField::class,
                 NameFieldOption::make()
-                    ->when($this->getModel()->slug, function (NameFieldOption $option, string $slug) {
+                    ->when($this->getModel()->slug, function (NameFieldOption $option, string $slug): void {
                         $option
                             ->helperText(trans('plugins/ecommerce::product-collections.slug_help_block', compact('slug')));
                     })

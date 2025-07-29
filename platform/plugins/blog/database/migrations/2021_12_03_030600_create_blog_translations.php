@@ -8,7 +8,7 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasTable('posts_translations')) {
-            Schema::create('posts_translations', function (Blueprint $table) {
+            Schema::create('posts_translations', function (Blueprint $table): void {
                 $table->string('lang_code', 20);
                 $table->foreignId('posts_id');
                 $table->string('name')->nullable();
@@ -20,7 +20,7 @@ return new class () extends Migration {
         }
 
         if (! Schema::hasTable('categories_translations')) {
-            Schema::create('categories_translations', function (Blueprint $table) {
+            Schema::create('categories_translations', function (Blueprint $table): void {
                 $table->string('lang_code', 20);
                 $table->foreignId('categories_id');
                 $table->string('name')->nullable();
@@ -31,7 +31,7 @@ return new class () extends Migration {
         }
 
         if (! Schema::hasTable('tags_translations')) {
-            Schema::create('tags_translations', function (Blueprint $table) {
+            Schema::create('tags_translations', function (Blueprint $table): void {
                 $table->string('lang_code', 20);
                 $table->foreignId('tags_id');
                 $table->string('name')->nullable();

@@ -7,6 +7,7 @@ use Botble\Base\Models\BaseModel;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Arr;
 
 class InvoiceItem extends BaseModel
 {
@@ -58,5 +59,48 @@ class InvoiceItem extends BaseModel
     protected function totalFormat(): Attribute
     {
         return Attribute::get(fn () => format_price($this->price * $this->qty));
+    }
+
+    public function productOptionsImplode(): Attribute
+    {
+        return Attribute::get(function () {
+            $options = $this->product_options_array;
+
+            if (! $options) {
+                return '';
+            }
+
+            return '(' . implode(', ', Arr::map($options, function ($item) use ($options): string {
+                return implode(': ', [
+                    $item['label'],
+                    $item['value'] . ($item['affect_price'] ? ' (+' . $item['affect_price'] . ')' : ''),
+                ]);
+            })) . ')';
+        });
+    }
+
+    public function productOptionsArray(): Attribute
+    {
+        return Attribute::get(function () {
+            if (! $this->options) {
+                return '';
+            }
+
+            $options = Arr::get($this->options, 'options');
+
+            if (! $options) {
+                return '';
+            }
+
+            return Arr::map(Arr::get($options, 'optionInfo'), function ($item, $key) use ($options) {
+                $affectedPrice = Arr::get($options, "optionCartValue.$key.0.affect_price");
+
+                return [
+                    'label' => $item,
+                    'value' => Arr::get($options, "optionCartValue.$key.0.option_value"),
+                    'affect_price' => $affectedPrice ? format_price($affectedPrice) : '',
+                ];
+            });
+        });
     }
 }

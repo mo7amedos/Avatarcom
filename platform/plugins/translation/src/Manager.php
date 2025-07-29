@@ -10,6 +10,7 @@ use Botble\Base\Services\DownloadLocaleService;
 use Botble\Base\Supports\Language;
 use Botble\Base\Supports\ServiceProvider;
 use Botble\Theme\Facades\Theme;
+use Exception;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Arr;
@@ -295,7 +296,11 @@ class Manager
 
             if (File::exists($themeLangPath)) {
 
-                File::ensureDirectoryExists(dirname($localeFilePath));
+                try {
+                    File::ensureDirectoryExists(dirname($localeFilePath));
+                } catch (Throwable) {
+                    throw new Exception(trans('plugins/translation::translation.folder_is_not_writeable', ['lang_path' => lang_path()]));
+                }
 
                 File::copy($themeLangPath, $localeFilePath);
             }
@@ -368,16 +373,16 @@ class Manager
 
     public function updateThemeTranslations(): int
     {
-        $theme = Theme::hasInheritTheme() ? Theme::getInheritTheme() : Theme::getThemeName();
         $keys = $this->findJsonTranslations(core_path());
         $keys += $this->findJsonTranslations(package_path());
         $keys += $this->findJsonTranslations(plugin_path());
-        $keys += $this->findJsonTranslations(theme_path($theme));
+        $keys += $this->findJsonTranslations(theme_path());
+
         ksort($keys);
 
         $data = json_encode($keys, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
-        BaseHelper::saveFileData(theme_path(sprintf('%s/lang/en.json', $theme)), $data, false);
+        BaseHelper::saveFileData(theme_path(sprintf('%s/lang/en.json', Theme::getThemeName())), $data, false);
 
         return count($keys);
     }

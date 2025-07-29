@@ -37,8 +37,8 @@ class LocationExporter extends Exporter
             ExportColumn::make('nationality'),
         ];
 
-        if (defined('LANGUAGE_MODULE_SCREEN_NAME')) {
-            $defaultLanguage = Language::getDefaultLanguage(['lang_code'])->lang_code;
+        if (defined('LANGUAGE_MODULE_SCREEN_NAME') && defined('LANGUAGE_ADVANCED_MODULE_SCREEN_NAME')) {
+            $defaultLanguage = Language::getDefaultLanguage(['lang_code'])?->lang_code;
             $supportedLocales = Language::getSupportedLocales();
 
             foreach ($supportedLocales as $properties) {
@@ -84,8 +84,8 @@ class LocationExporter extends Exporter
         $supportedLocales = [];
         $defaultLanguage = null;
 
-        if (defined('LANGUAGE_MODULE_SCREEN_NAME')) {
-            $defaultLanguage = Language::getDefaultLanguage(['lang_code'])->lang_code;
+        if (defined('LANGUAGE_MODULE_SCREEN_NAME') && defined('LANGUAGE_ADVANCED_MODULE_SCREEN_NAME')) {
+            $defaultLanguage = Language::getDefaultLanguage(['lang_code'])?->lang_code;
 
             $supportedLocales = Language::getSupportedLocales();
         }
@@ -118,13 +118,22 @@ class LocationExporter extends Exporter
                 'country' => '',
                 'import_type' => 'country',
                 'status' => $country->status,
-                'order' => $country->order,
+                'order' => $country->order ?: 0,
                 'nationality' => $country->nationality,
             ];
 
             foreach ($supportedLocales as $properties) {
                 if ($properties['lang_code'] != $defaultLanguage) {
-                    $countryData['name_' . $properties['lang_code']] = $country->translations->where('lang_code', $properties['lang_code'])->get('name');
+                    $translatedCountry = $country
+                        ->translations
+                        ->where('lang_code', $properties['lang_code'])
+                        ->get('name');
+
+                    if (! $translatedCountry) {
+                        $translatedCountry = $country->name;
+                    }
+
+                    $countryData['name_' . $properties['lang_code']] = $translatedCountry;
                 }
             }
 
@@ -139,13 +148,22 @@ class LocationExporter extends Exporter
                     'country' => $country->name,
                     'import_type' => 'state',
                     'status' => $state->status,
-                    'order' => $state->order,
+                    'order' => $state->order ?: 0,
                     'nationality' => '',
                 ];
 
                 foreach ($supportedLocales as $properties) {
                     if ($properties['lang_code'] != $defaultLanguage) {
-                        $stateData['name_' . $properties['lang_code']] = $state->translations->where('lang_code', $properties['lang_code'])->get('name');
+                        $translatedState = $state
+                            ->translations
+                            ->where('lang_code', $properties['lang_code'])
+                            ->get('name');
+
+                        if (! $translatedState) {
+                            $translatedState = $state->name;
+                        }
+
+                        $stateData['name_' . $properties['lang_code']] = $translatedState;
                     }
                 }
 
@@ -160,13 +178,22 @@ class LocationExporter extends Exporter
                         'country' => $city->country->name,
                         'import_type' => 'city',
                         'status' => $city->status,
-                        'order' => $city->order,
+                        'order' => $city->order ?: 0,
                         'nationality' => '',
                     ];
 
                     foreach ($supportedLocales as $properties) {
                         if ($properties['lang_code'] != $defaultLanguage) {
-                            $stateData['name_' . $properties['lang_code']] = $city->translations->where('lang_code', $properties['lang_code'])->get('name');
+                            $translatedCity = $city
+                                ->translations
+                                ->where('lang_code', $properties['lang_code'])
+                                ->get('name');
+
+                            if (! $translatedCity) {
+                                $translatedCity = $city->name;
+                            }
+
+                            $cityData['name_' . $properties['lang_code']] = $translatedCity;
                         }
                     }
 

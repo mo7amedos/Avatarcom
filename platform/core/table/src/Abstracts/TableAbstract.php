@@ -134,6 +134,8 @@ abstract class TableAbstract extends DataTable implements ExtensibleContract
             $this->setOption('class', 'table card-table table-vcenter table-striped table-hover');
         }
 
+        $this->hasResponsive = setting('datatables_default_enable_responsive', true);
+
         $this->setup();
 
         $this->setupExtended();
@@ -427,9 +429,9 @@ abstract class TableAbstract extends DataTable implements ExtensibleContract
     /**
      * @param  \Botble\Table\Columns\Column[]  $columns
      */
-    public function addColumns(array $columns): static
+    public function addColumns(Closure|callable|array $columns): static
     {
-        foreach ($columns as $column) {
+        foreach (value($columns) as $column) {
             $this->addColumn($column);
         }
 
@@ -451,8 +453,12 @@ abstract class TableAbstract extends DataTable implements ExtensibleContract
         return $this;
     }
 
-    public function removeColumns(array $columns): static
+    public function removeColumns(array $columns = []): static
     {
+        if (! $columns) {
+            $columns = array_map(fn ($column) => $column->get('data'), $this->getColumns());
+        }
+
         foreach ($columns as $column) {
             $this->removeColumn($column);
         }
@@ -608,7 +614,7 @@ abstract class TableAbstract extends DataTable implements ExtensibleContract
             $buttons[] = 'visibility';
         }
 
-        return $buttons;
+        return apply_filters('cms_table_default_buttons', $buttons, $this);
     }
 
     public function htmlInitComplete(): ?string

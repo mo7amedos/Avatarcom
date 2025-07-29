@@ -5,6 +5,7 @@ namespace Botble\AuditLog\Listeners;
 use Botble\AuditLog\Events\AuditHandlerEvent;
 use Botble\AuditLog\Models\AuditHistory;
 use Botble\Base\Facades\BaseHelper;
+use Botble\Base\Models\BaseModel;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
@@ -28,7 +29,9 @@ class AuditHandlerListener
                 'module' => $module,
                 'action' => $event->action,
                 'user_id' => $this->request->user() ? $this->request->user()->getKey() : 0,
-                'reference_user' => $event->referenceUser,
+                'user_type' => $this->request->user() ? get_class($this->request->user()) : null,
+                'actor_id' => $event->referenceUser,
+                'actor_type' => $this->request->user() ? get_class($this->request->user()) : null,
                 'reference_id' => $event->referenceId,
                 'reference_name' => $event->referenceName,
                 'type' => $event->type,
@@ -51,10 +54,16 @@ class AuditHandlerListener
                 ]));
             }
 
+            $model = new AuditHistory();
+
             if (! Cache::has('pruned_audit_logs_table')) {
-                (new AuditHistory())->pruneAll();
+                $model->pruneAll();
 
                 Cache::put('pruned_audit_logs_table', 1, Carbon::now()->addDay());
+            }
+
+            if (BaseModel::isUsingStringId()) {
+                $data['id'] = $model->newUniqueId();
             }
 
             AuditHistory::query()->insert($data);

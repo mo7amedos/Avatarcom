@@ -19,8 +19,7 @@ class RenderingSiteMapListener
                     $categories = Category::query()
                         ->with('slugable')
                         ->wherePublished()
-                        ->select(['id', 'name', 'updated_at'])
-                        ->orderByDesc('created_at')
+                        ->select(['id', 'name', 'updated_at'])->latest()
                         ->get();
 
                     foreach ($categories as $category) {
@@ -31,8 +30,7 @@ class RenderingSiteMapListener
                 case 'blog-tags':
                     $tags = Tag::query()
                         ->with('slugable')
-                        ->wherePublished()
-                        ->orderByDesc('created_at')
+                        ->wherePublished()->latest()
                         ->select(['id', 'name', 'updated_at'])
                         ->get();
 
@@ -43,8 +41,15 @@ class RenderingSiteMapListener
                     break;
             }
 
-            if (preg_match('/^blog-posts-((?:19|20|21|22)\d{2})-(0?[1-9]|1[012])$/', $key, $matches)) {
-                if (($year = Arr::get($matches, 1)) && ($month = Arr::get($matches, 2))) {
+            // Handle posts with pagination using new standardized pattern
+            $paginationData = SiteMapManager::extractPaginationDataByPattern($key, 'blog-posts', 'monthly-archive');
+
+            if ($paginationData) {
+                $matches = $paginationData['matches'];
+                $year = Arr::get($matches, 1);
+                $month = Arr::get($matches, 2);
+
+                if ($year && $month) {
                     $posts = Post::query()
                         ->wherePublished()
                         ->whereYear('created_at', $year)
@@ -52,6 +57,8 @@ class RenderingSiteMapListener
                         ->latest('updated_at')
                         ->select(['id', 'name', 'updated_at'])
                         ->with(['slugable'])
+                        ->skip($paginationData['offset'])
+                        ->take($paginationData['limit'])
                         ->get();
 
                     foreach ($posts as $post) {
@@ -67,8 +74,9 @@ class RenderingSiteMapListener
             return;
         }
 
+        // Generate sitemap indexes using the new SiteMapManager pagination functionality
         $posts = Post::query()
-            ->selectRaw('YEAR(created_at) as created_year, MONTH(created_at) as created_month, MAX(created_at) as created_at')
+            ->selectRaw('YEAR(created_at) as created_year, MONTH(created_at) as created_month, MAX(created_at) as created_at, COUNT(*) as post_count')
             ->wherePublished()
             ->groupBy('created_year', 'created_month')
             ->orderByDesc('created_year')
@@ -77,8 +85,11 @@ class RenderingSiteMapListener
 
         if ($posts->isNotEmpty()) {
             foreach ($posts as $post) {
-                $key = sprintf('blog-posts-%s-%s', $post->created_year, str_pad($post->created_month, 2, '0', STR_PAD_LEFT));
-                SiteMapManager::addSitemap(SiteMapManager::route($key), $post->created_at);
+                $formattedMonth = str_pad($post->created_month, 2, '0', STR_PAD_LEFT);
+                $baseKey = sprintf('blog-posts-%s-%s', $post->created_year, $formattedMonth);
+
+                // Use the new createPaginatedSitemaps method
+                SiteMapManager::createPaginatedSitemaps($baseKey, $post->post_count, $post->created_at);
             }
         }
 

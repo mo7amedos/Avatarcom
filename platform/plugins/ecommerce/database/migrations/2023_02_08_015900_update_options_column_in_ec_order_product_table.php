@@ -47,7 +47,7 @@ return new class () extends Migration {
             }
 
             if (Schema::hasTable('ec_order_return_items')) {
-                Schema::table('ec_order_return_items', function (Blueprint $table) {
+                Schema::table('ec_order_return_items', function (Blueprint $table): void {
                     $table->decimal('refund_amount', 12)->default(0)->nullable();
                 });
 
@@ -76,7 +76,7 @@ return new class () extends Migration {
     public function down(): void
     {
         if (Schema::hasTable('ec_order_return_items')) {
-            Schema::table('ec_order_return_items', function (Blueprint $table) {
+            Schema::table('ec_order_return_items', function (Blueprint $table): void {
                 if (Schema::hasColumn('ec_order_return_items', 'refund_amount')) {
                     $table->dropColumn('refund_amount');
                 }

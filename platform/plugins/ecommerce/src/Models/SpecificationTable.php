@@ -20,7 +20,7 @@ class SpecificationTable extends BaseModel
     protected static function booted(): void
     {
         if (AdminHelper::isInAdmin(true)) {
-            static::addGlobalScope('admin', function ($query) {
+            static::addGlobalScope('admin', function ($query): void {
                 $query->whereNull('author_id');
             });
         }

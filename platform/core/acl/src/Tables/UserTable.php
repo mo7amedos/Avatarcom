@@ -48,6 +48,9 @@ class UserTable extends TableAbstract
                     ->title(trans('core/acl::users.username'))
                     ->alignStart(),
                 EmailColumn::make()->linkable(),
+                FormattedColumn::make('phone')
+                    ->title(trans('core/acl::users.phone'))
+                    ->alignStart(),
                 FormattedColumn::make('role_name')
                     ->title(trans('core/acl::users.role'))
                     ->searchable(false)
@@ -81,7 +84,7 @@ class UserTable extends TableAbstract
                     ->width(100),
             ])
             ->addHeaderAction(CreateHeaderAction::make()->route('users.create'))
-            ->when(Auth::guard()->user()->isSuperUser(), function () {
+            ->when(Auth::guard()->user()->isSuperUser(), function (): void {
                 $this->addActions([
                     Action::make('make-super')
                         ->route('users.make-super')
@@ -107,19 +110,15 @@ class UserTable extends TableAbstract
             ->addBulkActions([
                 DeleteBulkAction::make()
                     ->permission('users.destroy')
-                    ->beforeDispatch(function (User $user, array $ids) {
+                    ->beforeDispatch(function (User $user, array $ids): void {
                         foreach ($ids as $id) {
-                            if (Auth::guard()->id() == $id) {
-                                abort(403, trans('core/acl::users.delete_user_logged_in'));
-                            }
+                            abort_if(Auth::guard()->id() == $id, 403, trans('core/acl::users.delete_user_logged_in'));
 
                             /**
                              * @var User $user
                              */
                             $user = User::query()->findOrFail($id);
-                            if (! Auth::guard()->user()->isSuperUser() && $user->isSuperUser()) {
-                                abort(403, trans('core/acl::users.cannot_delete_super_user'));
-                            }
+                            abort_if(! Auth::guard()->user()->isSuperUser() && $user->isSuperUser(), 403, trans('core/acl::users.cannot_delete_super_user'));
                         }
                     }),
             ])
@@ -137,6 +136,7 @@ class UserTable extends TableAbstract
                         'id',
                         'username',
                         'email',
+                        'phone',
                         'updated_at',
                         'created_at',
                         'super_user',

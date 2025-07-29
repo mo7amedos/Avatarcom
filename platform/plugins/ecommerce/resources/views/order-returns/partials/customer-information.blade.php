@@ -15,7 +15,7 @@
             @if ($returnRequest->customer->id)
                 <p class="mb-1">
                     <x-core::icon name="ti ti-inbox" />
-                    {{ $returnRequest->customer->orders()->count() }}
+                    {{ $returnRequest->customer->completedOrders()->count() }}
                     {{ trans('plugins/ecommerce::order.orders') }}
                 </p>
             @endif

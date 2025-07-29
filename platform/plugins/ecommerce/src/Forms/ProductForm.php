@@ -102,7 +102,7 @@ class ProductForm extends FormAbstract
                     'priority' => 9999,
                 ],
             ])
-            ->when(! EcommerceHelper::isDisabledPhysicalProduct(), function () {
+            ->when(! EcommerceHelper::isDisabledPhysicalProduct(), function (): void {
                 $this->add('product_type', 'hidden', [
                     'value' => request()->input('product_type') ?: ProductTypeEnum::PHYSICAL,
                 ]);
@@ -124,7 +124,7 @@ class ProductForm extends FormAbstract
                     ->selected(old('categories', $selectedCategories))
                     ->addAttribute('card-body-class', 'p-0')
             )
-            ->when($brands, function () use ($brands) {
+            ->when($brands, function () use ($brands): void {
                 $this
                     ->add(
                         'brand_id',
@@ -143,7 +143,7 @@ class ProductForm extends FormAbstract
                 MediaImageFieldOption::make()
                     ->label(trans('plugins/ecommerce::products.form.featured_image'))
             )
-            ->when($productCollections, function () use ($productCollections) {
+            ->when($productCollections, function () use ($productCollections): void {
                 $selectedProductCollections = [];
 
                 /**
@@ -165,7 +165,7 @@ class ProductForm extends FormAbstract
                         'value' => old('product_collections', $selectedProductCollections),
                     ]);
             })
-            ->when($productLabels, function () use ($productLabels) {
+            ->when($productLabels, function () use ($productLabels): void {
                 $selectedProductLabels = [];
 
                 /**
@@ -184,8 +184,8 @@ class ProductForm extends FormAbstract
                         'value' => old('product_labels', $selectedProductLabels),
                     ]);
             })
-            ->when(EcommerceHelper::isTaxEnabled(), function () {
-                $taxes = Tax::query()->orderBy('percentage')->get()->pluck('title_with_percentage', 'id')->all();
+            ->when(EcommerceHelper::isTaxEnabled(), function (): void {
+                $taxes = Tax::query()->oldest('percentage')->get()->pluck('title_with_percentage', 'id')->all();
 
                 if ($taxes) {
                     $selectedTaxes = [];
@@ -197,18 +197,30 @@ class ProductForm extends FormAbstract
 
                     if ($product && $product->getKey()) {
                         $selectedTaxes = $product->taxes()->pluck('tax_id')->all();
-                    } elseif ($defaultTaxRate = get_ecommerce_setting('default_tax_rate')) {
-                        $selectedTaxes = [$defaultTaxRate];
                     }
 
-                    $this->add('taxes[]', MultiCheckListField::class, [
+                    $taxFieldOptions = [
                         'label' => trans('plugins/ecommerce::products.form.taxes'),
                         'choices' => $taxes,
                         'value' => old('taxes', $selectedTaxes),
-                    ]);
+                    ];
+
+                    if (empty($selectedTaxes) && get_ecommerce_setting('default_tax_rate')) {
+                        $taxFieldOptions['help_block'] = [
+                            'text' => trans('plugins/ecommerce::products.form.taxes_helper', [
+                                'url' => route('ecommerce.settings.taxes'),
+                            ]),
+                            'tag' => 'span',
+                            'attr' => [
+                                'class' => 'text-warning',
+                            ],
+                        ];
+                    }
+
+                    $this->add('taxes[]', MultiCheckListField::class, $taxFieldOptions);
                 }
             })
-            ->when(EcommerceHelper::isCartEnabled(), function (ProductForm $form) {
+            ->when(EcommerceHelper::isCartEnabled(), function (ProductForm $form): void {
                 $form
                     ->add(
                         'minimum_order_quantity',

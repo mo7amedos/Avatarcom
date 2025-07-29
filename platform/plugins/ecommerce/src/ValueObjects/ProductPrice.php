@@ -51,7 +51,7 @@ class ProductPrice
 
     public function displayAsHtml(...$args): string
     {
-        return view(EcommerceHelper::viewPath('products.partials.price'), [
+        return view(EcommerceHelper::viewPath('includes.product-price'), [
             'product' => $this->product,
             ...$args,
         ])->render();

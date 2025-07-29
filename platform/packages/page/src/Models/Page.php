@@ -47,7 +47,7 @@ class Page extends BaseModel
 
     protected static function booted(): void
     {
-        static::creating(function (self $page) {
+        static::creating(function (self $page): void {
             $page->user_id = $page->user_id ?: auth()->id();
         });
     }

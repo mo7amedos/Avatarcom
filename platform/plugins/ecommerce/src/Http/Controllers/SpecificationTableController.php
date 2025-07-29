@@ -52,7 +52,7 @@ class SpecificationTableController extends BaseController
     {
         $form = $this->getForm()::create()->setRequest($request)->onlyValidatedData();
 
-        $form->saving(function (SpecificationTableForm $form) {
+        $form->saving(function (SpecificationTableForm $form): void {
             $model = $form->getModel();
             if (! empty($this->getAdditionalDataForSaving())) {
                 $model->fill($this->getAdditionalDataForSaving());
@@ -75,7 +75,7 @@ class SpecificationTableController extends BaseController
 
     public function edit(string $table)
     {
-        $table = SpecificationTable::query()->findOrFail($table);
+        $table = $this->getSpecificationTable($table);
 
         $this->pageTitle(trans('plugins/ecommerce::product-specification.specification_tables.edit.title', [
             'name' => $table->name,
@@ -86,11 +86,11 @@ class SpecificationTableController extends BaseController
 
     public function update(SpecificationTableRequest $request, string $table)
     {
-        $table = SpecificationTable::query()->findOrFail($table);
+        $table = $this->getSpecificationTable($table);
 
         $form = $this->getForm()::createFromModel($table)->setRequest($request)->onlyValidatedData();
 
-        $form->saving(function (SpecificationTableForm $form) {
+        $form->saving(function (SpecificationTableForm $form): void {
             $model = $form->getModel();
             if (! empty($this->getAdditionalDataForSaving())) {
                 $model->fill($this->getAdditionalDataForSaving());
@@ -120,7 +120,7 @@ class SpecificationTableController extends BaseController
 
     public function destroy(string $table)
     {
-        $table = SpecificationTable::query()->findOrFail($table);
+        $table = $this->getSpecificationTable($table);
 
         return DeleteResourceAction::make($table);
     }
@@ -160,5 +160,10 @@ class SpecificationTableController extends BaseController
     protected function getEditRouteName(): string
     {
         return 'ecommerce.specification-tables.edit';
+    }
+
+    protected function getSpecificationTable(string $table)
+    {
+        return SpecificationTable::query()->findOrFail($table);
     }
 }

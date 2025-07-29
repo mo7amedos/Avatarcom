@@ -72,7 +72,7 @@ class StoreController extends BaseController
     public function edit(Store $store, Request $request)
     {
         $form = StoreForm::createFromModel($store)
-            ->setUrl(route('marketplace.store.edit.update', $store->getKey()))
+            ->setUrl(route('marketplace.store.update', $store->getKey()))
             ->renderForm();
 
         $taxInformationForm = null;

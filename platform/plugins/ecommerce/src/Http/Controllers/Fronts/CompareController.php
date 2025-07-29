@@ -6,7 +6,6 @@ use Botble\Base\Http\Controllers\BaseController;
 use Botble\Ecommerce\Facades\Cart;
 use Botble\Ecommerce\Facades\EcommerceHelper;
 use Botble\Ecommerce\Models\Product;
-use Botble\Ecommerce\Models\ProductAttributeSet;
 use Botble\Ecommerce\Repositories\Interfaces\ProductInterface;
 use Botble\SeoHelper\Facades\SeoHelper;
 use Botble\Theme\Facades\Theme;
@@ -19,10 +18,13 @@ class CompareController extends BaseController
 
     public function index()
     {
-        SeoHelper::setTitle(__('Compare'));
+        $title = __('Compare');
+
+        SeoHelper::setTitle(theme_option('ecommerce_compare_seo_title') ?: $title)
+            ->setDescription(theme_option('ecommerce_compare_seo_description'));
 
         Theme::breadcrumb()
-            ->add(__('Compare'), route('public.compare'));
+            ->add($title, route('public.compare'));
 
         $itemIds = collect(Cart::instance('compare')->content())
             ->sortBy([['updated_at', 'desc']])
@@ -30,14 +32,20 @@ class CompareController extends BaseController
 
         $products = collect();
         $attributeSets = collect();
-        if ($itemIds->count()) {
+        if ($itemIds->isNotEmpty()) {
+            $productIds = $itemIds->all();
+
             $products = $this->productRepository
-                ->getProductsByIds($itemIds->toArray(), array_merge([
+                ->getProductsByIds($productIds, array_merge([
                     'take' => 10,
                     'with' => EcommerceHelper::withProductEagerLoadingRelations(),
                 ], EcommerceHelper::withReviewsParams()));
 
-            $attributeSets = ProductAttributeSet::getAllWithSelected($itemIds);
+            $attributeSets = collect();
+
+            foreach ($products->load('productAttributeSets.attributes') as $product) {
+                $attributeSets = $attributeSets->merge($product->productAttributeSets);
+            }
         }
 
         return Theme::scope(

@@ -143,6 +143,6 @@ class Cache implements CacheInterface
 
     public function generateCacheKeyFromInput(): string
     {
-        return serialize(request()->input()) . serialize(url()->current());
+        return serialize(request()->input()) . serialize(BaseHelper::getHomepageUrl());
     }
 }

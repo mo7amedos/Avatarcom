@@ -57,4 +57,5 @@ return [
     'selected' => 'selected',
     'count_selected' => ':count selected',
     'sort_order' => 'Sort order',
+    'search_input_placeholder' => 'Search...',
 ];

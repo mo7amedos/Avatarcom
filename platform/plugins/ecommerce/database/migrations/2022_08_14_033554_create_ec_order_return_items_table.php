@@ -8,7 +8,7 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasTable('ec_order_return_items')) {
-            Schema::create('ec_order_return_items', function (Blueprint $table) {
+            Schema::create('ec_order_return_items', function (Blueprint $table): void {
                 $table->id();
                 $table->foreignId('order_return_id')->comment('Order return id');
                 $table->foreignId('order_product_id')->comment('Order product id');

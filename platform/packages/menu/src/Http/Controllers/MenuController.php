@@ -58,7 +58,7 @@ class MenuController extends BaseController
         $form = MenuForm::create();
 
         $form
-            ->saving(function (MenuForm $form) use ($request) {
+            ->saving(function (MenuForm $form) use ($request): void {
                 $form
                     ->getModel()
                     ->fill($form->getRequest()->input())
@@ -124,7 +124,7 @@ class MenuController extends BaseController
     public function update(MenuModel $menu, MenuRequest $request)
     {
         MenuForm::createFromModel($menu)
-            ->saving(function (MenuForm $form) use ($request) {
+            ->saving(function (MenuForm $form) use ($request): void {
                 $form
                     ->getModel()
                     ->fill($form->getRequest()->input())
@@ -164,7 +164,7 @@ class MenuController extends BaseController
     {
         $form = MenuNodeForm::create();
 
-        $form->saving(function (MenuNodeForm $form) use ($request) {
+        $form->saving(function (MenuNodeForm $form) use ($request): void {
             /**
              * @var MenuNode $row
              */

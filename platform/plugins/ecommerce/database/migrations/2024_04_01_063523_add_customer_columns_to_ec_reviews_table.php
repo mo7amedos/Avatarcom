@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('ec_reviews', function (Blueprint $table) {
+        Schema::table('ec_reviews', function (Blueprint $table): void {
             $table->foreignId('customer_id')->nullable()->change();
             $table->string('customer_name')->nullable()->after('customer_id');
             $table->string('customer_email')->nullable()->after('customer_name');
@@ -16,7 +16,7 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::table('ec_reviews', function (Blueprint $table) {
+        Schema::table('ec_reviews', function (Blueprint $table): void {
             $table->foreignId('customer_id')->nullable(false)->change();
             $table->dropColumn(['customer_name', 'customer_email']);
         });

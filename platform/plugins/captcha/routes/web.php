@@ -3,9 +3,9 @@
 use Botble\Base\Facades\AdminHelper;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['namespace' => 'Botble\Captcha\Http\Controllers'], function () {
-    AdminHelper::registerRoutes(function () {
-        Route::group(['prefix' => 'settings/captcha', 'as' => 'captcha.settings', 'permission' => 'captcha.settings'], function () {
+Route::group(['namespace' => 'Botble\Captcha\Http\Controllers'], function (): void {
+    AdminHelper::registerRoutes(function (): void {
+        Route::group(['prefix' => 'settings/captcha', 'as' => 'captcha.settings', 'permission' => 'captcha.settings'], function (): void {
             Route::get('/', [
                 'uses' => 'Settings\CaptchaSettingController@edit',
             ]);

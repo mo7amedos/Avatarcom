@@ -39,7 +39,7 @@ class PublicStoreController extends BaseController
 
         $with = ['slugable'];
         if (EcommerceHelper::isReviewEnabled()) {
-            $with['reviews'] = function ($query) {
+            $with['reviews'] = function ($query): void {
                 $query->where([
                     'ec_products.status' => BaseStatusEnum::PUBLISHED,
                     'ec_reviews.status' => BaseStatusEnum::PUBLISHED,
@@ -52,13 +52,12 @@ class PublicStoreController extends BaseController
             ->where($condition)
             ->with($with)
             ->withCount([
-                'products' => function ($query) {
+                'products' => function ($query): void {
                     $query
                         ->where('is_variation', 0)
                         ->wherePublished();
                 },
-            ])
-            ->orderByDesc('created_at')
+            ])->latest()
             ->paginate(12);
 
         return Theme::scope('marketplace.stores', compact('stores'), MarketplaceHelper::viewPath('stores', false))->render();
@@ -71,9 +70,7 @@ class PublicStoreController extends BaseController
     ) {
         $slug = SlugHelper::getSlug($key, SlugHelper::getPrefix(Store::class));
 
-        if (! $slug) {
-            abort(404);
-        }
+        abort_unless($slug, 404);
 
         $condition = [
             'mp_stores.id' => $slug->reference_id,
@@ -162,9 +159,7 @@ class PublicStoreController extends BaseController
 
     public function checkStoreUrl(CheckStoreUrlRequest $request)
     {
-        if (! $request->ajax()) {
-            abort(404);
-        }
+        abort_unless($request->ajax(), 404);
 
         $slug = $request->input('url');
         $slug = Str::slug($slug, '-', ! SlugHelper::turnOffAutomaticUrlTranslationIntoLatin() ? 'en' : false);

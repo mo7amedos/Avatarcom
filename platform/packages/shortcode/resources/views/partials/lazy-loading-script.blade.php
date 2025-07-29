@@ -1,39 +1,55 @@
 @once
     <script>
         var lazyLoadShortcodeBlocks = function () {
-            $('.shortcode-lazy-loading').each(function (index, element) {
-                var $element = $(element);
-                var name = $element.data('name');
-                var attributes = $element.data('attributes');
+            document.querySelectorAll('.shortcode-lazy-loading').forEach(function (element) {
+                var name = element.getAttribute('data-name');
+                var attributes = JSON.parse(element.getAttribute('data-attributes'));
 
-                $.ajax({
-                    url: '{{ route('public.ajax.render-ui-block') }}',
-                    type: 'POST',
-                    data: {
+                const url = '{{ route('public.ajax.render-ui-block') }}';
+                const csrfToken = '{{ csrf_token() }}';
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
                         name,
                         attributes: {
-                            ...attributes,
-                        },
-                    },
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    success: function ({ error, data }) {
+                            ...attributes
+                        }
+                    })
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(({ error, data }) => {
                         if (error) {
                             return;
                         }
 
-                        $element.replaceWith(data);
+                        element.outerHTML = data;
 
                         document.dispatchEvent(new CustomEvent('shortcode.loaded', {
                             detail: {
                                 name,
                                 attributes,
-                                html: data,
+                                html: data
                             }
                         }));
-                    },
-                });
+
+                        if (typeof Theme !== 'undefined' && typeof Theme.lazyLoadInstance !== 'undefined') {
+                            Theme.lazyLoadInstance.update()
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Fetch error:', error);
+                    });
             });
         };
 

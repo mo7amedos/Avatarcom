@@ -67,7 +67,7 @@ class FaqServiceProvider extends ServiceProvider
             }
         }
 
-        DashboardMenu::default()->beforeRetrieving(function () {
+        DashboardMenu::default()->beforeRetrieving(function (): void {
             DashboardMenu::make()
                 ->registerItem(
                     DashboardMenuItem::make()
@@ -96,7 +96,7 @@ class FaqServiceProvider extends ServiceProvider
                 );
         });
 
-        PanelSectionManager::default()->beforeRendering(function () {
+        PanelSectionManager::default()->beforeRendering(function (): void {
             PanelSectionManager::registerItem(
                 SettingOthersPanelSection::class,
                 fn () => PanelSectionItem::make('faqs')

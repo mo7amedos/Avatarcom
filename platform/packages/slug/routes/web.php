@@ -3,9 +3,9 @@
 use Botble\Base\Facades\AdminHelper;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['namespace' => 'Botble\Slug\Http\Controllers'], function () {
-    AdminHelper::registerRoutes(function () {
-        Route::group(['prefix' => 'settings/permalink'], function () {
+Route::group(['namespace' => 'Botble\Slug\Http\Controllers'], function (): void {
+    AdminHelper::registerRoutes(function (): void {
+        Route::group(['prefix' => 'settings/permalink'], function (): void {
             Route::get('', [
                 'as' => 'slug.settings',
                 'uses' => 'SlugController@edit',
@@ -21,7 +21,7 @@ Route::group(['namespace' => 'Botble\Slug\Http\Controllers'], function () {
         });
     });
 
-    Route::group(['prefix' => 'ajax/slug', 'middleware' => ['web', 'core']], function () {
+    Route::group(['prefix' => 'ajax/slug', 'middleware' => ['web', 'core']], function (): void {
         Route::post('create', [
             'as' => 'slug.create',
             'uses' => 'SlugController@store',

@@ -102,7 +102,7 @@ class CustomerForm extends FormAbstract
                     ->label(trans('plugins/ecommerce::customer.avatar'))
             )
             ->setBreakFieldPoint('status')
-            ->when($this->getModel()->getKey(), function () {
+            ->when($this->getModel()->getKey(), function (): void {
                 /**
                  * @var Customer $model
                  */

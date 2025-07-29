@@ -38,6 +38,39 @@ use Illuminate\Support\Str;
 
 trait HasProductSeeder
 {
+    /**
+     * Generate a unique barcode for products
+     *
+     * @return string
+     */
+    protected function generateUniqueBarcode(): string
+    {
+        // Generate a random 12-digit EAN-13 compatible barcode
+        // The first 12 digits are random, and the 13th is a checksum
+        $barcode = '';
+        for ($i = 0; $i < 12; $i++) {
+            $barcode .= mt_rand(0, 9);
+        }
+
+        // Calculate checksum for EAN-13
+        $sum = 0;
+        for ($i = 0; $i < 12; $i++) {
+            $sum += (int) $barcode[$i] * ($i % 2 === 0 ? 1 : 3);
+        }
+        $checksum = (10 - ($sum % 10)) % 10;
+
+        // Append checksum to create a valid EAN-13 barcode
+        $barcode .= $checksum;
+
+        // Check if barcode already exists in the database
+        if (Product::query()->where('barcode', $barcode)->exists()) {
+            // If it exists, generate a new one recursively
+            return $this->generateUniqueBarcode();
+        }
+
+        return $barcode;
+    }
+
     public function createProducts(array $products, bool $truncate = true): void
     {
         if ($truncate) {
@@ -64,12 +97,15 @@ trait HasProductSeeder
         $faker = $this->fake();
 
         $categoryIds = ProductCategory::query()->pluck('id');
+        $categoriesCount = $categoryIds->count();
         $tagIds = ProductTag::query()->pluck('id');
+        $tagsCount = $tagIds->count();
         $collectionIds = ProductCollection::query()->pluck('id');
         $labelIds = ProductLabel::query()->pluck('id');
         $taxIds = Tax::query()->pluck('id');
         $brandIds = Brand::query()->pluck('id');
         $faqIds = is_plugin_active('faq') ? Faq::query()->pluck('id') : collect();
+        $faqsCount = $faqIds->count();
 
         $insertedProducts = collect();
 
@@ -85,7 +121,7 @@ trait HasProductSeeder
             if (! isset($item['product_type'])) {
                 $item['product_type'] = ProductTypeEnum::PHYSICAL;
 
-                if ($key % 4 == 0) {
+                if ($this->hasDigitalProducts() && $key % 4 == 0) {
                     $item['product_type'] = ProductTypeEnum::DIGITAL;
                     $item['name'] .= ' (' . ProductTypeEnum::DIGITAL()->label() . ')';
                 }
@@ -116,6 +152,11 @@ trait HasProductSeeder
                 $item['is_featured'] = $faker->boolean();
             }
 
+            // Generate and assign a unique barcode if not already set
+            if (! isset($item['barcode'])) {
+                $item['barcode'] = $this->generateUniqueBarcode();
+            }
+
             /**
              * @var Product $product
              */
@@ -133,12 +174,12 @@ trait HasProductSeeder
                 $product->productLabels()->sync([$labelIds->random()]);
             }
 
-            if ($categoryIds->isNotEmpty()) {
-                $product->categories()->sync($categoryIds->random($categoryIds->count() > 4 ? 4 : 1)->toArray());
+            if ($categoriesCount) {
+                $product->categories()->sync($categoryIds->random($categoriesCount > 4 ? 4 : 1)->all());
             }
 
-            if ($tagIds->isNotEmpty()) {
-                $product->tags()->sync($tagIds->random($tagIds->count() > 3 ? 3 : 1)->toArray());
+            if ($tagsCount) {
+                $product->tags()->sync($tagIds->random($tagsCount > 3 ? 3 : 1)->all());
             }
 
             if ($taxIds->isNotEmpty()) {
@@ -153,18 +194,22 @@ trait HasProductSeeder
                 MetaBox::saveMetaBoxData(
                     $product,
                     'faq_ids',
-                    $faqIds->random($faqIds->count() >= 5 ? 5 : 1)->toArray()
+                    $faqIds->random($faqsCount >= 5 ? 5 : 1)->all()
                 );
             }
         }
 
         $storeProductService = app(StoreProductService::class);
 
-        Storage::disk('local')->deleteDirectory(Product::getDigitalProductFilesDirectory());
+        if ($this->hasDigitalProducts()) {
+            Storage::disk('local')->deleteDirectory(Product::getDigitalProductFilesDirectory());
+        }
 
         $productCount = $insertedProducts->count();
 
         $productAttributeSets = ProductAttributeSet::query()->with('attributes')->get();
+
+        $productAttributeSetsCount = $productAttributeSets->count();
 
         foreach ($insertedProducts as $key => $product) {
             $key = $key + 1;
@@ -182,7 +227,7 @@ trait HasProductSeeder
             if ($faker->boolean()) {
                 $selectedProductAttributeSets = $productAttributeSets->take(2);
 
-                if ($key >= (int) ($productCount / 2)) {
+                if ($key >= (int) ($productCount / 2) && $productAttributeSetsCount > 2) {
                     $selectedProductAttributeSets = $productAttributeSets->skip(2)->take(2);
                 }
 
@@ -193,6 +238,7 @@ trait HasProductSeeder
                         'name' => $product->name,
                         'status' => BaseStatusEnum::PUBLISHED,
                         'sku' => $product->sku . '-A' . $j,
+                        'barcode' => $this->generateUniqueBarcode(), // Generate unique barcode for each variation
                         'quantity' => $product->quantity,
                         'weight' => $product->weight,
                         'height' => $product->height,
@@ -224,7 +270,7 @@ trait HasProductSeeder
                     }
 
                     $selectedProductAttributeSets->each(
-                        function (ProductAttributeSet $productAttributeSet) use ($faker, $productVariation) {
+                        function (ProductAttributeSet $productAttributeSet) use ($faker, $productVariation): void {
                             /**
                              * @var Collection $attributes
                              */
@@ -239,30 +285,37 @@ trait HasProductSeeder
             }
         }
 
-        foreach (Product::query()->where('product_type', ProductTypeEnum::DIGITAL)->get() as $product) {
-            foreach ($product->images as $index => $img) {
-                if ($index > 1) {
-                    continue;
+        if ($this->hasDigitalProducts()) {
+            foreach (Product::query()->where('product_type', ProductTypeEnum::DIGITAL)->get() as $product) {
+                foreach ($product->images as $index => $img) {
+                    if ($index > 1) {
+                        continue;
+                    }
+
+                    $productFile = RvMedia::getRealPath($img);
+
+                    if (! File::exists($productFile)) {
+                        continue;
+                    }
+
+                    $fileUpload = new UploadedFile(
+                        $productFile,
+                        basename($img),
+                        RvMedia::getMimeType($productFile),
+                        null,
+                        true
+                    );
+
+                    $productFileData = $storeProductService->saveProductFile($fileUpload);
+
+                    $product->productFiles()->create($productFileData);
                 }
-
-                $productFile = RvMedia::getRealPath($img);
-
-                if (! File::exists($productFile)) {
-                    continue;
-                }
-
-                $fileUpload = new UploadedFile(
-                    $productFile,
-                    basename($img),
-                    RvMedia::getMimeType($productFile),
-                    null,
-                    true
-                );
-
-                $productFileData = $storeProductService->saveProductFile($fileUpload);
-
-                $product->productFiles()->create($productFileData);
             }
         }
+    }
+
+    protected function hasDigitalProducts(): bool
+    {
+        return true;
     }
 }

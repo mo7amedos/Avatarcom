@@ -8,6 +8,7 @@ use Botble\Base\PanelSections\PanelSectionItem;
 use Botble\Base\Supports\ServiceProvider;
 use Botble\Base\Traits\LoadAndPublishDataTrait;
 use Botble\Language\Facades\Language;
+use Botble\Language\Http\Middleware\ApiLanguageMiddleware;
 use Botble\Language\Http\Middleware\LocaleSessionRedirect;
 use Botble\Language\Http\Middleware\LocalizationRedirectFilter;
 use Botble\Language\Http\Middleware\LocalizationRoutes;
@@ -43,6 +44,7 @@ class LanguageServiceProvider extends ServiceProvider
         $router->aliasMiddleware('localize', LocalizationRoutes::class);
         $router->aliasMiddleware('localizationRedirect', LocalizationRedirectFilter::class);
         $router->aliasMiddleware('localeSessionRedirect', LocaleSessionRedirect::class);
+        $router->aliasMiddleware('api.language', ApiLanguageMiddleware::class);
     }
 
     public function boot(): void
@@ -53,7 +55,7 @@ class LanguageServiceProvider extends ServiceProvider
             ->setNamespace('plugins/language')
             ->loadHelpers()
             ->loadAndPublishConfigurations(['permissions'])
-            ->loadRoutes()
+            ->loadRoutes(['web', 'api'])
             ->loadAndPublishViews()
             ->loadAndPublishTranslations()
             ->loadMigrations()
@@ -67,7 +69,7 @@ class LanguageServiceProvider extends ServiceProvider
         }
 
         if (! $this->app->runningInConsole() && is_plugin_active('language')) {
-            PanelSectionManager::default()->beforeRendering(function () {
+            PanelSectionManager::default()->beforeRendering(function (): void {
                 PanelSectionManager::registerItem(
                     SettingCommonPanelSection::class,
                     fn () => PanelSectionItem::make('language')
@@ -79,12 +81,12 @@ class LanguageServiceProvider extends ServiceProvider
                 );
             });
 
-            $this->app['events']->listen(RouteMatched::class, function () {
+            $this->app['events']->listen(RouteMatched::class, function (): void {
                 Assets::addScriptsDirectly('vendor/core/plugins/language/js/language-global.js')
                     ->addStylesDirectly(['vendor/core/plugins/language/css/language.css']);
             });
 
-            $this->app->booted(function () {
+            $this->app->booted(function (): void {
                 if (defined('THEME_OPTIONS_MODULE_SCREEN_NAME')) {
                     Language::registerModule(THEME_OPTIONS_MODULE_SCREEN_NAME);
                 }

@@ -6,12 +6,12 @@ use Botble\Ecommerce\Http\Middleware\CheckCartEnabledMiddleware;
 use Botble\Theme\Facades\Theme;
 use Illuminate\Support\Facades\Route;
 
-Theme::registerRoutes(function () {
+Theme::registerRoutes(function (): void {
     Route::middleware(CheckCartEnabledMiddleware::class)
         ->controller(PublicCartController::class)
         ->prefix(EcommerceHelper::getPageSlug('cart'))
         ->name('public.')
-        ->group(function () {
+        ->group(function (): void {
             Route::get('/', 'index')->name('cart');
             Route::post('add-to-cart', 'store')->name('cart.add-to-cart');
             Route::post('update', 'update')->name('cart.update');

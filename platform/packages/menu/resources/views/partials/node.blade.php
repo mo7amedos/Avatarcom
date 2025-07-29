@@ -1,6 +1,19 @@
 <li
     class="dd-item dd3-item @if ($row->reference_id > 0) post-item @endif"
-    data-menu-item="{{ Js::encode(Arr::except(apply_filters('menu_nodes_item_data', $row)->toArray(), ['created_at', 'updated_at', 'child'])) }}"
+    data-menu-item="{{ Js::encode(Arr::only(apply_filters('menu_nodes_item_data', $row)->toArray(), [
+    'id',
+    'menu_id',
+    'parent_id',
+    'reference_id',
+    'reference_type',
+    'url',
+    'icon_font',
+    'title',
+    'css_class',
+    'target',
+    'has_child',
+    'position',
+])) }}"
 >
     <div class="dd-handle dd3-handle"></div>
     <div class="dd3-content d-flex justify-content-between">

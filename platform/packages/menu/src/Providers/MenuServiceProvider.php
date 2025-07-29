@@ -49,7 +49,7 @@ class MenuServiceProvider extends ServiceProvider
             ->loadMigrations()
             ->publishAssets();
 
-        DashboardMenu::default()->beforeRetrieving(function () {
+        DashboardMenu::default()->beforeRetrieving(function (): void {
             DashboardMenu::make()
                 ->registerItem(
                     DashboardMenuItem::make()
@@ -63,7 +63,7 @@ class MenuServiceProvider extends ServiceProvider
                 );
         });
 
-        $this->app['events']->listen(RenderingAdminBar::class, function () {
+        $this->app['events']->listen(RenderingAdminBar::class, function (): void {
             AdminBar::registerLink(
                 trans('packages/menu::menu.name'),
                 route('menus.index'),

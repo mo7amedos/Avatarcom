@@ -20,8 +20,7 @@ class RenderingSiteMapListener
                 case 'product-tags':
                     $tags = ProductTag::query()
                         ->with('slugable')
-                        ->wherePublished()
-                        ->orderByDesc('created_at')
+                        ->wherePublished()->latest()
                         ->select(['id', 'name', 'updated_at'])
                         ->get();
 
@@ -37,8 +36,7 @@ class RenderingSiteMapListener
                 case 'product-categories':
                     $productCategories = ProductCategory::query()
                         ->with('slugable')
-                        ->wherePublished()
-                        ->orderByDesc('created_at')
+                        ->wherePublished()->latest()
                         ->select(['id', 'name', 'updated_at'])
                         ->get();
 
@@ -54,8 +52,7 @@ class RenderingSiteMapListener
                 case 'product-brands':
                     $brands = Brand::query()
                         ->with('slugable')
-                        ->wherePublished()
-                        ->orderByDesc('created_at')
+                        ->wherePublished()->latest()
                         ->select(['id', 'name', 'updated_at'])
                         ->get();
 
@@ -77,15 +74,43 @@ class RenderingSiteMapListener
                     break;
             }
 
-            if (preg_match('/^products-((?:19|20|21|22)\d{2})-(0?[1-9]|1[012])$/', $key, $matches)) {
-                if (($year = Arr::get($matches, 1)) && ($month = Arr::get($matches, 2))) {
+            // Handle products with pagination - added in March 2025
+            $paginationData = SiteMapManager::extractPaginationDataByPattern($key, 'products', 'monthly-archive');
+
+            if ($paginationData) {
+                $matches = $paginationData['matches'];
+                $year = Arr::get($matches, 1);
+                $month = Arr::get($matches, 2);
+
+                if ($year && $month) {
                     $products = Product::query()
                         ->with('slugable')
                         ->wherePublished()
                         ->where('is_variation', 0)
                         ->whereYear('created_at', $year)
                         ->whereMonth('created_at', $month)
-                        ->orderByDesc('created_at')
+                        ->latest('updated_at')
+                        ->select(['id', 'name', 'updated_at'])
+                        ->skip($paginationData['offset'])
+                        ->take($paginationData['limit'])
+                        ->get();
+
+                    foreach ($products as $product) {
+                        if (! $product->slugable) {
+                            continue;
+                        }
+
+                        SiteMapManager::add($product->url, $product->updated_at, '0.8');
+                    }
+                }
+            } elseif (preg_match('/^products-((?:19|20|21|22)\d{2})-(0?[1-9]|1[012])$/', $key, $matches)) {
+                if (($year = Arr::get($matches, 1)) && ($month = Arr::get($matches, 2))) {
+                    $products = Product::query()
+                        ->with('slugable')
+                        ->wherePublished()
+                        ->where('is_variation', 0)
+                        ->whereYear('created_at', $year)
+                        ->whereMonth('created_at', $month)->latest()
                         ->select(['id', 'name', 'updated_at'])
                         ->get();
 
@@ -101,22 +126,25 @@ class RenderingSiteMapListener
         } else {
             $products = Product::query()
                 ->selectRaw(
-                    'YEAR(created_at) as created_year, MONTH(created_at) as created_month, MAX(created_at) as created_at'
+                    'YEAR(created_at) as created_year, MONTH(created_at) as created_month, MAX(created_at) as created_at, COUNT(*) as product_count'
                 )
                 ->where('is_variation', 0)
+                ->wherePublished()
                 ->groupBy('created_year', 'created_month')
-                ->orderByDesc('created_year')
-                ->orderByDesc('created_month')
+                ->latest('created_year')
+                ->latest('created_month')
                 ->get();
 
             foreach ($products as $product) {
-                $key = sprintf(
+                $formattedMonth = str_pad($product->created_month, 2, '0', STR_PAD_LEFT);
+                $baseKey = sprintf(
                     'products-%s-%s',
                     $product->created_year,
-                    str_pad($product->created_month, 2, '0', STR_PAD_LEFT)
+                    $formattedMonth
                 );
 
-                SiteMapManager::addSitemap(SiteMapManager::route($key), $product->created_at);
+                // Use the pagination functionality to split sitemaps with more than 1000 products - added in March 2025
+                SiteMapManager::createPaginatedSitemaps($baseKey, $product->product_count, $product->created_at);
             }
 
             $productCategoryUpdated = ProductCategory::query()

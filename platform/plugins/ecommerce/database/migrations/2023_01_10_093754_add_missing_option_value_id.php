@@ -7,12 +7,12 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        rescue(function () {
-            Schema::table('ec_option_value', function (Blueprint $table) {
+        rescue(function (): void {
+            Schema::table('ec_option_value', function (Blueprint $table): void {
                 $table->id()->after('option_id');
             });
 
-            Schema::table('ec_global_option_value', function (Blueprint $table) {
+            Schema::table('ec_global_option_value', function (Blueprint $table): void {
                 $table->id()->after('option_id');
             });
         }, report: false);
@@ -20,11 +20,11 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::table('ec_global_option_value', function (Blueprint $table) {
+        Schema::table('ec_global_option_value', function (Blueprint $table): void {
             $table->dropColumn('id');
         });
 
-        Schema::table('ec_option_value', function (Blueprint $table) {
+        Schema::table('ec_option_value', function (Blueprint $table): void {
             $table->dropColumn('id');
         });
     }

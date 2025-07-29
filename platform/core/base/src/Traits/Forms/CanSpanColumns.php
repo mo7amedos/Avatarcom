@@ -46,7 +46,7 @@ trait CanSpanColumns
 
         if (! is_array($span)) {
             $span = [
-                'lg' => ceil(12 / ((int) $parent->getColumns('lg')) * $span),
+                'lg' => min(ceil(12 / ((int) $parent->getColumns('lg')) * $span), 12),
             ];
         }
 
@@ -60,7 +60,7 @@ trait CanSpanColumns
         }
 
         return array_map(function ($value) use ($span) {
-            return $value * $span;
+            return min($value * $span, 12);
         }, $parent->getColumns());
     }
 

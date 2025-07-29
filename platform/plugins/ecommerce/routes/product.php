@@ -5,9 +5,9 @@ use Botble\Ecommerce\Http\Controllers\ExportProductController;
 use Botble\Ecommerce\Http\Controllers\ImportProductController;
 use Illuminate\Support\Facades\Route;
 
-AdminHelper::registerRoutes(function () {
-    Route::group(['namespace' => 'Botble\Ecommerce\Http\Controllers', 'prefix' => 'ecommerce'], function () {
-        Route::group(['prefix' => 'products', 'as' => 'products.'], function () {
+AdminHelper::registerRoutes(function (): void {
+    Route::group(['namespace' => 'Botble\Ecommerce\Http\Controllers', 'prefix' => 'ecommerce'], function (): void {
+        Route::group(['prefix' => 'products', 'as' => 'products.'], function (): void {
             Route::resource('', 'ProductController')
                 ->parameters(['' => 'product']);
 
@@ -124,19 +124,52 @@ AdminHelper::registerRoutes(function () {
                 'uses' => 'ProductController@setDefaultProductVariation',
                 'permission' => 'products.edit',
             ])->wherePrimaryKey();
+
+            // License code management routes
+            Route::group(['prefix' => '{product}/license-codes', 'as' => 'license-codes.'], function (): void {
+                Route::get('/', [
+                    'as' => 'index',
+                    'uses' => 'ProductLicenseCodeController@index',
+                    'permission' => 'products.edit',
+                ]);
+
+                Route::post('/', [
+                    'as' => 'store',
+                    'uses' => 'ProductLicenseCodeController@store',
+                    'permission' => 'products.edit',
+                ]);
+
+                Route::put('{licenseCode}', [
+                    'as' => 'update',
+                    'uses' => 'ProductLicenseCodeController@update',
+                    'permission' => 'products.edit',
+                ]);
+
+                Route::delete('{licenseCode}', [
+                    'as' => 'destroy',
+                    'uses' => 'ProductLicenseCodeController@destroy',
+                    'permission' => 'products.edit',
+                ]);
+
+                Route::post('bulk-generate', [
+                    'as' => 'bulk-generate',
+                    'uses' => 'ProductLicenseCodeController@bulkGenerate',
+                    'permission' => 'products.edit',
+                ]);
+            });
         });
     });
 
-    Route::prefix('tools/data-synchronize')->name('tools.data-synchronize.')->group(function () {
-        Route::prefix('export')->name('export.')->group(function () {
-            Route::group(['prefix' => 'products', 'as' => 'products.', 'permission' => 'ecommerce.export.products.index'], function () {
+    Route::prefix('tools/data-synchronize')->name('tools.data-synchronize.')->group(function (): void {
+        Route::prefix('export')->name('export.')->group(function (): void {
+            Route::group(['prefix' => 'products', 'as' => 'products.', 'permission' => 'ecommerce.export.products.index'], function (): void {
                 Route::get('/', [ExportProductController::class, 'index'])->name('index');
                 Route::post('/', [ExportProductController::class, 'store'])->name('store');
             });
         });
 
-        Route::prefix('import')->name('import.')->group(function () {
-            Route::group(['prefix' => 'products', 'as' => 'products.', 'permission' => 'ecommerce.import.products.index'], function () {
+        Route::prefix('import')->name('import.')->group(function (): void {
+            Route::group(['prefix' => 'products', 'as' => 'products.', 'permission' => 'ecommerce.import.products.index'], function (): void {
                 Route::get('/', [ImportProductController::class, 'index'])->name('index');
                 Route::post('validate', [ImportProductController::class, 'validateData'])->name('validate');
                 Route::post('import', [ImportProductController::class, 'import'])->name('store');

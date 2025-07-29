@@ -11,7 +11,7 @@ return new class () extends Migration {
             return;
         }
 
-        Schema::table('ec_discounts', function (Blueprint $table) {
+        Schema::table('ec_discounts', function (Blueprint $table): void {
             $table->boolean('display_at_checkout')->default(false)->after('apply_via_url');
             $table->string('description', 400)->nullable();
         });
@@ -19,7 +19,7 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::table('ec_discounts', function (Blueprint $table) {
+        Schema::table('ec_discounts', function (Blueprint $table): void {
             $table->dropColumn(['display_at_checkout', 'description']);
         });
     }

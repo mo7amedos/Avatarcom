@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::create('ec_flash_sales', function (Blueprint $table) {
+        Schema::create('ec_flash_sales', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
             $table->dateTime('end_date');
@@ -15,7 +15,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('ec_flash_sale_products', function (Blueprint $table) {
+        Schema::create('ec_flash_sale_products', function (Blueprint $table): void {
             $table->foreignId('flash_sale_id');
             $table->foreignId('product_id');
             $table->double('price')->unsigned()->nullable();

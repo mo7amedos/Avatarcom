@@ -7,14 +7,14 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('ec_order_addresses', function (Blueprint $table) {
+        Schema::table('ec_order_addresses', function (Blueprint $table): void {
             $table->string('type', 60)->default('shipping_address');
         });
     }
 
     public function down(): void
     {
-        Schema::table('ec_order_addresses', function (Blueprint $table) {
+        Schema::table('ec_order_addresses', function (Blueprint $table): void {
             $table->dropColumn('type');
         });
     }

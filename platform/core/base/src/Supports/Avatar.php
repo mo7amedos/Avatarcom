@@ -3,6 +3,7 @@
 namespace Botble\Base\Supports;
 
 use Botble\Media\Facades\RvMedia;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -139,7 +140,7 @@ class Avatar
         $base64 = $this->image->toJpeg()->toDataUri();
 
         if ($cacheEnabled) {
-            Cache::forever($key, $base64);
+            Cache::put($key, $base64, Carbon::now()->addDay());
         }
 
         return $base64;
@@ -179,7 +180,7 @@ class Avatar
                 $this->make($this->name, $this->chars, $this->uppercase, $this->ascii),
                 (int) ($this->width / 2),
                 (int) ($this->height / 2),
-                function (FontFactory $font) {
+                function (FontFactory $font): void {
                     $font->filename($this->font);
                     $font->size($this->fontSize);
                     $font->color($this->foreground);
@@ -189,7 +190,7 @@ class Avatar
             );
         } else {
             try {
-                $favicon = setting('admin_favicon');
+                $favicon = app('Botble\Base\Helpers\AdminHelper')->getAdminFavicon();
 
                 if ($favicon) {
                     $favicon = Storage::path($favicon);
@@ -239,7 +240,7 @@ class Avatar
         } else {
             // otherwise, use initial char from each word
             $initials = collect();
-            $words->each(function ($word) use ($initials) {
+            $words->each(function ($word) use ($initials): void {
                 $initials->push(Str::substr($word, 0, 1));
             });
 
@@ -296,7 +297,7 @@ class Avatar
         $this->image->drawCircle(
             intval($this->width / 2),
             intval($this->height / 2),
-            function (CircleFactory $draw) {
+            function (CircleFactory $draw): void {
                 $draw->radius($this->width - $this->borderSize);
                 $draw->background($this->background);
                 $draw->border($this->getBorderColor(), $this->borderSize);
@@ -326,7 +327,7 @@ class Avatar
         $this->image->drawRectangle(
             $edge,
             $edge,
-            function (RectangleFactory $draw) use ($height, $width) {
+            function (RectangleFactory $draw) use ($height, $width): void {
                 $draw->size($width, $height);
                 $draw->background($this->background);
                 $draw->border($this->getBorderColor(), $this->borderSize);

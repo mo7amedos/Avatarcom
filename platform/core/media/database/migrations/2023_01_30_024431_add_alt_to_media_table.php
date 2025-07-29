@@ -8,7 +8,7 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasColumn('media_files', 'alt')) {
-            Schema::table('media_files', function (Blueprint $table) {
+            Schema::table('media_files', function (Blueprint $table): void {
                 $table->string('alt')->nullable()->after('name');
             });
         }
@@ -17,7 +17,7 @@ return new class () extends Migration {
     public function down(): void
     {
         if (Schema::hasColumn('media_files', 'alt')) {
-            Schema::table('media_files', function (Blueprint $table) {
+            Schema::table('media_files', function (Blueprint $table): void {
                 $table->dropColumn('alt');
             });
         }

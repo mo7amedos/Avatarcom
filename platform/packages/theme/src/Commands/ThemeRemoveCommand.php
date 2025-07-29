@@ -9,7 +9,6 @@ use Illuminate\Console\ConfirmableTrait;
 use Illuminate\Contracts\Console\PromptsForMissingInput;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputOption;
 
 #[AsCommand('cms:theme:remove', 'Remove an existing theme')]
 class ThemeRemoveCommand extends Command implements PromptsForMissingInput
@@ -23,13 +22,15 @@ class ThemeRemoveCommand extends Command implements PromptsForMissingInput
             return self::FAILURE;
         }
 
-        if (! preg_match('/^[a-z0-9\-]+$/i', $this->argument('name'))) {
+        $name = $this->getTheme();
+
+        if (! preg_match('/^[a-z0-9\-]+$/i', $name)) {
             $this->components->error('Only alphabetic characters are allowed.');
 
             return self::FAILURE;
         }
 
-        $result = $themeService->remove($this->getTheme());
+        $result = $themeService->remove($name);
 
         if ($result['error']) {
             $this->components->error($result['message']);
@@ -46,6 +47,5 @@ class ThemeRemoveCommand extends Command implements PromptsForMissingInput
     {
         $this->addArgument('name', InputArgument::REQUIRED, 'The theme name that you want to remove');
         $this->addOption('force', 'f', null, 'Force to remove theme without confirmation');
-        $this->addOption('path', null, InputOption::VALUE_REQUIRED, 'Path to theme directory');
     }
 }

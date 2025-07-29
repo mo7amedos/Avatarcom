@@ -7,13 +7,13 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::create('dashboard_widgets', function (Blueprint $table) {
+        Schema::create('dashboard_widgets', function (Blueprint $table): void {
             $table->id();
             $table->string('name', 120);
             $table->timestamps();
         });
 
-        Schema::create('dashboard_widget_settings', function (Blueprint $table) {
+        Schema::create('dashboard_widget_settings', function (Blueprint $table): void {
             $table->id();
             $table->text('settings')->nullable();
             $table->foreignId('user_id')->index();

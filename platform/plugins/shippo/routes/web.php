@@ -4,14 +4,14 @@ use Botble\Base\Facades\AdminHelper;
 use Botble\Theme\Facades\Theme;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['namespace' => 'Botble\Shippo\Http\Controllers'], function () {
-    AdminHelper::registerRoutes(function () {
+Route::group(['namespace' => 'Botble\Shippo\Http\Controllers'], function (): void {
+    AdminHelper::registerRoutes(function (): void {
         Route::group([
             'prefix' => 'shipments/shippo',
             'as' => 'ecommerce.shipments.shippo.',
             'permission' => 'ecommerce.shipments.index',
-        ], function () {
-            Route::controller('ShippoController')->group(function () {
+        ], function (): void {
+            Route::controller('ShippoController')->group(function (): void {
                 Route::get('show/{id}', [
                     'as' => 'show',
                     'uses' => 'show',
@@ -40,7 +40,7 @@ Route::group(['namespace' => 'Botble\Shippo\Http\Controllers'], function () {
                 ]);
             });
 
-            Route::group(['prefix' => 'settings', 'as' => 'settings.'], function () {
+            Route::group(['prefix' => 'settings', 'as' => 'settings.'], function (): void {
                 Route::post('update', [
                     'as' => 'update',
                     'uses' => 'ShippoSettingController@update',
@@ -52,15 +52,15 @@ Route::group(['namespace' => 'Botble\Shippo\Http\Controllers'], function () {
     });
 
     if (is_plugin_active('marketplace')) {
-        Theme::registerRoutes(function () {
+        Theme::registerRoutes(function (): void {
             Route::group([
                 'prefix' => 'vendor',
                 'as' => 'marketplace.vendor.',
                 'middleware' => ['vendor'],
-            ], function () {
-                Route::group(['prefix' => 'orders', 'as' => 'orders.'], function () {
-                    Route::group(['prefix' => 'shippo', 'as' => 'shippo.'], function () {
-                        Route::controller('ShippoController')->group(function () {
+            ], function (): void {
+                Route::group(['prefix' => 'orders', 'as' => 'orders.'], function (): void {
+                    Route::group(['prefix' => 'shippo', 'as' => 'shippo.'], function (): void {
+                        Route::controller('ShippoController')->group(function (): void {
                             Route::get('show/{id}', [
                                 'as' => 'show',
                                 'uses' => 'show',
@@ -93,8 +93,8 @@ Route::group([
     'prefix' => 'shippo',
     'middleware' => ['api', 'shippo.webhook'],
     'as' => 'shippo.',
-], function () {
-    Route::controller('ShippoWebhookController')->group(function () {
+], function (): void {
+    Route::controller('ShippoWebhookController')->group(function (): void {
         Route::post('webhooks', [
             'uses' => 'index',
             'as' => 'webhooks',

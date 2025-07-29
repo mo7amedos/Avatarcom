@@ -5,11 +5,13 @@ namespace Botble\ACL\Forms\Auth;
 use Botble\ACL\Http\Requests\LoginRequest;
 use Botble\ACL\Models\User;
 use Botble\Base\Facades\BaseHelper;
+use Botble\Base\Facades\Html;
 use Botble\Base\Forms\FieldOptions\CheckboxFieldOption;
 use Botble\Base\Forms\FieldOptions\HtmlFieldOption;
 use Botble\Base\Forms\FieldOptions\TextFieldOption;
 use Botble\Base\Forms\Fields\CheckboxField;
 use Botble\Base\Forms\Fields\HtmlField;
+use Botble\Base\Forms\Fields\PasswordField;
 use Botble\Base\Forms\Fields\TextField;
 
 class LoginForm extends AuthForm
@@ -36,8 +38,18 @@ class LoginForm extends AuthForm
             )
             ->add(
                 'password',
-                HtmlField::class,
-                ['html' => view('core/acl::auth.partials.password')->render()]
+                PasswordField::class,
+                TextFieldOption::make()
+                    ->label(trans('core/acl::auth.login.password'))
+                    ->labelAttributes([
+                        'description' => Html::link(route('access.password.request'), trans('core/acl::auth.lost_your_password'), ['tabindex' => 5, 'title' => trans('core/acl::auth.forgot_password.title')])->toHtml(),
+                    ])
+                    ->attributes(['tabindex' => 2])
+                    ->when(BaseHelper::hasDemoModeEnabled(), function (TextFieldOption $option): void {
+                        $option->value(config('core.base.general.demo.account.password'));
+                    })
+                    ->required()
+                    ->placeholder(trans('core/acl::auth.login.placeholder.password'))
             )
             ->add(
                 'remember',

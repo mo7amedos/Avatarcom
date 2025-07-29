@@ -4,6 +4,8 @@
     }
 
     $currentCategories = $groupedCategories->get($parentId = $parentId ?? 0);
+
+    $totalCategoryCount = $totalCategoryCount ?? 0;
 @endphp
 
 @if ($currentCategories)
@@ -29,7 +31,7 @@
                             {{ $category->name }}
                         </span>
 
-                        @if($category->badge_with_count)
+                        @if ($totalCategoryCount < 200 && $category->badge_with_count)
                             {{ $category->badge_with_count }}
                         @endif
 

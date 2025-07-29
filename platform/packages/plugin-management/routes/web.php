@@ -3,9 +3,9 @@
 use Botble\Base\Facades\AdminHelper;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['namespace' => 'Botble\PluginManagement\Http\Controllers'], function () {
-    AdminHelper::registerRoutes(function () {
-        Route::group(['prefix' => 'plugins'], function () {
+Route::group(['namespace' => 'Botble\PluginManagement\Http\Controllers'], function (): void {
+    AdminHelper::registerRoutes(function (): void {
+        Route::group(['prefix' => 'plugins'], function (): void {
 
             if (config('packages.plugin-management.general.enable_plugin_manager', true)) {
                 Route::redirect('', 'plugins/installed');
@@ -46,7 +46,7 @@ Route::group(['namespace' => 'Botble\PluginManagement\Http\Controllers'], functi
                     'prefix' => 'marketplace/ajax',
                     'permission' => 'plugins.marketplace',
                     'as' => 'plugins.marketplace.ajax.',
-                ], function () {
+                ], function (): void {
                     Route::get('plugins', [
                         'as' => 'list',
                         'uses' => 'MarketplaceController@list',

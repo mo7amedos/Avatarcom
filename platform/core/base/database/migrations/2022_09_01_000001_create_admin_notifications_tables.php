@@ -8,7 +8,7 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasTable('admin_notifications')) {
-            Schema::create('admin_notifications', function (Blueprint $table) {
+            Schema::create('admin_notifications', function (Blueprint $table): void {
                 $table->id();
                 $table->string('title');
                 $table->string('action_label')->nullable();

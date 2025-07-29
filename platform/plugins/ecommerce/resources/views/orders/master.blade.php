@@ -12,9 +12,9 @@
     >
     <title> @yield('title', __('Checkout')) </title>
 
-    @if (theme_option('favicon'))
+    @if ($favicon = Theme::getFavicon())
         <link
-            href="{{ RvMedia::getImageUrl(theme_option('favicon')) }}"
+            href="{{ RvMedia::getImageUrl($favicon) }}"
             rel="shortcut icon"
         >
     @endif
@@ -28,25 +28,31 @@
         }
     </style>
 
-    {!! Html::style('vendor/core/core/base/libraries/font-awesome/css/fontawesome.min.css') !!}
-    {!! Html::style('vendor/core/core/base/libraries/ckeditor/content-styles.css?v=3.8.0') !!}
-    {!! Html::style('vendor/core/plugins/ecommerce/css/front-theme.css?v=3.8.0') !!}
-
+    {!! Html::style('vendor/core/core/base/libraries/font-awesome/css/fontawesome.min.css?v=' . ($assetsVersion = EcommerceHelper::getAssetVersion())) !!}
+    {!! Html::style('vendor/core/core/base/libraries/ckeditor/content-styles.css?v=' . $assetsVersion) !!}
     @if (BaseHelper::isRtlEnabled())
-        {!! Html::style('vendor/core/plugins/ecommerce/css/front-theme-rtl.css?v=3.8.0') !!}
+        {!! Html::style('vendor/core/plugins/ecommerce/libraries/bootstrap/bootstrap.rtl.min.css?v=' . $assetsVersion) !!}
+    @else
+        {!! Html::style('vendor/core/plugins/ecommerce/libraries/bootstrap/bootstrap.min.css?v=' . $assetsVersion) !!}
     @endif
 
-    {!! Html::style('vendor/core/core/base/libraries/toastr/toastr.min.css') !!}
+    {!! Html::style('vendor/core/plugins/ecommerce/css/front-theme.css?v=' . $assetsVersion) !!}
 
-    {!! Html::script('vendor/core/plugins/ecommerce/js/checkout.js?v=3.8.0') !!}
+    @if (BaseHelper::isRtlEnabled())
+        {!! Html::style('vendor/core/plugins/ecommerce/css/front-theme-rtl.css?v=' . $assetsVersion) !!}
+    @endif
+
+    {!! Html::style('vendor/core/core/base/libraries/toastr/toastr.min.css?v=' . $assetsVersion) !!}
+
+    {!! Html::script('vendor/core/plugins/ecommerce/js/checkout.js?v=' . $assetsVersion) !!}
 
     @if (EcommerceHelper::loadCountriesStatesCitiesFromPluginLocation())
         <link
-            href="{{ asset('vendor/core/core/base/libraries/select2/css/select2.min.css') }}"
+            href="{{ asset('vendor/core/core/base/libraries/select2/css/select2.min.css?v=' . $assetsVersion) }}"
             rel="stylesheet"
         >
-        <script src="{{ asset('vendor/core/core/base/libraries/select2/js/select2.min.js') }}"></script>
-        <script src="{{ asset('vendor/core/plugins/location/js/location.js?v=3.8.0') }}"></script>
+        <script src="{{ asset('vendor/core/core/base/libraries/select2/js/select2.min.js?v=' . $assetsVersion) }}"></script>
+        <script src="{{ asset('vendor/core/plugins/location/js/location.js?v=' . $assetsVersion) }}"></script>
     @endif
 
     {!! apply_filters('ecommerce_checkout_header', null) !!}
@@ -68,8 +74,8 @@
 
     @stack('footer')
 
-    {!! Html::script('vendor/core/plugins/ecommerce/js/utilities.js?v=3.8.0') !!}
-    {!! Html::script('vendor/core/core/base/libraries/toastr/toastr.min.js') !!}
+    {!! Html::script('vendor/core/plugins/ecommerce/js/utilities.js?v=' . $assetsVersion) !!}
+    {!! Html::script('vendor/core/core/base/libraries/toastr/toastr.min.js?v=' . $assetsVersion) !!}
 
     <script type="text/javascript">
         window.messages = {

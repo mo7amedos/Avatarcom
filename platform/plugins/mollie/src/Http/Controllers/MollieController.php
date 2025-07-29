@@ -2,9 +2,11 @@
 
 namespace Botble\Mollie\Http\Controllers;
 
+use Botble\Base\Facades\BaseHelper;
 use Botble\Base\Http\Controllers\BaseController;
 use Botble\Base\Http\Responses\BaseHttpResponse;
 use Botble\Payment\Enums\PaymentStatusEnum;
+use Botble\Payment\Models\Payment;
 use Botble\Payment\Supports\PaymentHelper;
 use Illuminate\Http\Request;
 use Mollie\Api\Exceptions\ApiException;
@@ -13,12 +15,29 @@ use Mollie\Laravel\Facades\Mollie;
 
 class MollieController extends BaseController
 {
-    public function paymentCallback(Request $request, BaseHttpResponse $response)
+    public function paymentCallback(string $token, Request $request, BaseHttpResponse $response)
     {
         try {
             $api = Mollie::api();
 
             $paymentId = $request->input('id');
+
+            if (! $paymentId) {
+                $message = __('Payment failed! Missing transaction ID.');
+
+                return $response
+                    ->setError()
+                    ->setNextUrl(PaymentHelper::getCancelURL($token) . '&error_message=' . $message)
+                    ->setMessage($message);
+            }
+
+            $payment = Payment::query()->where('charge_id', $paymentId)->first();
+
+            if ($payment && $payment->status == PaymentStatusEnum::COMPLETED) {
+                return $response
+                    ->setNextUrl(PaymentHelper::getRedirectURL($token) . '?charge_id=' . $paymentId)
+                    ->setMessage(__('Checkout successfully!'));
+            }
 
             do_action('payment_before_making_api_request', MOLLIE_PAYMENT_METHOD_NAME, ['payment_id' => $paymentId]);
 
@@ -27,9 +46,11 @@ class MollieController extends BaseController
             do_action('payment_after_api_response', MOLLIE_PAYMENT_METHOD_NAME, ['payment_id' => $paymentId], (array) $result);
 
         } catch (ApiException $exception) {
+            BaseHelper::logError($exception);
+
             return $response
                 ->setError()
-                ->setNextUrl(PaymentHelper::getCancelURL())
+                ->setNextUrl(PaymentHelper::getCancelURL($token) . '&error_message=' . $exception->getMessage())
                 ->setMessage($exception->getMessage());
         }
 
@@ -40,14 +61,14 @@ class MollieController extends BaseController
         ])) {
             return $response
                 ->setError()
-                ->setNextUrl(PaymentHelper::getCancelURL())
-                ->setMessage(__('Payment failed!'));
+                ->setNextUrl(PaymentHelper::getCancelURL($token))
+                ->setMessage(__('Payment failed! Status: :status', ['status' => $result->status]));
         }
 
         if (! $result->isPaid()) {
             return $response
                 ->setError()
-                ->setNextUrl(PaymentHelper::getCancelURL())
+                ->setNextUrl(PaymentHelper::getCancelURL($token))
                 ->setMessage(__('Error when processing payment via :paymentType!', ['paymentType' => 'Mollie']));
         }
 
@@ -60,7 +81,7 @@ class MollieController extends BaseController
         $orderIds = (array) $result->metadata->order_id;
 
         do_action(PAYMENT_ACTION_PAYMENT_PROCESSED, [
-            'amount' => $request->input('amount'),
+            'amount' => $result->amount->value,
             'currency' => $result->amount->currency,
             'charge_id' => $result->id,
             'payment_channel' => MOLLIE_PAYMENT_METHOD_NAME,
@@ -72,7 +93,7 @@ class MollieController extends BaseController
         ]);
 
         return $response
-            ->setNextUrl(PaymentHelper::getRedirectURL())
+            ->setNextUrl(PaymentHelper::getRedirectURL($token) . '?charge_id=' . $result->id)
             ->setMessage(__('Checkout successfully!'));
     }
 }

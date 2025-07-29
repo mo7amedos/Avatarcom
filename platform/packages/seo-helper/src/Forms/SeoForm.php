@@ -2,10 +2,12 @@
 
 namespace Botble\SeoHelper\Forms;
 
+use Botble\Base\Forms\FieldOptions\HtmlFieldOption;
 use Botble\Base\Forms\FieldOptions\MediaImageFieldOption;
 use Botble\Base\Forms\FieldOptions\RadioFieldOption;
 use Botble\Base\Forms\FieldOptions\TextareaFieldOption;
 use Botble\Base\Forms\FieldOptions\TextFieldOption;
+use Botble\Base\Forms\Fields\HtmlField;
 use Botble\Base\Forms\Fields\MediaImageField;
 use Botble\Base\Forms\Fields\RadioField;
 use Botble\Base\Forms\Fields\TextareaField;
@@ -40,6 +42,12 @@ class SeoForm extends FormAbstract
                     ->maxLength(160)
                     ->allowOverLimit()
                     ->value(old('seo_meta.seo_description', $meta['seo_description']))
+            )
+            ->add(
+                'meta_keywords',
+                HtmlField::class,
+                HtmlFieldOption::make()
+                    ->content(view('packages/theme::partials.no-meta-keywords')->render())
             )
             ->add(
                 'seo_meta_image',

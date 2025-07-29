@@ -5,6 +5,7 @@ namespace Botble\Stripe\Providers;
 use Botble\Base\Facades\Html;
 use Botble\Payment\Enums\PaymentMethodEnum;
 use Botble\Payment\Facades\PaymentMethods;
+use Botble\Payment\Supports\PaymentFeeHelper;
 use Botble\Stripe\Forms\StripePaymentMethodForm;
 use Botble\Stripe\Services\Gateways\StripePaymentService;
 use Illuminate\Http\Request;
@@ -16,7 +17,7 @@ class HookServiceProvider extends ServiceProvider
     {
         add_filter(PAYMENT_FILTER_ADDITIONAL_PAYMENT_METHODS, [$this, 'registerStripeMethod'], 1, 2);
 
-        $this->app->booted(function () {
+        $this->app->booted(function (): void {
             add_filter(PAYMENT_FILTER_AFTER_POST_CHECKOUT, [$this, 'checkoutWithStripe'], 1, 2);
         });
 
@@ -105,6 +106,18 @@ class HookServiceProvider extends ServiceProvider
         $currentCurrency = get_application_currency();
 
         $paymentData = apply_filters(PAYMENT_FILTER_PAYMENT_DATA, [], $request);
+
+        $orderAmount = $paymentData['amount'] ?? 0;
+        $paymentFee = 0;
+        if (is_plugin_active('payment')) {
+            $paymentFee = PaymentFeeHelper::calculateFee(STRIPE_PAYMENT_METHOD_NAME, $orderAmount);
+        }
+
+        $paymentData['payment_fee'] = $paymentFee;
+
+        if (! isset($paymentData['currency'])) {
+            $paymentData['currency'] = strtoupper(get_application_currency()->title);
+        }
 
         $supportedCurrencies = $stripePaymentService->supportedCurrencyCodes();
 

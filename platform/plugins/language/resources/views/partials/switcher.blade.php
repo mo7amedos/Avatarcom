@@ -29,7 +29,7 @@
                     {!! language_flag(Language::getCurrentLocaleFlag(), Language::getCurrentLocaleName()) !!}
                 @endif
                 @if (Arr::get($options, 'lang_name', true) && ($languageDisplay == 'all' || $languageDisplay == 'name'))
-                    {{ Language::getCurrentLocaleName() }}
+                    <span>{{ Language::getCurrentLocaleName() }}</span>
                 @endif
             </button>
             <ul class="dropdown-menu language_bar_chooser {{ Arr::get($options, 'class') }}">

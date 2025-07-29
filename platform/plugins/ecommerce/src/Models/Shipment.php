@@ -46,7 +46,7 @@ class Shipment extends BaseModel
 
     protected static function booted(): void
     {
-        static::deleted(function (Shipment $shipment) {
+        static::deleted(function (Shipment $shipment): void {
             $shipment->histories()->delete();
         });
     }

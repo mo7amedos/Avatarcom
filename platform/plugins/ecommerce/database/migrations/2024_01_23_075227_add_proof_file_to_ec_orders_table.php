@@ -7,14 +7,14 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('ec_orders', function (Blueprint $table) {
+        Schema::table('ec_orders', function (Blueprint $table): void {
             $table->string('proof_file')->nullable();
         });
     }
 
     public function down(): void
     {
-        Schema::table('ec_orders', function (Blueprint $table) {
+        Schema::table('ec_orders', function (Blueprint $table): void {
             $table->dropColumn('proof_file');
         });
     }

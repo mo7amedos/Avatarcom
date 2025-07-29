@@ -30,7 +30,7 @@ class RadioField extends ThemeOptionField
             'attributes' => [
                 ...parent::toArray()['attributes'],
                 'choices' => $this->options,
-                'selected' => $this->getValue(),
+                'value' => $this->getValue(),
                 'attr' => [
                     'inline' => $this->inline,
                 ],

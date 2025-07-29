@@ -10,7 +10,7 @@ return new class () extends Migration {
     {
         try {
             if (Schema::hasColumn('ec_wish_lists', 'id')) {
-                Schema::table('ec_wish_lists', function (Blueprint $table) {
+                Schema::table('ec_wish_lists', function (Blueprint $table): void {
                     $table->dropColumn('id');
                 });
             }
@@ -21,11 +21,11 @@ return new class () extends Migration {
 
             DB::statement('TRUNCATE TABLE ec_wish_lists');
 
-            Schema::table('ec_wish_lists', function (Blueprint $table) {
+            Schema::table('ec_wish_lists', function (Blueprint $table): void {
                 $table->primary(['customer_id', 'product_id']);
             });
 
-            DB::table('ec_wish_lists_tmp')->oldest()->chunk(1000, function ($chunked) {
+            DB::table('ec_wish_lists_tmp')->oldest()->chunk(1000, function ($chunked): void {
                 DB::table('ec_wish_lists')->insertOrIgnore(array_map(fn ($item) => (array) $item, $chunked->toArray()));
             });
 

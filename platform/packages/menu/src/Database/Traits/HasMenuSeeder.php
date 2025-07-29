@@ -20,7 +20,7 @@ trait HasMenuSeeder
             MenuNode::query()->truncate();
         }
 
-        foreach ($data as $index => $item) {
+        foreach ($data as $item) {
             $item['slug'] = Str::slug($item['name']);
 
             /**
@@ -42,8 +42,8 @@ trait HasMenuSeeder
                 }
             }
 
-            foreach ($item['items'] as $menuNode) {
-                $this->createMenuNode($index, $menuNode, $menu->getKey());
+            foreach ($item['items'] as $position => $menuNode) {
+                $this->createMenuNode($position, $menuNode, $menu->getKey());
             }
 
             if (is_plugin_active('language')) {
@@ -56,11 +56,11 @@ trait HasMenuSeeder
         Menu::clearCacheMenuItems();
     }
 
-    protected function createMenuNode(int $index, array $menuNode, int|string $menuId, int|string $parentId = 0): void
+    protected function createMenuNode(int $position, array $menuNode, int|string $menuId, int|string $parentId = 0): void
     {
         $menuNode['menu_id'] = $menuId;
         $menuNode['parent_id'] = $parentId;
-        $menuNode['position'] = $index;
+        $menuNode['position'] = $position;
 
         if (isset($menuNode['url'])) {
             $menuNode['url'] = str_replace(url(''), '', $menuNode['url']);
@@ -84,8 +84,8 @@ trait HasMenuSeeder
         $this->createMetadata($createdNode, $menuNode);
 
         if ($children) {
-            foreach ($children as $child) {
-                $this->createMenuNode($index, $child, $menuId, $createdNode->getKey());
+            foreach ($children as $childPosition => $child) {
+                $this->createMenuNode($childPosition, $child, $menuId, $createdNode->getKey());
             }
         }
     }

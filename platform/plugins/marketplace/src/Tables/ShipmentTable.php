@@ -81,8 +81,8 @@ class ShipmentTable extends TableAbstract
                 'cod_status',
                 'created_at',
             ])
-            ->whereHas('order', function ($query) {
-                $query->where('store_id', auth('customer')->user()->store->id);
+            ->whereHas('order', function ($query): void {
+                $query->where('store_id', auth('customer')->user()->store?->id);
             })
             ->with(['order', 'order.user', 'order.address']);
 

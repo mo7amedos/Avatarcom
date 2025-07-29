@@ -54,7 +54,7 @@ export class UploadService {
                 formData.append('path', file.fullPath)
             },
             chunksUploaded: (file, done) => {
-                _self.uploadProgressContainer.find('.progress-percent').html('100%')
+                _self.uploadProgressContainer.find('.progress-percent').html(`- <span class="text-info">100%</span>`)
                 done()
             },
             accept: (file, done) => {
@@ -69,7 +69,7 @@ export class UploadService {
                 }
                 let percentShow = (percent > 100 ? '100' : parseInt(percent)) + '%'
                 let el = _self.uploadProgressContainer.find('tr').eq(file.index - 1)
-                el.find('.progress-percent').html(percentShow)
+                el.find('.progress-percent').html(`- <span class="text-info">` + percentShow + `</span>`)
             },
         })
 
@@ -143,11 +143,17 @@ export class UploadService {
 
         const response = Helpers.jsonDecode(file.xhr.responseText || '', {})
 
-        _self.totalError = _self.totalError + (response.error === true || file.status === 'error' ? 1 : 0)
+        const isError = response.error === true || file.status === 'error'
+
+        _self.totalError = _self.totalError + (isError ? 1 : 0)
 
         $label.removeClass('text-success text-danger text-warning')
-        $label.addClass(response.error === true || file.status === 'error' ? 'text-danger' : 'text-success')
-        $label.html(response.error === true || file.status === 'error' ? 'Error' : 'Uploaded')
+        $label.addClass(isError ? 'text-danger' : 'text-success')
+        $label.html(isError ? 'Error' : 'Uploaded')
+
+        if (isError) {
+            $progressLine.find('.progress-percent').html('');
+        }
 
         if (file.status === 'error') {
             if (file.xhr.status === 422) {
@@ -159,8 +165,12 @@ export class UploadService {
             } else if (file.xhr.status === 500) {
                 $progressLine.find('.file-error').html(`<span class="text-danger">${file.xhr.statusText}</span>`)
             }
+
+            $progressLine.find('.progress-percent').html('');
         } else if (response.error) {
             $progressLine.find('.file-error').html(`<span class="text-danger">${response.message}</span>`)
+
+            $progressLine.find('.progress-percent').html('');
         } else {
             Helpers.addToRecent(response.data.id)
             Helpers.setSelectedFile(response.data.id)

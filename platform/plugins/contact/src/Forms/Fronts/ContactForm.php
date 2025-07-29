@@ -2,7 +2,6 @@
 
 namespace Botble\Contact\Forms\Fronts;
 
-use Botble\Base\Facades\Html;
 use Botble\Base\Forms\FieldOptions\ButtonFieldOption;
 use Botble\Base\Forms\FieldOptions\CheckboxFieldOption;
 use Botble\Base\Forms\FieldOptions\HtmlFieldOption;
@@ -27,6 +26,7 @@ use Botble\Contact\Enums\CustomFieldType;
 use Botble\Contact\Http\Requests\ContactRequest;
 use Botble\Contact\Models\Contact;
 use Botble\Contact\Models\CustomField;
+use Botble\Theme\Facades\Theme;
 use Botble\Theme\FormFront;
 use Closure;
 use Illuminate\Contracts\Support\Arrayable;
@@ -50,6 +50,21 @@ class ContactForm extends FormFront
     public function setup(): void
     {
         $data = $this->getModel();
+
+        Theme::asset()
+            ->usePath(false)
+            ->add('contact-css', asset('vendor/core/plugins/contact/css/contact-public.css'), [], [], '1.0.1');
+
+        Theme::asset()
+            ->container('footer')
+            ->usePath(false)
+            ->add(
+                'contact-public-js',
+                asset('vendor/core/plugins/contact/js/contact-public.js'),
+                ['jquery'],
+                [],
+                '1.0.1'
+            );
 
         try {
             $displayFields = array_filter(explode(',', (string) Arr::get($data, 'display_fields'))) ?: ['phone', 'email', 'address', 'subject'];
@@ -87,14 +102,14 @@ class ContactForm extends FormFront
                 TextFieldOption::make()
                     ->value(Arr::get($data, 'display_fields'))
             )
-            ->addRowWrapper('form_wrapper', function (self $form) use ($displayFields, $mandatoryFields) {
+            ->addRowWrapper('form_wrapper', function (self $form) use ($displayFields, $mandatoryFields): void {
                 $customFields = CustomField::query()
-                    ->wherePublished()->with('options')
-                    ->orderBy('order')
+                    ->wherePublished()
+                    ->oldest('order')
                     ->get();
 
                 $form
-                    ->addColumnWrapper('name_wrapper', function (self $form) {
+                    ->addColumnWrapper('name_wrapper', function (self $form): void {
                         $form
                             ->add(
                                 'name',
@@ -108,15 +123,15 @@ class ContactForm extends FormFront
                                     ->maxLength(-1)
                             );
                     })
-                    ->when(in_array('email', $displayFields), function (self $form) use ($mandatoryFields) {
+                    ->when(in_array('email', $displayFields), function (self $form) use ($mandatoryFields): void {
                         $form
-                            ->addColumnWrapper('email_wrapper', function (self $form) use ($mandatoryFields) {
+                            ->addColumnWrapper('email_wrapper', function (self $form) use ($mandatoryFields): void {
                                 $form
                                     ->add(
                                         'email',
                                         EmailField::class,
                                         TextFieldOption::make()
-                                            ->when(in_array('email', $mandatoryFields), function (TextFieldOption $option) {
+                                            ->when(in_array('email', $mandatoryFields), function (TextFieldOption $option): void {
                                                 $option->required();
                                             })
                                             ->label(__('Email'))
@@ -127,14 +142,14 @@ class ContactForm extends FormFront
                                     );
                             });
                     })
-                    ->when(in_array('address', $displayFields), function (self $form) use ($mandatoryFields) {
-                        $form->addColumnWrapper('address_wrapper', function (self $form) use ($mandatoryFields) {
+                    ->when(in_array('address', $displayFields), function (self $form) use ($mandatoryFields): void {
+                        $form->addColumnWrapper('address_wrapper', function (self $form) use ($mandatoryFields): void {
                             $form
                                 ->add(
                                     'address',
                                     TextField::class,
                                     TextFieldOption::make()
-                                        ->when(in_array('address', $mandatoryFields), function (TextFieldOption $option) {
+                                        ->when(in_array('address', $mandatoryFields), function (TextFieldOption $option): void {
                                             $option->required();
                                         })
                                         ->label(__('Address'))
@@ -145,14 +160,14 @@ class ContactForm extends FormFront
                                 );
                         });
                     })
-                    ->when(in_array('phone', $displayFields), function (self $form) use ($mandatoryFields) {
-                        $form->addColumnWrapper('phone_wrapper', function (self $form) use ($mandatoryFields) {
+                    ->when(in_array('phone', $displayFields), function (self $form) use ($mandatoryFields): void {
+                        $form->addColumnWrapper('phone_wrapper', function (self $form) use ($mandatoryFields): void {
                             $form
                                 ->add(
                                     'phone',
                                     TextField::class,
                                     TextFieldOption::make()
-                                        ->when(in_array('phone', $mandatoryFields), function (TextFieldOption $option) {
+                                        ->when(in_array('phone', $mandatoryFields), function (TextFieldOption $option): void {
                                             $option->required();
                                         })
                                         ->label(__('Phone'))
@@ -163,13 +178,13 @@ class ContactForm extends FormFront
                                 );
                         });
                     })
-                    ->when(in_array('subject', $displayFields), function (self $form) use ($mandatoryFields) {
-                        $form->addColumnWrapper('subject_wrapper', function (self $form) use ($mandatoryFields) {
+                    ->when(in_array('subject', $displayFields), function (self $form) use ($mandatoryFields): void {
+                        $form->addColumnWrapper('subject_wrapper', function (self $form) use ($mandatoryFields): void {
                             $form->add(
                                 'subject',
                                 TextField::class,
                                 TextFieldOption::make()
-                                    ->when(in_array('subject', $mandatoryFields), function (TextFieldOption $option) {
+                                    ->when(in_array('subject', $mandatoryFields), function (TextFieldOption $option): void {
                                         $option->required();
                                     })
                                     ->label(__('Subject'))
@@ -180,19 +195,21 @@ class ContactForm extends FormFront
                             );
                         }, 12);
                     })
-                    ->when($customFields, function (ContactForm $form, Collection $customFields) {
+                    ->when($customFields, function (ContactForm $form, Collection $customFields): void {
                         foreach ($customFields as $customField) {
-                            $options = $customField->options->pluck('label', 'value')->all();
+                            $options = $customField->options()->select('id', 'label', 'value')->get()->mapWithKeys(function ($option) {
+                                return [$option->value => $option->label];
+                            })->all();
 
                             $fieldOptions = match ($customField->type->getValue()) {
                                 CustomFieldType::NUMBER => NumberFieldOption::make()
-                                    ->when($customField->placeholder, function (InputFieldOption $options, string $placeholder) {
+                                    ->when($customField->placeholder, function (InputFieldOption $options, string $placeholder): void {
                                         $options->placeholder($placeholder);
                                     }),
                                 CustomFieldType::DROPDOWN => SelectFieldOption::make()
-                                    ->when($customField->placeholder, function (SelectFieldOption $fieldOptions, string $placeholder) use ($options) {
+                                    ->when($customField->placeholder, function (SelectFieldOption $fieldOptions, string $placeholder) use ($options): void {
                                         $fieldOptions->choices(['' => $placeholder, ...$options]);
-                                    }, function (SelectFieldOption $fieldOptions) use ($options) {
+                                    }, function (SelectFieldOption $fieldOptions) use ($options): void {
                                         $fieldOptions->choices($options);
                                     }),
                                 CustomFieldType::CHECKBOX => CheckboxFieldOption::make(),
@@ -200,9 +217,7 @@ class ContactForm extends FormFront
                                 default => TextFieldOption::make()
                                     ->wrapperAttributes(['class' => $this->formInputWrapperClass])
                                     ->cssClass($this->formInputClass)
-                                    ->when($customField->placeholder, function (InputFieldOption $options, string $placeholder) {
-                                        $options->placeholder($placeholder);
-                                    }),
+                                    ->placeholder($customField->placeholder ?: $customField->name)
                             };
 
                             $field = match ($customField->type->getValue()) {
@@ -217,60 +232,45 @@ class ContactForm extends FormFront
                                 default => TextField::class,
                             };
 
-                            $form->addColumnWrapper("custom_field_{$customField->id}_wrapper", function (self $form) use ($customField, $field, $fieldOptions) {
+                            $form->addColumnWrapper("custom_field_{$customField->id}_wrapper", function (self $form) use ($customField, $field, $fieldOptions): void {
                                 $form->add(
                                     "contact_custom_fields[$customField->id]",
                                     $field,
                                     $fieldOptions
                                         ->label($customField->name)
                                         ->required($customField->required)
+                                        ->wrapperAttributes(['class' => $this->formInputWrapperClass])
                                 );
                             }, 12);
                         }
                     });
             })
-            ->addRowWrapper(
+            ->add(
                 'content',
-                function (self $form) {
-                    $form->addColumnWrapper(
-                        'content',
-                        function (self $form) {
-                            $form->add(
-                                'content',
-                                TextareaField::class,
-                                TextareaFieldOption::make()
-                                    ->required()
-                                    ->label(__('Content'))
-                                    ->placeholder(__('Write your message here'))
-                                    ->wrapperAttributes(['class' => $this->formInputWrapperClass])
-                                    ->cssClass($this->formInputClass)
-                                    ->rows(5)
-                                    ->maxLength(-1)
-                            );
-                        },
-                        12
-                    );
-                }
+                TextareaField::class,
+                TextareaFieldOption::make()
+                    ->required()
+                    ->label(__('Message'))
+                    ->placeholder(__('Your Message'))
+                    ->wrapperAttributes(['class' => $this->formInputWrapperClass])
+                    ->cssClass($this->formInputClass)
+                    ->maxLength(-1)
             )
+            ->when(setting('contact_form_show_terms_checkbox', true), function (self $form): void {
+                $form->add(
+                    'agree_terms_and_policy',
+                    OnOffCheckboxField::class,
+                    CheckboxFieldOption::make()
+                        ->required()
+                        ->label(__('I agree to the Terms and Privacy Policy'))
+                        ->wrapperAttributes(['class' => $this->formInputWrapperClass])
+                );
+            })
             ->add(
                 'filters_after_form',
                 HtmlField::class,
                 HtmlFieldOption::make()
                     ->content(apply_filters('after_contact_form', null))
-            )
-            ->add(
-                'agree_terms_and_policy',
-                OnOffCheckboxField::class,
-                CheckboxFieldOption::make()
-                    ->when(
-                        $privacyPolicyUrl = theme_option('term_and_privacy_policy_url'),
-                        function (CheckboxFieldOption $fieldOption, string $url) {
-                            $fieldOption->label(__('I agree to the :link', ['link' => Html::link($url, __('Terms and Privacy Policy'), attributes: ['class' => 'text-decoration-underline', 'target' => '_blank'])]));
-                        }
-                    )
-                    ->when(! $privacyPolicyUrl, function (CheckboxFieldOption $fieldOption) {
-                        $fieldOption->label(__('I agree to the Terms and Privacy Policy'));
-                    })
             )
             ->addWrappedField(
                 'submit',

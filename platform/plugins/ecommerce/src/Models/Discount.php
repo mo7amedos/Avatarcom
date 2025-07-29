@@ -44,7 +44,7 @@ class Discount extends BaseModel
 
     protected static function booted(): void
     {
-        static::deleted(function (Discount $discount) {
+        static::deleted(function (Discount $discount): void {
             $discount->productCollections()->detach();
             $discount->productCategories()->detach();
             $discount->customers()->detach();

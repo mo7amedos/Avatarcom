@@ -19,4 +19,13 @@ class PaymentMethodEnum extends Enum
     {
         return apply_filters(PAYMENT_FILTER_GET_SERVICE_CLASS, null, (string) $this->value);
     }
+
+    public function displayName(): ?string
+    {
+        if ($label = get_payment_setting('name', $this->value)) {
+            return $label;
+        }
+
+        return parent::label();
+    }
 }

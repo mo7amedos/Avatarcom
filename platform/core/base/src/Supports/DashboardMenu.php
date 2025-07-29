@@ -163,7 +163,7 @@ class DashboardMenu
         return isset($this->links[$this->groupId][$id]);
     }
 
-    public function getAll(string $id = null): Collection
+    public function getAll(?string $id = null): Collection
     {
         if ($id !== null) {
             $this->setGroupId($id);
@@ -180,7 +180,7 @@ class DashboardMenu
 
             return tap(
                 apply_filters('dashboard_menu', $items, $this),
-                function ($menu) {
+                function ($menu): void {
                     $this->dispatchAfterRetrieved($menu);
                 }
             );
@@ -192,7 +192,7 @@ class DashboardMenu
             $items = value($value);
         }
 
-        return tap($this->applyActive($items), function (Collection $items) {
+        return tap($this->applyActive($items), function (Collection $items): void {
             DashboardMenuRetrieved::dispatch($this, $items);
 
             do_action('rendered_dashboard_menu', $this, $items);

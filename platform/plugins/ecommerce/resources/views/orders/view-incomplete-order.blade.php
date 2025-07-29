@@ -261,7 +261,7 @@
                         @if ($order->user->id)
                             <p class="mb-1">
                                 <x-core::icon name="ti ti-inbox" />
-                                {{ $order->user->orders()->count() }}
+                                {{ $order->user->completedOrders()->count() }}
                                 {{ trans('plugins/ecommerce::order.orders') }}
                             </p>
                         @endif
@@ -368,23 +368,25 @@
         :description="trans('plugins/ecommerce::order.mark_as_completed.modal_description')"
         :form-action="route('orders.mark-as-completed', $order->id)"
     >
-        <x-core::form.select
-            name="payment_method"
-            :label="trans('plugins/ecommerce::order.payment_method')"
-            :options="\Botble\Payment\Enums\PaymentMethodEnum::labels()"
-        />
+        @if (is_plugin_active('payment'))
+            <x-core::form.select
+                name="payment_method"
+                :label="trans('plugins/ecommerce::order.payment_method')"
+                :options="\Botble\Payment\Enums\PaymentMethodEnum::labels()"
+            />
 
-        <x-core::form.select
-            name="payment_status"
-            :label="trans('plugins/ecommerce::order.payment_status_label')"
-            :options="\Botble\Payment\Enums\PaymentStatusEnum::labels()"
-        />
+            <x-core::form.select
+                name="payment_status"
+                :label="trans('plugins/ecommerce::order.payment_status_label')"
+                :options="\Botble\Payment\Enums\PaymentStatusEnum::labels()"
+            />
 
-        <x-core::form.text-input
-            name="transaction_id"
-            :label="trans('plugins/ecommerce::order.transaction_id')"
-            :helper-text="trans('plugins/ecommerce::order.incomplete_order_transaction_id_placeholder')"
-        />
+            <x-core::form.text-input
+                name="transaction_id"
+                :label="trans('plugins/ecommerce::order.transaction_id')"
+                :helper-text="trans('plugins/ecommerce::order.incomplete_order_transaction_id_placeholder')"
+            />
+        @endif
 
         <x-slot:footer>
             <x-core::button data-bs-dismiss="modal" type="button">

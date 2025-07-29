@@ -30,8 +30,8 @@ class Location
     {
         return State::query()
             ->wherePublished()
-            ->orderBy('order')
-            ->orderBy('name')
+            ->oldest('order')
+            ->oldest('name')
             ->pluck('name', 'id')
             ->all();
     }
@@ -45,8 +45,8 @@ class Location
         return City::query()
             ->wherePublished()
             ->where('state_id', $stateId)
-            ->orderBy('order')
-            ->orderBy('name')
+            ->oldest('order')
+            ->oldest('name')
             ->pluck('name', 'id')
             ->all();
     }
@@ -104,14 +104,14 @@ class Location
         return array_keys($this->getSupported());
     }
 
-    public function getSupported(string|object $model = null): array
+    public function getSupported(string|object|null $model = null): array
     {
         if (! $model) {
             return config('plugins.location.general.supported', []);
         }
 
         if (is_object($model)) {
-            $model = get_class($model);
+            $model = $model::class;
         }
 
         return Arr::get(config('plugins.location.general.supported', []), $model, []);
@@ -212,7 +212,10 @@ class Location
         $dataPath = storage_path('app/locations-master/' . $countryCode);
 
         if (! File::isDirectory($dataPath)) {
-            abort(404);
+            return [
+                'error' => true,
+                'message' => trans('plugins/location::bulk-import.cant_download_location_at_this_time'),
+            ];
         }
 
         $country = file_get_contents($dataPath . '/country.json');
@@ -292,12 +295,12 @@ class Location
         ];
     }
 
-    public function filter($model, int|string $cityId = null, string $location = null, int|string $stateId = null)
+    public function filter($model, int|string|null $cityId = null, ?string $location = null, int|string|null $stateId = null)
     {
         if ($model instanceof BaseQueryBuilder) {
-            $className = get_class($model->getModel());
+            $className = $model->getModel()::class;
         } else {
-            $className = get_class($model);
+            $className = $model::class;
         }
 
         if ($this->isSupported($className)) {
@@ -322,20 +325,20 @@ class Location
 
                 if (count($locationData) > 1) {
                     $model = $model
-                        ->whereHas($cityRelation, function ($query) use ($locationData) {
+                        ->whereHas($cityRelation, function ($query) use ($locationData): void {
                             $query->where('name', 'LIKE', '%' . trim($locationData[0]) . '%');
                         })
-                        ->whereHas($stateRelation, function ($query) use ($locationData) {
+                        ->whereHas($stateRelation, function ($query) use ($locationData): void {
                             $query->where('name', 'LIKE', '%' . trim($locationData[1]) . '%');
                         });
                 } else {
                     $model = $model
-                        ->where(function (Builder $query) use ($cityRelation, $stateRelation, $location) {
+                        ->where(function (Builder $query) use ($cityRelation, $stateRelation, $location): void {
                             $query
-                                ->whereHas($cityRelation, function ($query) use ($location) {
+                                ->whereHas($cityRelation, function ($query) use ($location): void {
                                     $query->where('name', 'LIKE', '%' . $location . '%');
                                 })
-                                ->orWhereHas($stateRelation, function ($query) use ($location) {
+                                ->orWhereHas($stateRelation, function ($query) use ($location): void {
                                     $query->where('name', 'LIKE', '%' . $location . '%');
                                 });
                         });

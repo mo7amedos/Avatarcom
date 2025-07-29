@@ -26,7 +26,6 @@ use Illuminate\Foundation\AliasLoader;
 use Illuminate\Http\Request as IlluminateRequest;
 use Illuminate\Routing\Events\Routing;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Validator;
 
 class CaptchaServiceProvider extends ServiceProvider
@@ -38,11 +37,14 @@ class CaptchaServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton('captcha', function () {
+            $key = setting('captcha_site_key');
+            $secret = setting('captcha_secret');
+
             if (setting('captcha_type') === 'v3') {
-                return new CaptchaV3(setting('captcha_site_key'), setting('captcha_secret'));
+                return new CaptchaV3($key, $secret);
             }
 
-            return new Captcha(setting('captcha_site_key'), setting('captcha_secret'));
+            return new Captcha($key, $secret);
         });
 
         $this->app->singleton('math-captcha', function ($app) {
@@ -63,7 +65,7 @@ class CaptchaServiceProvider extends ServiceProvider
 
         $this->bootValidator();
 
-        PanelSectionManager::default()->beforeRendering(function () {
+        PanelSectionManager::default()->beforeRendering(function (): void {
             PanelSectionManager::registerItem(
                 SettingOthersPanelSection::class,
                 fn () => PanelSectionItem::make('captcha')
@@ -125,7 +127,7 @@ class CaptchaServiceProvider extends ServiceProvider
             }
         });
 
-        Event::listen(Routing::class, function () {
+        $this->app['events']->listen(Routing::class, function (): void {
             add_filter('core_request_rules', function (array $rules, Request $request) {
                 if (! CaptchaFacade::isEnabled() && ! CaptchaFacade::mathCaptchaEnabled()) {
                     return $rules;
@@ -176,6 +178,21 @@ class CaptchaServiceProvider extends ServiceProvider
                 Validator::validate($request->input(), CaptchaFacade::mathCaptchaRules());
             }
         }, 999, 2);
+
+        add_filter('core_request_messages', function (array $messages): array {
+            return [
+                ...$messages,
+                'captcha' => __('Captcha Verification Failed!'),
+                'math_captcha' => __('Math Captcha Verification Failed!'),
+            ];
+        }, 999);
+
+        add_filter('core_request_attributes', function (array $attributes): array {
+            return [
+                ...$attributes,
+                CaptchaFacade::attributes(),
+            ];
+        }, 999);
     }
 
     public function bootValidator(): void
@@ -215,7 +232,7 @@ class CaptchaServiceProvider extends ServiceProvider
         }, __('Math Captcha Verification Failed!'));
     }
 
-    public function mapParameterToOptions(array $parameters = []): array
+    public function mapParameterToOptions(?array $parameters = []): array
     {
         if (! is_array($parameters)) {
             return [];

@@ -11,7 +11,7 @@ return new class () extends Migration {
             return;
         }
 
-        Schema::table('ec_customer_addresses', function (Blueprint $table) {
+        Schema::table('ec_customer_addresses', function (Blueprint $table): void {
             $table->string('phone', 20)->nullable()->change();
             $table->string('address')->nullable()->change();
         });
@@ -19,7 +19,7 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::table('ec_customer_addresses', function (Blueprint $table) {
+        Schema::table('ec_customer_addresses', function (Blueprint $table): void {
             $table->string('phone', 20)->change();
             $table->string('address')->change();
         });

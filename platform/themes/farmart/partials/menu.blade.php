@@ -9,17 +9,7 @@
                 href="{{ url($row->url) }}"
                 @if ($row->target !== '_self') target="{{ $row->target }}" @endif
             >
-                @if ($iconImage = $row->getMetaData('icon_image', true))
-                    <img
-                        src="{{ RvMedia::getImageUrl($iconImage) }}"
-                        alt="icon image"
-                        style="vertical-align: top; margin-top: 3px"
-                        width="12"
-                        height="12"
-                    />
-                @elseif ($row->icon_font)
-                    <i class="{{ trim($row->icon_font) }}"></i>
-                @endif {{ $row->title }}
+                {!! $row->icon_html !!}{{ $row->title }}
                 @if ($row->has_child)
                     <span class="sub-toggle">
                         <span class="svg-icon">

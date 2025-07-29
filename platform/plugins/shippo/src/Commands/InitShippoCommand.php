@@ -112,7 +112,7 @@ class InitShippoCommand extends Command implements PromptsForMissingInput
 
         Setting::set($settings)->save();
 
-        $this->info('Shippo configuration initialized successfully!');
+        $this->components->info('Shippo configuration initialized successfully!');
 
         return self::SUCCESS;
     }

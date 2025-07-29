@@ -21,7 +21,7 @@ class MollieServiceProvider extends ServiceProvider
             ->loadAndPublishViews()
             ->publishAssets();
 
-        $this->app->booted(function () {
+        $this->app->booted(function (): void {
             $this->app->make('config')->set([
                 'mollie.key' => get_payment_setting('api_key', MOLLIE_PAYMENT_METHOD_NAME),
             ]);

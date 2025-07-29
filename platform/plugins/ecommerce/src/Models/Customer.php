@@ -63,6 +63,7 @@ class Customer extends BaseModel implements
     protected $casts = [
         'status' => CustomerStatusEnum::class,
         'dob' => 'date',
+        'confirmed_at' => 'datetime',
     ];
 
     public function sendPasswordResetNotification($token): void
@@ -78,6 +79,11 @@ class Customer extends BaseModel implements
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class, 'user_id', 'id');
+    }
+
+    public function completedOrders(): HasMany
+    {
+        return $this->orders()->whereNotNull('completed_at');
     }
 
     public function addresses(): HasMany
@@ -106,7 +112,7 @@ class Customer extends BaseModel implements
 
     protected static function booted(): void
     {
-        self::deleted(function (Customer $customer) {
+        self::deleted(function (Customer $customer): void {
             $customer->discounts()->detach();
             $customer->usedCoupons()->detach();
             $customer->orders()->update(['user_id' => 0]);
@@ -115,7 +121,7 @@ class Customer extends BaseModel implements
             $customer->reviews()->each(fn (Review $review) => $review->delete());
         });
 
-        static::deleted(function (Customer $customer) {
+        static::deleted(function (Customer $customer): void {
             $folder = Storage::path($customer->upload_folder);
             if (File::isDirectory($folder) && Str::endsWith($customer->upload_folder, '/' . $customer->id)) {
                 File::deleteDirectory($folder);
@@ -175,6 +181,10 @@ class Customer extends BaseModel implements
         return Attribute::get(function () {
             if ($this->avatar) {
                 return RvMedia::getImageUrl($this->avatar, 'thumb');
+            }
+
+            if ($defaultAvatar = get_ecommerce_setting('customer_default_avatar')) {
+                return RvMedia::getImageUrl($defaultAvatar);
             }
 
             try {

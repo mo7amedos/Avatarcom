@@ -1,5 +1,5 @@
 <script>
-    $(function () {
+    window.addEventListener('load', function() {
         if (typeof gtag !== 'function') {
             return;
         }

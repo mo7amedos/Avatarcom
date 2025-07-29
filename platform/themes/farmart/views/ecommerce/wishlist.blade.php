@@ -1,3 +1,7 @@
+@php
+    Theme::set('pageTitle', __('Wishlist'));
+@endphp
+
 <div class="row wishlist-page-content py-5 mt-3">
     <div class="col-12">
         @if ($products->total() && $products->loadMissing(['options', 'options.values']))

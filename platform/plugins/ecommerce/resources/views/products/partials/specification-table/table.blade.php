@@ -29,24 +29,24 @@
                         <x-core::table.body.cell>{{ $group->name }}</x-core::table.body.cell>
                         <x-core::table.body.cell>{{ $attribute->name }}</x-core::table.body.cell>
                         <x-core::table.body.cell>
-                            @if ($attribute->type === 'checkbox')
+                            @if ($attribute->type == 'checkbox')
                                 <input class="form-check-input" type="checkbox" name="specification_attributes[{{ $attribute->id }}][value]" value="1" @checked($attributeValue)>
-                            @elseif ($attribute->type === 'select')
+                            @elseif ($attribute->type == 'select')
                                 <select class="form-select" name="specification_attributes[{{ $attribute->id }}][value]">
                                     @foreach ($attribute->options as $value)
                                         <option value="{{ $value }}" @selected($value === $attributeValue)>{{ $value }}</option>
                                     @endforeach
                                 </select>
-                            @elseif ($attribute->type === 'radio')
+                            @elseif ($attribute->type == 'radio')
                                 @foreach ($attribute->options as $value)
                                     <label class="form-check form-check-inline mb-0">
                                         <input class="form-check-input" type="radio" name="specification_attributes[{{ $attribute->id }}][value]" value="{{ $value }}" @checked($value === $attributeValue)>
                                         <span class="form-check-label">{{ $value }}</span>
                                     </label>
                                 @endforeach
-                            @elseif ($attribute->type === 'text')
+                            @elseif ($attribute->type == 'text')
                                 <input class="form-control" type="text" name="specification_attributes[{{ $attribute->id }}][value]" value="{{ $attributeValue }}">
-                            @elseif ($attribute->type === 'textarea')
+                            @elseif ($attribute->type == 'textarea')
                                 <textarea class="form-control" name="specification_attributes[{{ $attribute->id }}][value]">{{ $attributeValue }}</textarea>
                             @endif
                         </x-core::table.body.cell>

@@ -11,6 +11,10 @@ class MarkOrderAsCompletedRequest extends Request
 {
     public function rules(): array
     {
+        if (! is_plugin_active('payment')) {
+            return [];
+        }
+
         return [
             'payment_method' => ['required', 'string', Rule::in(PaymentMethodEnum::values())],
             'payment_status' => ['required', 'string', Rule::in(PaymentStatusEnum::values())],

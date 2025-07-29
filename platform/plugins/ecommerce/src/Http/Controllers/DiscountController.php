@@ -157,11 +157,11 @@ class DiscountController extends BaseController
             $productVariant->variationItems = $productVariant->variationInfo->variationItems;
         }
 
-        $discount->products->each(function ($product) {
+        $discount->products->each(function ($product): void {
             $product->image_url = RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage());
         });
 
-        $discount->customers->each(function ($customer) {
+        $discount->customers->each(function ($customer): void {
             $customer->avatar_url = RvMedia::getImageUrl($customer->avatar, 'thumb', false, RvMedia::getDefaultImage());
         });
 

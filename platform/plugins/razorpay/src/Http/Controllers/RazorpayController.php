@@ -4,72 +4,562 @@ namespace Botble\Razorpay\Http\Controllers;
 
 use Botble\Base\Facades\BaseHelper;
 use Botble\Base\Http\Controllers\BaseController;
+use Botble\Base\Http\Responses\BaseHttpResponse;
 use Botble\Ecommerce\Models\Order;
 use Botble\Payment\Enums\PaymentStatusEnum;
 use Botble\Payment\Models\Payment;
+use Botble\Payment\Supports\PaymentHelper;
+use Exception;
 use Illuminate\Http\Request;
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors\BadRequestError;
+use Razorpay\Api\Errors\SignatureVerificationError;
 
 class RazorpayController extends BaseController
 {
-    public function webhook(Request $request)
-    {
-        if (
-            $request->input('event') === 'order.paid'
-            && $request->input('payload.order.entity.status') === 'paid'
-        ) {
-            $api = new Api(
-                get_payment_setting('key', RAZORPAY_PAYMENT_METHOD_NAME),
-                get_payment_setting('secret', RAZORPAY_PAYMENT_METHOD_NAME)
+    public function callback(
+        string $token,
+        Request $request,
+        BaseHttpResponse $response
+    ): BaseHttpResponse {
+        // Log the callback request for debugging
+        PaymentHelper::log(
+            RAZORPAY_PAYMENT_METHOD_NAME,
+            ['callback_request' => $request->all()],
+            ['token' => $token, 'headers' => $request->headers->all()]
+        );
+
+        if ($request->input('error.description')) {
+            $message = $request->input('error.code') . ': ' . $request->input('error.description');
+
+            // Log payment error
+            PaymentHelper::log(
+                RAZORPAY_PAYMENT_METHOD_NAME,
+                ['error' => $request->input('error')],
+                ['token' => $token, 'message' => $message]
             );
 
-            try {
-                $orderId = $request->input('payload.payment.entity.order_id');
+            return $this
+                ->httpResponse()
+                ->setNextUrl(PaymentHelper::getCancelURL($token) . '&error_message=' . $message)
+                ->withInput()
+                ->setMessage($message);
+        }
+
+        $chargeId = $request->input('razorpay_payment_id');
+
+        if (! $chargeId) {
+            // Log missing payment ID
+            PaymentHelper::log(
+                RAZORPAY_PAYMENT_METHOD_NAME,
+                ['error' => 'Missing payment ID'],
+                ['token' => $token]
+            );
+
+            return $response
+                ->setNextUrl(PaymentHelper::getCancelURL($token))
+                ->withInput()
+                ->setMessage(__('Payment failed!'));
+        }
+
+        $orderId = $request->input('razorpay_order_id');
+        $signature = $request->input('razorpay_signature');
+
+        try {
+            if ($orderId && $signature) {
+                // Log signature verification attempt
+                PaymentHelper::log(
+                    RAZORPAY_PAYMENT_METHOD_NAME,
+                    [
+                        'verification_attempt' => [
+                            'payment_id' => $chargeId,
+                            'order_id' => $orderId,
+                        ],
+                    ],
+                    ['token' => $token]
+                );
+
+                $status = PaymentStatusEnum::PENDING;
+
+                $apiKey = get_payment_setting('key', RAZORPAY_PAYMENT_METHOD_NAME);
+                $apiSecret = get_payment_setting('secret', RAZORPAY_PAYMENT_METHOD_NAME);
+
+                $api = new Api($apiKey, $apiSecret);
+
+                // @phpstan-ignore-next-line
+                $api->utility->verifyPaymentSignature([
+                    'razorpay_signature' => $signature,
+                    'razorpay_payment_id' => $chargeId,
+                    'razorpay_order_id' => $orderId,
+                ]);
+
+                // Log successful signature verification
+                PaymentHelper::log(
+                    RAZORPAY_PAYMENT_METHOD_NAME,
+                    ['signature_verification' => 'success'],
+                    ['payment_id' => $chargeId, 'order_id' => $orderId]
+                );
 
                 do_action('payment_before_making_api_request', RAZORPAY_PAYMENT_METHOD_NAME, ['order_id' => $orderId]);
 
                 // @phpstan-ignore-next-line
                 $order = $api->order->fetch($orderId);
 
-                do_action('payment_after_api_response', RAZORPAY_PAYMENT_METHOD_NAME, ['order_id' => $orderId], $order->toArray());
+                $order = $order->toArray();
 
-                $status = PaymentStatusEnum::PENDING;
+                do_action('payment_after_api_response', RAZORPAY_PAYMENT_METHOD_NAME, ['order_id' => $orderId], $order);
 
-                if ($order['status'] === 'paid') {
-                    $status = PaymentStatusEnum::COMPLETED;
-                }
+                // Log order details
+                PaymentHelper::log(
+                    RAZORPAY_PAYMENT_METHOD_NAME,
+                    ['order_details' => ['order_id' => $orderId]],
+                    ['order_data' => $order]
+                );
 
-                $chargeId = $request->input('payload.payment.entity.id');
+                $amount = $order['amount_paid'] / 100;
 
-                $payment = Payment::query()
-                    ->where('charge_id', $chargeId)
-                    ->first();
+                $status = $order['status'] === 'paid' ? PaymentStatusEnum::COMPLETED : $status;
 
-                if ($payment) {
-                    $payment->status = $status;
-                    $payment->save();
+                $orderId = $request->input('order_id');
 
-                    $orderId = $payment->order_id;
-                } elseif (class_exists(Order::class)) {
+                if (! $orderId && class_exists(Order::class)) {
                     $orderId = Order::query()->where('token', $order['receipt'])->pluck('id')->all();
+
+                    // Log order lookup
+                    PaymentHelper::log(
+                        RAZORPAY_PAYMENT_METHOD_NAME,
+                        ['order_lookup' => ['receipt' => $order['receipt']]],
+                        ['found_order_ids' => $orderId]
+                    );
                 }
 
-                if ($orderId) {
-                    do_action(PAYMENT_ACTION_PAYMENT_PROCESSED, [
+                // Log payment processing
+                PaymentHelper::log(
+                    RAZORPAY_PAYMENT_METHOD_NAME,
+                    [
+                        'processing_payment' => [
+                            'amount' => $amount,
+                            'currency' => $order['currency'],
+                            'status' => $status,
+                        ],
+                    ],
+                    [
                         'charge_id' => $chargeId,
                         'order_id' => $orderId,
-                        'status' => $status,
-                        'payment_channel' => RAZORPAY_PAYMENT_METHOD_NAME,
-                    ]);
+                    ]
+                );
 
-                    return response('ok');
+                do_action(PAYMENT_ACTION_PAYMENT_PROCESSED, [
+                    'amount' => $amount,
+                    'currency' => $order['currency'],
+                    'charge_id' => $chargeId,
+                    'payment_channel' => RAZORPAY_PAYMENT_METHOD_NAME,
+                    'status' => $status,
+                    'order_id' => $orderId,
+                    'customer_id' => $request->input('customer_id'),
+                    'customer_type' => $request->input('customer_type'),
+                ]);
+            } else {
+                // Log missing order ID or signature
+                PaymentHelper::log(
+                    RAZORPAY_PAYMENT_METHOD_NAME,
+                    ['warning' => 'Missing order ID or signature, attempting direct payment fetch'],
+                    [
+                        'token' => $token,
+                        'has_order_id' => (bool) $orderId,
+                        'has_signature' => (bool) $signature,
+                        'payment_id' => $chargeId,
+                    ]
+                );
+
+                // Try to fetch payment details directly without signature verification
+                try {
+                    $apiKey = get_payment_setting('key', RAZORPAY_PAYMENT_METHOD_NAME);
+                    $apiSecret = get_payment_setting('secret', RAZORPAY_PAYMENT_METHOD_NAME);
+                    $api = new Api($apiKey, $apiSecret);
+
+                    $payment = $api->payment->fetch($chargeId);
+
+                    if ($payment && ($payment->status === 'captured' || $payment->status === 'authorized')) {
+                        $amount = $payment->amount / 100;
+                        $status = PaymentStatusEnum::COMPLETED;
+
+                        $orderId = $request->input('order_id');
+                        if (! $orderId && class_exists(Order::class) && $payment->notes && isset($payment->notes->order_id)) {
+                            $orderId = $payment->notes->order_id;
+                        }
+
+                        do_action(PAYMENT_ACTION_PAYMENT_PROCESSED, [
+                            'amount' => $amount,
+                            'currency' => $payment->currency,
+                            'charge_id' => $chargeId,
+                            'payment_channel' => RAZORPAY_PAYMENT_METHOD_NAME,
+                            'status' => $status,
+                            'order_id' => $orderId,
+                            'customer_id' => $request->input('customer_id'),
+                            'customer_type' => $request->input('customer_type'),
+                        ]);
+
+                        PaymentHelper::log(
+                            RAZORPAY_PAYMENT_METHOD_NAME,
+                            ['payment_processed_without_signature' => true],
+                            [
+                                'charge_id' => $chargeId,
+                                'status' => $payment->status,
+                            ]
+                        );
+                    }
+                } catch (Exception $e) {
+                    PaymentHelper::log(
+                        RAZORPAY_PAYMENT_METHOD_NAME,
+                        ['error' => 'Failed to fetch payment details'],
+                        [
+                            'exception' => $e->getMessage(),
+                            'payment_id' => $chargeId,
+                        ]
+                    );
+                    BaseHelper::logError($e);
                 }
-            } catch (BadRequestError $exception) {
+            }
+        } catch (SignatureVerificationError $exception) {
+            // Log signature verification error
+            PaymentHelper::log(
+                RAZORPAY_PAYMENT_METHOD_NAME,
+                ['error' => 'Signature verification failed'],
+                [
+                    'exception' => $exception->getMessage(),
+                    'payment_id' => $chargeId,
+                    'order_id' => $orderId,
+                ]
+            );
+
+            BaseHelper::logError($exception);
+
+            return $response
+                ->setNextUrl(PaymentHelper::getCancelURL($token) . '&error_message=' . $exception->getMessage())
+                ->withInput()
+                ->setMessage($exception->getMessage());
+        } catch (Exception $exception) {
+            // Log any other exceptions
+            PaymentHelper::log(
+                RAZORPAY_PAYMENT_METHOD_NAME,
+                ['error' => 'Payment processing failed'],
+                [
+                    'exception' => $exception->getMessage(),
+                    'payment_id' => $chargeId,
+                    'token' => $token,
+                ]
+            );
+
+            BaseHelper::logError($exception);
+
+            // Still try to process the payment if we have a charge ID
+            if ($chargeId) {
+                try {
+                    $apiKey = get_payment_setting('key', RAZORPAY_PAYMENT_METHOD_NAME);
+                    $apiSecret = get_payment_setting('secret', RAZORPAY_PAYMENT_METHOD_NAME);
+                    $api = new Api($apiKey, $apiSecret);
+
+                    // Fetch payment details directly
+                    $payment = $api->payment->fetch($chargeId);
+
+                    if ($payment && $payment->status === 'captured') {
+                        $amount = $payment->amount / 100;
+                        $status = PaymentStatusEnum::COMPLETED;
+
+                        $orderId = $request->input('order_id');
+                        if (! $orderId && class_exists(Order::class) && $payment->notes && isset($payment->notes->order_id)) {
+                            $orderId = $payment->notes->order_id;
+                        }
+
+                        do_action(PAYMENT_ACTION_PAYMENT_PROCESSED, [
+                            'amount' => $amount,
+                            'currency' => $payment->currency,
+                            'charge_id' => $chargeId,
+                            'payment_channel' => RAZORPAY_PAYMENT_METHOD_NAME,
+                            'status' => $status,
+                            'order_id' => $orderId,
+                            'customer_id' => $request->input('customer_id'),
+                            'customer_type' => $request->input('customer_type'),
+                        ]);
+
+                        return $response
+                            ->setNextUrl(PaymentHelper::getRedirectURL($token) . '?charge_id=' . $chargeId)
+                            ->setMessage(__('Checkout successfully!'));
+                    }
+                } catch (Exception $e) {
+                    BaseHelper::logError($e);
+                }
+            }
+
+            return $response
+                ->setNextUrl(PaymentHelper::getCancelURL($token) . '&error_message=' . $exception->getMessage())
+                ->withInput()
+                ->setMessage(__('Payment failed!'));
+        }
+
+        // Log successful checkout
+        PaymentHelper::log(
+            RAZORPAY_PAYMENT_METHOD_NAME,
+            ['success' => 'Payment processed successfully'],
+            [
+                'charge_id' => $chargeId,
+                'token' => $token,
+            ]
+        );
+
+        return $response
+            ->setNextUrl(PaymentHelper::getRedirectURL($token) . '?charge_id=' . $chargeId)
+            ->setMessage(__('Checkout successfully!'));
+    }
+
+    public function webhook(Request $request)
+    {
+        $webhookSecret = get_payment_setting('webhook_secret', RAZORPAY_PAYMENT_METHOD_NAME);
+        $signature = $request->header('X-Razorpay-Signature');
+        $content = $request->getContent();
+
+        // Log the webhook request for debugging
+        PaymentHelper::log(
+            RAZORPAY_PAYMENT_METHOD_NAME,
+            ['webhook_request' => $request->all()],
+            ['headers' => $request->headers->all()]
+        );
+
+        // Signature verification (if webhook secret is configured)
+        if ($webhookSecret && $signature && $content) {
+            try {
+                // Verify webhook signature
+                $expectedSignature = hash_hmac('sha256', $content, $webhookSecret);
+                if (hash_equals($expectedSignature, $signature)) {
+                    // Log successful signature verification
+                    PaymentHelper::log(
+                        RAZORPAY_PAYMENT_METHOD_NAME,
+                        ['webhook_signature_verification' => 'success'],
+                        ['signature' => substr($signature, 0, 10) . '...'] // Only log part of the signature for security
+                    );
+                } else {
+                    BaseHelper::logError(new Exception('Invalid webhook signature'));
+
+                    return response('Invalid signature', 400);
+                }
+            } catch (Exception $exception) {
                 BaseHelper::logError($exception);
 
-                return response('invalid payload.', 400);
+                return response('Error verifying webhook signature: ' . $exception->getMessage(), 400);
             }
+        } else {
+            // For backward compatibility, proceed without signature verification
+            // but log a warning about missing webhook secret
+            if (! $webhookSecret) {
+                PaymentHelper::log(
+                    RAZORPAY_PAYMENT_METHOD_NAME,
+                    ['webhook_warning' => 'No webhook secret configured'],
+                    ['recommendation' => 'Configure webhook secret for secure webhook verification']
+                );
+            }
+
+            // If we have a signature but no secret, log this unusual situation
+            if ($signature && ! $webhookSecret) {
+                PaymentHelper::log(
+                    RAZORPAY_PAYMENT_METHOD_NAME,
+                    ['webhook_warning' => 'Signature provided but no webhook secret configured'],
+                    ['signature_prefix' => substr($signature, 0, 10) . '...']
+                );
+            }
+        }
+
+        // Process the webhook event
+        try {
+            $event = $request->input('event');
+            $eventId = $request->header('X-Razorpay-Event-Id');
+
+            // Check for duplicate webhook events (idempotency)
+            if ($eventId) {
+                // Log the event ID for tracking
+                PaymentHelper::log(
+                    RAZORPAY_PAYMENT_METHOD_NAME,
+                    ['webhook_event_id' => $eventId],
+                    ['event' => $event]
+                );
+
+                // Here you could check if this event ID has been processed before
+                // For example, by checking a database table of processed webhook events
+                // If implemented, this would prevent duplicate processing
+            }
+
+            $api = new Api(
+                get_payment_setting('key', RAZORPAY_PAYMENT_METHOD_NAME),
+                get_payment_setting('secret', RAZORPAY_PAYMENT_METHOD_NAME)
+            );
+
+            // Handle different event types
+            switch ($event) {
+                case 'payment.authorized':
+                case 'payment.captured':
+                case 'payment.failed':
+                case 'payment.pending':
+                case 'order.paid':
+                    try {
+                        // Log the specific event type
+                        PaymentHelper::log(
+                            RAZORPAY_PAYMENT_METHOD_NAME,
+                            ['event_type' => $event],
+                            ['payload' => $request->input('payload')]
+                        );
+
+                        $paymentEntity = $request->input('payload.payment.entity');
+                        if (! $paymentEntity) {
+                            return response('No payment entity found', 400);
+                        }
+
+                        $chargeId = $paymentEntity['id'];
+                        $orderId = $paymentEntity['order_id'];
+
+                        if (! $orderId) {
+                            return response('No order ID found', 400);
+                        }
+
+                        do_action('payment_before_making_api_request', RAZORPAY_PAYMENT_METHOD_NAME, ['order_id' => $orderId]);
+
+                        // @phpstan-ignore-next-line
+                        $order = $api->order->fetch($orderId);
+                        $orderData = $order->toArray();
+
+                        do_action('payment_after_api_response', RAZORPAY_PAYMENT_METHOD_NAME, ['order_id' => $orderId], $orderData);
+
+                        $status = PaymentStatusEnum::PENDING;
+
+                        // Log payment status from Razorpay
+                        PaymentHelper::log(
+                            RAZORPAY_PAYMENT_METHOD_NAME,
+                            ['payment_status_check' => [
+                                'payment_status' => $paymentEntity['status'] ?? 'unknown',
+                                'order_status' => $orderData['status'] ?? 'unknown',
+                            ]],
+                            ['charge_id' => $chargeId]
+                        );
+
+                        // Check payment status with more detailed conditions
+                        if ($paymentEntity['status'] === 'captured' || $paymentEntity['status'] === 'authorized' || $orderData['status'] === 'paid') {
+                            $status = PaymentStatusEnum::COMPLETED;
+
+                            // If payment is authorized but not captured, try to capture it
+                            if ($paymentEntity['status'] === 'authorized' && ! $paymentEntity['captured']) {
+                                try {
+                                    $api->payment->capture($chargeId, ['amount' => $paymentEntity['amount']]);
+                                    PaymentHelper::log(
+                                        RAZORPAY_PAYMENT_METHOD_NAME,
+                                        ['payment_captured' => true],
+                                        ['charge_id' => $chargeId]
+                                    );
+                                } catch (Exception $e) {
+                                    PaymentHelper::log(
+                                        RAZORPAY_PAYMENT_METHOD_NAME,
+                                        ['capture_error' => $e->getMessage()],
+                                        ['charge_id' => $chargeId]
+                                    );
+                                }
+                            }
+                        } elseif ($paymentEntity['status'] === 'failed') {
+                            $status = PaymentStatusEnum::FAILED;
+                        } elseif ($paymentEntity['status'] === 'refunded') {
+                            $status = PaymentStatusEnum::REFUNDED;
+                        }
+
+                        $payment = Payment::query()
+                            ->where('charge_id', $chargeId)
+                            ->first();
+
+                        if ($payment) {
+                            $payment->status = $status;
+                            $payment->save();
+
+                            $orderId = $payment->order_id;
+                        } elseif (class_exists(Order::class)) {
+                            $orderId = Order::query()->where('token', $orderData['receipt'])->pluck('id')->all();
+                        }
+
+                        if ($orderId) {
+                            $amount = isset($orderData['amount_paid']) ? $orderData['amount_paid'] / 100 : ($paymentEntity['amount'] / 100);
+                            $currency = $orderData['currency'] ?? $paymentEntity['currency'];
+
+                            do_action(PAYMENT_ACTION_PAYMENT_PROCESSED, [
+                                'amount' => $amount,
+                                'currency' => $currency,
+                                'charge_id' => $chargeId,
+                                'order_id' => $orderId,
+                                'status' => $status,
+                                'payment_channel' => RAZORPAY_PAYMENT_METHOD_NAME,
+                            ]);
+
+                            PaymentHelper::log(
+                                RAZORPAY_PAYMENT_METHOD_NAME,
+                                ['webhook_payment_processed' => true],
+                                [
+                                    'charge_id' => $chargeId,
+                                    'order_id' => $orderId,
+                                    'status' => $status,
+                                ]
+                            );
+
+                            return response('Webhook processed successfully');
+                        } else {
+                            // If no order found, still process the payment to avoid losing it
+                            $amount = $paymentEntity['amount'] / 100;
+                            $currency = $paymentEntity['currency'];
+
+                            // Try to extract order info from payment notes
+                            $orderInfo = [];
+                            if (isset($paymentEntity['notes'])) {
+                                $orderInfo = $paymentEntity['notes'];
+                            }
+
+                            do_action(PAYMENT_ACTION_PAYMENT_PROCESSED, [
+                                'amount' => $amount,
+                                'currency' => $currency,
+                                'charge_id' => $chargeId,
+                                'order_id' => $orderInfo['order_id'] ?? null,
+                                'status' => $status,
+                                'payment_channel' => RAZORPAY_PAYMENT_METHOD_NAME,
+                                'metadata' => $orderInfo,
+                            ]);
+
+                            PaymentHelper::log(
+                                RAZORPAY_PAYMENT_METHOD_NAME,
+                                ['webhook_payment_processed_without_order' => true],
+                                [
+                                    'charge_id' => $chargeId,
+                                    'status' => $status,
+                                    'notes' => $orderInfo,
+                                ]
+                            );
+
+                            return response('Webhook processed successfully (no order found)');
+                        }
+                    } catch (BadRequestError $exception) {
+                        BaseHelper::logError($exception);
+
+                        return response('Error processing payment: ' . $exception->getMessage(), 400);
+                    }
+                case 'refund.created':
+                    // Handle refund events if needed
+                    return response('Refund event received');
+
+                default:
+                    // Log unhandled events
+                    PaymentHelper::log(
+                        RAZORPAY_PAYMENT_METHOD_NAME,
+                        ['unhandled_event' => $event],
+                        ['payload' => $request->all()]
+                    );
+
+                    return response('Event type not handled: ' . $event);
+            }
+        } catch (Exception $exception) {
+            BaseHelper::logError($exception);
+
+            return response('Error processing webhook: ' . $exception->getMessage(), 500);
         }
     }
 }

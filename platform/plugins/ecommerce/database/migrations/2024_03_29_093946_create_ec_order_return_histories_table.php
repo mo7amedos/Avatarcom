@@ -7,7 +7,11 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::create('ec_order_return_histories', function (Blueprint $table) {
+        if (Schema::hasTable('ec_order_return_histories')) {
+            return;
+        }
+
+        Schema::create('ec_order_return_histories', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->nullable();
             $table->foreignId('order_return_id');

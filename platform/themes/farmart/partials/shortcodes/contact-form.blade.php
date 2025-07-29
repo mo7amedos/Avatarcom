@@ -1,10 +1,10 @@
-<div class="ms-md-5 ps-md-5">
+<div class="{{ $cssClass ?? 'ms-md-5 ps-md-5' }}">
     <h2>{{ __('Drop Us A Line') }}</h2>
 
     {!!
         $form
             ->setFormOption('class', 'mt-5 contact-form')
-            ->setFormInputClass('form-control py-3 px-3')
+            ->setFormInputClass('form-control')
             ->setFormLabelClass('d-none sr-only')
             ->modify(
                 'submit',

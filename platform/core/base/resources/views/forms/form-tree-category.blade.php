@@ -25,7 +25,7 @@
         </div>
 
         <div class="col-md-4">
-            <x-core::alert type="info">
+            <x-core::alert type="info" class="bg-white text-info">
                 {{ trans('core/base::tree-category.drag_drop_info') }}
             </x-core::alert>
 

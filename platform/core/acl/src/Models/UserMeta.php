@@ -53,11 +53,11 @@ class UserMeta extends BaseModel
 
     protected static function booted(): void
     {
-        static::saved(function () {
+        static::saved(function (): void {
             Cache::make(static::class)->flush();
         });
 
-        static::deleted(function () {
+        static::deleted(function (): void {
             Cache::make(static::class)->flush();
         });
     }

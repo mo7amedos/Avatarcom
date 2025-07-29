@@ -7,16 +7,18 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('ec_customers', function (Blueprint $table) {
-            if (! Schema::hasColumn('ec_customers', 'vendor_verified_at')) {
-                $table->dateTime('vendor_verified_at')->nullable();
-            }
+        if (Schema::hasColumn('ec_customers', 'vendor_verified_at')) {
+            return;
+        }
+
+        Schema::table('ec_customers', function (Blueprint $table): void {
+            $table->dateTime('vendor_verified_at')->nullable();
         });
     }
 
     public function down(): void
     {
-        Schema::table('ec_customers', function (Blueprint $table) {
+        Schema::table('ec_customers', function (Blueprint $table): void {
             if (Schema::hasColumn('ec_customers', 'vendor_verified_at')) {
                 $table->dropColumn('vendor_verified_at');
             }

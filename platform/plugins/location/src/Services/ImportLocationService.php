@@ -27,30 +27,44 @@ class ImportLocationService
         $this->states = collect();
     }
 
-    public function handle(array $rows): void
+    public function handle(array $rows, bool $skipExistingRecords = false): void
     {
         foreach ($rows as $row) {
             match ($row['import_type'] ?: ImportType::STATE) {
-                ImportType::COUNTRY => $this->storeCountry($row),
-                ImportType::CITY => $this->storeCity($row),
-                default => $this->storeState($row)
+                ImportType::COUNTRY => $this->storeCountry($row, $skipExistingRecords),
+                ImportType::CITY => $this->storeCity($row, $skipExistingRecords),
+                default => $this->storeState($row, $skipExistingRecords),
             };
         }
     }
 
-    protected function storeCountry(array $row): void
+    protected function storeCountry(array $row, bool $skipExistingRecords = false): void
     {
         /**
          * @var Country $country
          */
-        $country = Country::query()->firstOrCreate(
-            ['name' => $row['name']],
-            [
-                'order' => $row['order'] ?: 0,
-                'status' => $row['status'],
-                'nationality' => $row['nationality'],
-            ]
-        );
+        $country = Country::query()->where('name', $row['name'])->first();
+
+        if ($country && $skipExistingRecords) {
+            return;
+        }
+
+        if (! $country) {
+            /**
+             * @var Country $country
+             */
+            $country = Country::query()->updateOrCreate(
+                [
+                    'name' => $row['name'],
+                ],
+                [
+                    'name' => $row['name'],
+                    'order' => $row['order'] ?: 0,
+                    'status' => $row['status'],
+                    'nationality' => $row['nationality'],
+                ]
+            );
+        }
 
         $this->countries->push($country);
         $this->count++;
@@ -60,23 +74,38 @@ class ImportLocationService
         }
     }
 
-    protected function storeState(array $row): void
+    protected function storeState(array $row, bool $skipExistingRecords = false): void
     {
         /**
          * @var State $state
          */
-        $state = State::query()->updateOrCreate(
-            [
-                'name' => $row['name'],
-                'country_id' => $this->getCountryId($row['country']),
-            ],
-            [
-                'abbreviation' => $row['abbreviation'],
-                'slug' => Str::slug($row['slug'] ?: $row['name']),
-                'order' => $row['order'] ?: 0,
-                'status' => $row['status'],
-            ]
-        );
+        $state = State::query()
+            ->where('name', $row['name'])
+            ->where('country_id', $countryId = $this->getCountryId($row['country']))
+            ->first();
+
+        if ($state && $skipExistingRecords) {
+            return;
+        }
+
+        if (! $state) {
+            /**
+             * @var State $state
+             */
+            $state = State::query()->updateOrCreate(
+                [
+                    'name' => $row['name'],
+                ],
+                [
+                    'name' => $row['name'],
+                    'country_id' => $countryId,
+                    'abbreviation' => $row['abbreviation'],
+                    'slug' => Str::slug($row['slug'] ?: $row['name']),
+                    'order' => $row['order'] ?: 0,
+                    'status' => $row['status'],
+                ]
+            );
+        }
 
         $this->states->push($state);
         $this->count++;
@@ -86,23 +115,39 @@ class ImportLocationService
         }
     }
 
-    protected function storeCity(array $row): void
+    protected function storeCity(array $row, bool $skipExistingRecords = false): void
     {
         /**
          * @var City $city
          */
-        $city = City::query()->firstOrCreate(
-            [
-                'name' => $row['name'],
-                'country_id' => $countryId = $this->getCountryId($row['country']),
-                'state_id' => $this->getStateId($row['state'], $countryId),
-            ],
-            [
-                'slug' => Str::slug($row['slug'] ?: $row['name']),
-                'order' => $row['order'] ?: 0,
-                'status' => $row['status'],
-            ],
-        );
+        $city = City::query()
+            ->where('name', $row['name'])
+            ->where('country_id', $countryId = $this->getCountryId($row['country']))
+            ->where('state_id', $stateId = $this->getStateId($row['state'], $countryId))
+            ->first();
+
+        if ($city && $skipExistingRecords) {
+            return;
+        }
+
+        if (! $city) {
+            /**
+             * @var City $city
+             */
+            $city = City::query()->updateOrCreate(
+                [
+                    'name' => $row['name'],
+                ],
+                [
+                    'name' => $row['name'],
+                    'country_id' => $countryId,
+                    'state_id' => $stateId,
+                    'slug' => Str::slug($row['slug'] ?: $row['name']),
+                    'order' => $row['order'] ?: 0,
+                    'status' => $row['status'],
+                ]
+            );
+        }
 
         $this->count++;
 

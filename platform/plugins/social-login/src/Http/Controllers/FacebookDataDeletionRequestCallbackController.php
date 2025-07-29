@@ -29,9 +29,7 @@ class FacebookDataDeletionRequestCallbackController extends BaseController
 
     public function show(string $id)
     {
-        if (! Str::isUuid($id)) {
-            abort(404);
-        }
+        abort_unless(Str::isUuid($id), 404);
 
         return response()->json([
             'status' => 'pending',

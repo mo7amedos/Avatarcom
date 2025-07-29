@@ -93,7 +93,7 @@ class Menu
         $node = MenuNode::query()->findOrNew(Arr::get($menuItem, 'id'));
 
         MenuNodeForm::createFromModel($node)
-            ->saving(function (MenuNodeForm $form) use ($hasChild, $parentId, $menuId, $menuItem) {
+            ->saving(function (MenuNodeForm $form) use ($hasChild, $parentId, $menuId, $menuItem): void {
                 /**
                  * @var MenuNode $node
                  */
@@ -167,14 +167,6 @@ class Menu
 
     public function renderMenuLocation(string $location, array $attributes = []): ?string
     {
-        $cacheKey = 'menu_location_' . md5(serialize(url()->current()) . serialize(func_get_args()));
-
-        $cacheEnabled = setting('cache_front_menu_enabled', true);
-
-        if ($cacheEnabled && $this->cache->has($cacheKey) && ($html = $this->cache->get($cacheKey))) {
-            return $html;
-        }
-
         $this->load();
 
         $html = '';
@@ -186,10 +178,6 @@ class Menu
 
             $attributes['slug'] = $menu->slug;
             $html .= $this->generateMenu($attributes);
-        }
-
-        if ($cacheEnabled) {
-            $this->cache->put($cacheKey, $html, 60 * 60 * 24);
         }
 
         return $html;
@@ -236,54 +224,63 @@ class Menu
         $this->load();
 
         $view = Arr::get($args, 'view');
+
         $theme = Arr::get($args, 'theme', true);
 
-        $menu = Arr::get($args, 'menu');
+        $cacheKey = 'menu_location_' . md5(serialize(BaseHelper::getHomepageUrl()) . serialize($args));
 
-        $slug = Arr::get($args, 'slug');
-        if (! $menu && ! $slug) {
-            return null;
-        }
+        $cacheEnabled = setting('cache_front_menu_enabled', true);
 
-        $parentId = Arr::get($args, 'parent_id', 0);
-
-        if (! $menu) {
-            $menu = $this->data->where('slug', $slug)->first();
-        }
-
-        if (! $menu) {
-            $menu = RepositoryHelper::applyBeforeExecuteQuery(
-                MenuModel::query()->where('slug', $slug),
-                new MenuModel(),
-                true
-            )->first();
-        }
-
-        if (! $menu) {
-            return null;
-        }
-
-        if (! Arr::has($args, 'menu_nodes')) {
-            $menuNodes = $menu->menuNodes->where('parent_id', $parentId);
+        if ($cacheEnabled && $this->cache->has($cacheKey) && ($cachedData = $this->cache->get($cacheKey))) {
+            $data = $cachedData;
         } else {
-            $menuNodes = Arr::get($args, 'menu_nodes', []);
-        }
+            $menu = Arr::get($args, 'menu');
 
-        if ($menuNodes instanceof Collection) {
-            try {
-                $menuNodes->loadMissing('reference');
-            } catch (Throwable) {
+            $slug = Arr::get($args, 'slug');
+            if (! $menu && ! $slug) {
+                return null;
             }
+
+            $parentId = Arr::get($args, 'parent_id', 0);
+
+            if (! $menu) {
+                $menu = $this->data->where('slug', $slug)->first();
+            }
+
+            if (! $menu) {
+                $menu = RepositoryHelper::applyBeforeExecuteQuery(
+                    MenuModel::query()->where('slug', $slug),
+                    new MenuModel(),
+                    true
+                )->first();
+            }
+
+            if (! $menu) {
+                return null;
+            }
+
+            if (! Arr::has($args, 'menu_nodes')) {
+                $menuNodes = $menu->menuNodes->where('parent_id', $parentId);
+            } else {
+                $menuNodes = Arr::get($args, 'menu_nodes', []);
+            }
+
+            if ($menuNodes instanceof Collection) {
+                try {
+                    $menuNodes->loadMissing('reference');
+                } catch (Throwable) {
+                }
+            }
+
+            $menuNodes = $menuNodes->sortBy('position');
+
+            $data = [
+                'menu' => $menu,
+                'menu_nodes' => $menuNodes,
+            ];
+
+            $data['options'] = Html::attributes(Arr::get($args, 'options', []));
         }
-
-        $menuNodes = $menuNodes->sortBy('position');
-
-        $data = [
-            'menu' => $menu,
-            'menu_nodes' => $menuNodes,
-        ];
-
-        $data['options'] = Html::attributes(Arr::get($args, 'options', []));
 
         if ($theme && $view) {
             return Theme::partial($view, $data);
@@ -322,7 +319,7 @@ class Menu
                 $items = $model
                     ->where('parent_id', Arr::get($args, 'parent_id', 0))
                     ->with(['children', 'children.children'])
-                    ->orderBy('name');
+                    ->oldest('name');
             } else {
                 $items = $model->orderBy('name');
             }
@@ -400,7 +397,7 @@ class Menu
                 $form
                     ->modify(
                         'icon_font',
-                        $form->getFormHelper()->hasCustomField('themeIcon') ? 'themeIcon' : CoreIconField::class,
+                        CoreIconField::class,
                         CoreIconFieldOption::make()
                     )
                     ->addAfter('icon_font', 'icon_image', 'mediaImage', [
@@ -421,7 +418,7 @@ class Menu
             return $form;
         }, 124);
 
-        FormAbstract::beforeSaving(function (FormAbstract $form) {
+        FormAbstract::beforeSaving(function (FormAbstract $form): void {
             $model = $form->getModel();
 
             if ($model instanceof MenuNode) {

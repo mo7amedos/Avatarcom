@@ -34,6 +34,7 @@ class AddressForm extends FormFront
                 'name',
                 TextField::class,
                 TextFieldOption::make()
+                    ->addAttribute('id', 'address-name')
                     ->label(trans('plugins/ecommerce::addresses.name'))
                     ->placeholder(trans('plugins/ecommerce::addresses.name_placeholder'))
                     ->colspan(1)
@@ -42,11 +43,18 @@ class AddressForm extends FormFront
                 'phone',
                 TextField::class,
                 TextFieldOption::make()
+                    ->addAttribute('id', 'address-phone')
                     ->label(trans('plugins/ecommerce::addresses.phone'))
                     ->placeholder(trans('plugins/ecommerce::addresses.phone_placeholder'))
                     ->colspan(1)
             )
-            ->add('email', EmailField::class, EmailFieldOption::make()->colspan(1))
+            ->add(
+                'email',
+                EmailField::class,
+                EmailFieldOption::make()
+                    ->addAttribute('id', 'address-email')
+                    ->colspan(1)
+            )
             ->addLocationFields()
             ->add(
                 'is_default',
@@ -62,7 +70,7 @@ class AddressForm extends FormFront
                 ButtonFieldOption::make()
                     ->colspan(2)
                     ->label(($model && $model->getKey()) ? __('Update') : __('Create'))
-                    ->cssClass('btn btn-primary mt-2')
+                    ->cssClass('btn btn-primary mt-4')
             );
     }
 

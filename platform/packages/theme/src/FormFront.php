@@ -4,6 +4,8 @@ namespace Botble\Theme;
 
 use Botble\Base\Forms\FieldOptions\HtmlFieldOption;
 use Botble\Base\Forms\Fields\CheckboxField;
+use Botble\Base\Forms\Fields\DateField;
+use Botble\Base\Forms\Fields\DatetimeField;
 use Botble\Base\Forms\Fields\EmailField;
 use Botble\Base\Forms\Fields\HtmlField;
 use Botble\Base\Forms\Fields\NumberField;
@@ -130,6 +132,8 @@ abstract class FormFront extends FormAbstract
                 RadioField::class,
                 OnOffCheckboxField::class,
                 CheckboxField::class,
+                DateField::class,
+                DatetimeField::class,
                 'text',
                 'email',
                 'password',

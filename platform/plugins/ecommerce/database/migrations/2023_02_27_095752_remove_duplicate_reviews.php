@@ -20,7 +20,7 @@ return new class () extends Migration {
 
             Review::query()->whereNotIn('id', $reviews)->delete();
 
-            Schema::table('ec_reviews', function (Blueprint $table) {
+            Schema::table('ec_reviews', function (Blueprint $table): void {
                 $table->unique(['product_id', 'customer_id']);
             });
 
@@ -32,7 +32,7 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::table('ec_reviews', function (Blueprint $table) {
+        Schema::table('ec_reviews', function (Blueprint $table): void {
             $table->dropUnique(['product_id', 'customer_id']);
         });
     }

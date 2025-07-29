@@ -7,22 +7,22 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('ec_customer_addresses', function (Blueprint $table) {
+        Schema::table('ec_customer_addresses', function (Blueprint $table): void {
             $table->string('zip_code', 20)->nullable();
         });
 
-        Schema::table('ec_order_addresses', function (Blueprint $table) {
+        Schema::table('ec_order_addresses', function (Blueprint $table): void {
             $table->string('zip_code', 20)->nullable();
         });
     }
 
     public function down(): void
     {
-        Schema::table('ec_customer_addresses', function (Blueprint $table) {
+        Schema::table('ec_customer_addresses', function (Blueprint $table): void {
             $table->dropColumn('zip_code');
         });
 
-        Schema::table('ec_order_addresses', function (Blueprint $table) {
+        Schema::table('ec_order_addresses', function (Blueprint $table): void {
             $table->dropColumn('zip_code');
         });
     }

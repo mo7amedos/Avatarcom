@@ -32,6 +32,8 @@
             --header-text-color: {{ theme_option('header_text_color', '#000') }};
             --header-text-secondary-color: {{ BaseHelper::hexToRgba(theme_option('header_text_color', '#000'), 0.5) }};
             --header-deliver-color: {{ BaseHelper::hexToRgba(theme_option('header_deliver_color', '#000'), 0.15) }};
+            --header-mobile-background-color: {{ theme_option('header_mobile_background_color', '#fff') }};
+            --header-mobile-icon-color: {{ theme_option('header_mobile_icon_color', '#222') }};
             --footer-text-color: {{ theme_option('footer_text_color', '#555') }};
             --footer-heading-color: {{ theme_option('footer_heading_color', '#555') }};
             --footer-hover-color: {{ theme_option('footer_hover_color', '#fab528') }};

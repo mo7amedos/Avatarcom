@@ -3,6 +3,7 @@
 namespace Botble\Blog\Services;
 
 use Botble\Base\Enums\BaseStatusEnum;
+use Botble\Base\Facades\AdminHelper;
 use Botble\Base\Supports\Helper;
 use Botble\Blog\Models\Category;
 use Botble\Blog\Models\Post;
@@ -16,7 +17,6 @@ use Botble\Theme\Facades\AdminBar;
 use Botble\Theme\Facades\Theme;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Auth;
 
 class BlogService
 {
@@ -31,7 +31,7 @@ class BlogService
             'status' => BaseStatusEnum::PUBLISHED,
         ];
 
-        if (Auth::guard()->check() && request()->input('preview')) {
+        if (AdminHelper::isPreviewing()) {
             Arr::forget($condition, 'status');
         }
 

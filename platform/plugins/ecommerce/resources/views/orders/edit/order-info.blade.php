@@ -53,6 +53,17 @@
                 </x-core::table.body.cell>
             </x-core::table.body.row>
         @endif
+
+        @if ((float) $order->payment_fee)
+            <x-core::table.body.row>
+                <x-core::table.body.cell>
+                    {{ trans('plugins/payment::payment.payment_fee') }}
+                </x-core::table.body.cell>
+                <x-core::table.body.cell>
+                    {{ format_price($order->payment_fee) }}
+                </x-core::table.body.cell>
+            </x-core::table.body.row>
+        @endif
         <x-core::table.body.row>
             <x-core::table.body.cell>
                 {{ trans('plugins/ecommerce::order.total_amount') }}
@@ -121,7 +132,8 @@
                     </x-core::table.body.cell>
                     <x-core::table.body.cell>
                         <a href="{{ route('orders.download-proof', $order->id) }}" target="_blank">
-                            {{ $order->proof_file }}
+                            <span>{{ trans('plugins/ecommerce::order.download') }}</span>
+                            <x-core::icon name="ti ti-download" />
                         </a>
                     </x-core::table.body.cell>
                 </x-core::table.body.row>

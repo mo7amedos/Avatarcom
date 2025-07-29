@@ -102,7 +102,7 @@ class ProductCategoryRepository extends RepositoriesAbstract implements ProductC
         }
 
         if ($parentOnly) {
-            $data = $data->where(function ($query) {
+            $data = $data->where(function ($query): void {
                 $query
                     ->whereNull('parent_id')
                     ->orWhere('parent_id', 0);
@@ -110,8 +110,7 @@ class ProductCategoryRepository extends RepositoriesAbstract implements ProductC
         }
 
         $data = $data
-            ->orderBy('order')
-            ->orderByDesc('created_at');
+            ->orderBy('order')->latest();
 
         if ($select) {
             $data = $data->select($select);

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::create('simple_sliders', function (Blueprint $table) {
+        Schema::create('simple_sliders', function (Blueprint $table): void {
             $table->id();
             $table->string('name', 120);
             $table->string('key', 120);
@@ -16,7 +16,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('simple_slider_items', function (Blueprint $table) {
+        Schema::create('simple_slider_items', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('simple_slider_id');
             $table->string('title')->nullable();

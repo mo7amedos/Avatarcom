@@ -29,6 +29,7 @@ trait CheckReviewConditionTrait
         if ($exists) {
             return [
                 'error' => true,
+                'type' => 'already_reviewed',
                 'message' => __('You have reviewed this product already!'),
             ];
         }
@@ -39,11 +40,11 @@ trait CheckReviewConditionTrait
                     'user_id' => $customerId,
                     'status' => OrderStatusEnum::COMPLETED,
                 ])
-                ->join('ec_order_product', function ($query) use ($productId) {
+                ->join('ec_order_product', function ($query) use ($productId): void {
                     $query
                         ->on('ec_order_product.order_id', 'ec_orders.id')
                         ->leftJoin('ec_product_variations', 'ec_product_variations.product_id', 'ec_order_product.product_id')
-                        ->where(function ($query) use ($productId) {
+                        ->where(function ($query) use ($productId): void {
                             $query->where('ec_product_variations.configurable_product_id', $productId)
                             ->orWhere('ec_order_product.product_id', $productId);
                         });
@@ -53,6 +54,7 @@ trait CheckReviewConditionTrait
             if (! $order) {
                 return [
                     'error' => true,
+                    'type' => 'purchase_required',
                     'message' => __('Please purchase the product for a review!'),
                 ];
             }
@@ -60,6 +62,7 @@ trait CheckReviewConditionTrait
 
         return [
             'error' => false,
+            'type' => null,
         ];
     }
 }

@@ -17,6 +17,7 @@ use Botble\Slug\Models\Slug;
 use Botble\Table\Columns\Column;
 use Botble\Table\Columns\NameColumn;
 use Botble\Theme\Events\RenderingThemeOptionSettings;
+use Botble\Theme\Facades\Theme;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Support\Collection;
@@ -28,17 +29,17 @@ class HookServiceProvider extends ServiceProvider
     {
         Menu::addMenuOptionModel(Page::class);
 
-        $this->app['events']->listen(RenderingMenuOptions::class, function () {
+        $this->app['events']->listen(RenderingMenuOptions::class, function (): void {
             add_action(MENU_ACTION_SIDEBAR_OPTIONS, [$this, 'registerMenuOptions'], 10);
         });
 
-        $this->app['events']->listen(RenderingDashboardWidgets::class, function () {
+        $this->app['events']->listen(RenderingDashboardWidgets::class, function (): void {
             add_filter(DASHBOARD_FILTER_ADMIN_LIST, [$this, 'addPageStatsWidget'], 15, 2);
         });
 
         add_filter(BASE_FILTER_PUBLIC_SINGLE_DATA, [$this, 'handleSingleView'], 1);
 
-        $this->app['events']->listen(RenderingThemeOptionSettings::class, function () {
+        $this->app['events']->listen(RenderingThemeOptionSettings::class, function (): void {
             $pages = Page::query()
                 ->wherePublished();
 
@@ -47,7 +48,7 @@ class HookServiceProvider extends ServiceProvider
                 ->all();
 
             theme_option()
-                ->when($pages, function () use ($pages) {
+                ->when($pages, function () use ($pages): void {
                     theme_option()
                         ->setSection([
                             'title' => trans('packages/page::pages.theme_options.title'),
@@ -73,11 +74,11 @@ class HookServiceProvider extends ServiceProvider
                 });
         });
 
-        $this->app['events']->listen(RouteMatched::class, function () {
+        $this->app['events']->listen(RouteMatched::class, function (): void {
             if (defined('THEME_FRONT_HEADER')) {
                 add_action(BASE_ACTION_PUBLIC_RENDER_SINGLE, function ($screen, $page): void {
                     add_filter(THEME_FRONT_HEADER, function (?string $html) use ($page): string|null {
-                        if (get_class($page) != Page::class) {
+                        if ($page::class != Page::class) {
                             return $html;
                         }
 
@@ -88,7 +89,7 @@ class HookServiceProvider extends ServiceProvider
                             'url' => $page->url,
                             'logo' => [
                                 '@type' => 'ImageObject',
-                                'url' => RvMedia::getImageUrl(theme_option('logo')),
+                                'url' => RvMedia::getImageUrl(Theme::getLogo()),
                             ],
                         ];
 
@@ -122,7 +123,7 @@ class HookServiceProvider extends ServiceProvider
 
     public function addPageStatsWidget(array $widgets, Collection $widgetSettings): array
     {
-        $pages = Page::query()->wherePublished()->count();
+        $pages = fn () => Page::query()->wherePublished()->count();
 
         return (new DashboardWidgetInstance())
             ->setType('stats')

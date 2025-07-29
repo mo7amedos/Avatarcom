@@ -3,7 +3,6 @@
 namespace Botble\Blog\Providers;
 
 use Botble\ACL\Models\User;
-use Botble\Api\Facades\ApiHelper;
 use Botble\Base\Facades\DashboardMenu;
 use Botble\Base\Facades\PanelSectionManager;
 use Botble\Base\PanelSections\PanelSectionItem;
@@ -67,21 +66,24 @@ class BlogServiceProvider extends ServiceProvider
             ->loadMigrations()
             ->publishAssets();
 
-        if (class_exists('ApiHelper') && ApiHelper::enabled()) {
+        if (class_exists('ApiHelper')) {
             $this->loadRoutes(['api']);
         }
 
         $this->app->register(EventServiceProvider::class);
 
-        $this->app['events']->listen(ThemeRoutingBeforeEvent::class, function () {
+        $this->app['events']->listen(ThemeRoutingBeforeEvent::class, function (): void {
             SiteMapManager::registerKey([
                 'blog-categories',
                 'blog-tags',
-                'blog-posts-((?:19|20|21|22)\d{2})-(0?[1-9]|1[012])',
+                'blog-posts',
             ]);
+
+            // Register monthly archive sitemaps for blog posts
+            SiteMapManager::registerMonthlyArchives('blog-posts');
         });
 
-        SlugHelper::registering(function () {
+        SlugHelper::registering(function (): void {
             SlugHelper::registerModule(Post::class, fn () => trans('plugins/blog::base.blog_posts'));
             SlugHelper::registerModule(Category::class, fn () => trans('plugins/blog::base.blog_categories'));
             SlugHelper::registerModule(Tag::class, fn () => trans('plugins/blog::base.blog_tags'));
@@ -91,7 +93,7 @@ class BlogServiceProvider extends ServiceProvider
             SlugHelper::setPrefix(Category::class, null, true);
         });
 
-        DashboardMenu::default()->beforeRetrieving(function () {
+        DashboardMenu::default()->beforeRetrieving(function (): void {
             DashboardMenu::make()
                 ->registerItem(
                     DashboardMenuItem::make()
@@ -129,7 +131,7 @@ class BlogServiceProvider extends ServiceProvider
                 );
         });
 
-        PanelSectionManager::default()->beforeRendering(function () {
+        PanelSectionManager::default()->beforeRendering(function (): void {
             PanelSectionManager::registerItem(
                 SettingOthersPanelSection::class,
                 fn () => PanelSectionItem::make('blog')
@@ -141,7 +143,7 @@ class BlogServiceProvider extends ServiceProvider
             );
         });
 
-        PanelSectionManager::setGroupId('data-synchronize')->beforeRendering(function () {
+        PanelSectionManager::setGroupId('data-synchronize')->beforeRendering(function (): void {
             PanelSectionManager::default()
                 ->registerItem(
                     ExportPanelSection::class,
@@ -163,7 +165,7 @@ class BlogServiceProvider extends ServiceProvider
                 );
         });
 
-        if (defined('LANGUAGE_MODULE_SCREEN_NAME')) {
+        if (defined('LANGUAGE_MODULE_SCREEN_NAME') && defined('LANGUAGE_ADVANCED_MODULE_SCREEN_NAME')) {
             if (
                 defined('LANGUAGE_ADVANCED_MODULE_SCREEN_NAME') &&
                 $this->app['config']->get('plugins.blog.general.use_language_v2')
@@ -196,7 +198,7 @@ class BlogServiceProvider extends ServiceProvider
             return $user->morphMany(Slug::class, 'reference');
         });
 
-        $this->app->booted(function () {
+        $this->app->booted(function (): void {
             SeoHelper::registerModule([Post::class, Category::class, Tag::class]);
 
             $configKey = 'packages.revision.general.supported';
@@ -210,14 +212,14 @@ class BlogServiceProvider extends ServiceProvider
                 'plugins/blog::themes.post',
                 'plugins/blog::themes.category',
                 'plugins/blog::themes.tag',
-            ], function (View $view) {
+            ], function (View $view): void {
                 $view->withShortcodes();
             });
         }
 
         $this->app['events']->listen(
             [DeactivatedPlugin::class, RemovedPlugin::class],
-            function (DeactivatedPlugin|RemovedPlugin $event) {
+            function (DeactivatedPlugin|RemovedPlugin $event): void {
                 if ($event->plugin === 'member') {
                     Post::query()->where('author_type', 'Botble\Member\Models\Member')->update([
                         'author_id' => null,

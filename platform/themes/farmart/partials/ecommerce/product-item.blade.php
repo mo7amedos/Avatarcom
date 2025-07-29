@@ -21,7 +21,7 @@
                     @foreach ($product->productLabels as $label)
                         <span
                             class="ribbon"
-                            @if ($label->color) style="background-color: {{ $label->color }}" @endif
+                            {!! $label->css_styles !!}
                         >{{ $label->name }}</span>
                     @endforeach
                 @else
@@ -60,14 +60,6 @@
             {!! Theme::partial('star-rating', ['avg' => $product->reviews_avg, 'count' => $product->reviews_count]) !!}
         @endif
         {!! Theme::partial('ecommerce.product-price', compact('product')) !!}
-        
-        <!-- إضافة الوزن -->
-        @if (!empty($product->weight))
-            <p class="product-weight">
-                <strong>{{ _('Weight') }}:</strong> {{ $product->weight }} {{ _('gram') }}
-            </p>
-        @endif
-
         @if (!empty($isFlashSale))
             <div class="deal-sold row mt-2">
                 @if (Botble\Ecommerce\Facades\FlashSale::isShowSaleCountLeft())
@@ -98,9 +90,9 @@
                     </div>
                 </div>
             </div>
-        @endif
-    </div>
-    <div class="product-bottom-box">
-        {!! Theme::partial('ecommerce.product-cart-form', compact('product')) !!}
-    </div>
-    </div>
+        @endisset
+</div>
+<div class="product-bottom-box">
+    {!! Theme::partial('ecommerce.product-cart-form', compact('product')) !!}
+</div>
+</div>

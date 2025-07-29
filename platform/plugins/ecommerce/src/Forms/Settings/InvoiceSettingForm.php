@@ -18,6 +18,7 @@ use Botble\Ecommerce\Facades\EcommerceHelper;
 use Botble\Ecommerce\Facades\InvoiceHelper;
 use Botble\Ecommerce\Http\Requests\Settings\InvoiceSettingRequest;
 use Botble\Setting\Forms\SettingForm;
+use Botble\Theme\Facades\Theme;
 
 class InvoiceSettingForm extends SettingForm
 {
@@ -80,7 +81,7 @@ class InvoiceSettingForm extends SettingForm
                     ->value(InvoiceHelper::getCompanyCity())
                     ->colspan(2)
             )
-            ->when(EcommerceHelper::isZipCodeEnabled(), function (FormAbstract $form) {
+            ->when(EcommerceHelper::isZipCodeEnabled(), function (FormAbstract $form): void {
                 $form->add('company_zipcode_for_invoicing', TextField::class, [
                     'label' => trans('plugins/ecommerce::setting.invoice.form.company_zipcode'),
                     'value' => InvoiceHelper::getCompanyZipCode(),
@@ -104,7 +105,7 @@ class InvoiceSettingForm extends SettingForm
             ])
             ->add('company_logo_for_invoicing', MediaImageField::class, [
                 'label' => trans('plugins/ecommerce::setting.invoice.form.company_logo'),
-                'value' => get_ecommerce_setting('company_logo_for_invoicing') ?: (theme_option('logo_in_invoices') ?: theme_option('logo')),
+                'value' => get_ecommerce_setting('company_logo_for_invoicing') ?: (theme_option('logo_in_invoices') ?: Theme::getLogo()),
                 'allow_thumb' => false,
                 'colspan' => 6,
             ])
@@ -138,14 +139,27 @@ class InvoiceSettingForm extends SettingForm
                     ->label(trans('plugins/ecommerce::setting.invoice.form.add_language_support'))
                     ->choices([
                         'default' => trans('plugins/ecommerce::setting.invoice.form.only_latin_languages'),
-                        'arabic' => 'Arabic',
-                        'bangladesh' => 'Bangladesh',
-                        'chinese' => 'Chinese',
+                        'arabic' => trans('plugins/ecommerce::setting.invoice.form.languages.arabic'),
+                        'bangladesh' => trans('plugins/ecommerce::setting.invoice.form.languages.bangladesh'),
+                        'chinese' => trans('plugins/ecommerce::setting.invoice.form.languages.chinese'),
                     ])
                     ->defaultValue('default')
-                    ->when(InvoiceHelper::getLanguageSupport(), function (RadioFieldOption $option, string $language) {
+                    ->when(InvoiceHelper::getLanguageSupport(), function (RadioFieldOption $option, string $language): void {
                         $option->selected($language);
                     })
+                    ->colspan(6)
+            )
+            ->add(
+                'invoice_processing_library',
+                RadioField::class,
+                RadioFieldOption::make()
+                    ->label(trans('plugins/ecommerce::setting.invoice.form.invoice_processing_library'))
+                    ->choices([
+                        'dompdf' => 'DomPDF',
+                        'mpdf' => 'mPDF',
+                    ])
+                    ->defaultValue('dompdf')
+                    ->selected(get_ecommerce_setting('invoice_processing_library', 'dompdf'))
                     ->colspan(6)
             )
             ->add('enable_invoice_stamp', OnOffCheckboxField::class, [

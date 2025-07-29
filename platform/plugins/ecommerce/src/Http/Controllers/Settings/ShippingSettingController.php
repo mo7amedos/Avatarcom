@@ -6,6 +6,8 @@ use Botble\Base\Facades\Assets;
 use Botble\Ecommerce\Forms\Settings\ShippingSettingForm;
 use Botble\Ecommerce\Http\Requests\Settings\ShippingSettingRequest;
 use Botble\Ecommerce\Models\Shipping;
+use Botble\Ecommerce\Services\HandleShippingFeeService;
+use Botble\Support\Services\Cache\Cache;
 
 class ShippingSettingController extends SettingController
 {
@@ -21,11 +23,13 @@ class ShippingSettingController extends SettingController
 
         $shipping = Shipping::query()
             ->with([
-                'rules' => function ($query) {
+                'rules' => function ($query): void {
                     $query->withCount('items');
                 },
             ])
             ->get();
+
+        Cache::make(HandleShippingFeeService::class)->flush();
 
         return view('plugins/ecommerce::settings.shipping', compact('shipping', 'form'));
     }

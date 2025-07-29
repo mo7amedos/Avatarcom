@@ -21,6 +21,8 @@ class ProductSpecificationSeeder extends BaseSeeder
         SpecificationGroup::query()->truncate();
         DB::table('ec_specification_table_group')->truncate();
         DB::table('ec_specification_attributes_translations')->truncate();
+        DB::table('ec_specification_groups_translations')->truncate();
+        DB::table('ec_specification_tables_translations')->truncate();
         DB::table('ec_product_specification_attribute')->truncate();
 
         Setting::set('ecommerce_enable_product_specification', true)->save();
@@ -105,18 +107,18 @@ class ProductSpecificationSeeder extends BaseSeeder
         $tables = SpecificationTable::query()->with('groups.specificationAttributes')->get();
         $products = Product::query()->where('is_variation', false)->get();
 
-        $products->each(function (Model|Product $product) use ($tables) {
+        $products->each(function (Model|Product $product) use ($tables): void {
             $table = $tables->random();
 
             $product->update([
                 'specification_table_id' => $table->id,
             ]);
 
-            $table->groups->each(function ($group) use ($product) {
+            $table->groups->each(function ($group) use ($product): void {
                 /**
                  * @var Product $product
                  */
-                $group->specificationAttributes->each(function ($attribute) use ($product) {
+                $group->specificationAttributes->each(function ($attribute) use ($product): void {
                     $value = $this->generateAttributeValue($attribute);
 
                     $product->specificationAttributes()->attach($attribute->id, [
@@ -131,7 +133,7 @@ class ProductSpecificationSeeder extends BaseSeeder
 
     protected function generateAttributeValue(SpecificationAttribute $attribute)
     {
-        return match ($attribute->type) {
+        return match ($attribute->type->getValue()) {
             SpecificationAttributeFieldType::TEXT => $this->fake()->randomFloat(2, 1, 100) . ' cm',
             SpecificationAttributeFieldType::SELECT, SpecificationAttributeFieldType::RADIO => $this->fake()->randomElement($attribute->options),
             SpecificationAttributeFieldType::CHECKBOX => $this->fake()->boolean(),

@@ -43,7 +43,7 @@ class MigrateLocationCommand extends Command
         $model = new $className();
         Schema::connection($model->getConnectionName())->table(
             $model->getTable(),
-            function (Blueprint $table) use ($className) {
+            function (Blueprint $table) use ($className): void {
                 $table->location($className);
             }
         );

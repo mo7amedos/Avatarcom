@@ -40,7 +40,7 @@ class ThemeServiceProvider extends ServiceProvider
             ->loadRoutes()
             ->publishAssets();
 
-        DashboardMenu::default()->beforeRetrieving(function (DashboardMenuSupport $menu) {
+        DashboardMenu::default()->beforeRetrieving(function (DashboardMenuSupport $menu): void {
             $config = $this->app['config'];
 
             $menu
@@ -53,7 +53,7 @@ class ThemeServiceProvider extends ServiceProvider
                 )
                 ->when(
                     $config->get('packages.theme.general.display_theme_manager_in_admin_panel', true),
-                    function (DashboardMenuSupport $menu) {
+                    function (DashboardMenuSupport $menu): void {
                         $menu->registerItem(
                             DashboardMenuItem::make()
                                 ->id('cms-core-theme')
@@ -88,7 +88,7 @@ class ThemeServiceProvider extends ServiceProvider
                 )
                 ->when(
                     $config->get('packages.theme.general.enable_custom_js'),
-                    function (DashboardMenuSupport $menu) {
+                    function (DashboardMenuSupport $menu): void {
                         $menu->registerItem(
                             DashboardMenuItem::make()
                                 ->id('cms-core-appearance-custom-js')
@@ -103,7 +103,7 @@ class ThemeServiceProvider extends ServiceProvider
                 )
                 ->when(
                     $config->get('packages.theme.general.enable_custom_html'),
-                    function (DashboardMenuSupport $menu) {
+                    function (DashboardMenuSupport $menu): void {
                         $menu->registerItem(
                             DashboardMenuItem::make()
                                 ->id('cms-core-appearance-custom-html')
@@ -118,7 +118,7 @@ class ThemeServiceProvider extends ServiceProvider
                 )
                 ->when(
                     $config->get('packages.theme.general.enable_robots_txt_editor'),
-                    function (DashboardMenuSupport $menu) {
+                    function (DashboardMenuSupport $menu): void {
                         $menu->registerItem(
                             DashboardMenuItem::make()
                                 ->id('cms-core-appearance-robots-txt')
@@ -133,7 +133,7 @@ class ThemeServiceProvider extends ServiceProvider
                 );
         });
 
-        PanelSectionManager::default()->beforeRendering(function () {
+        PanelSectionManager::default()->beforeRendering(function (): void {
             PanelSectionManager::registerItem(
                 SettingCommonPanelSection::class,
                 fn () => PanelSectionItem::make('website_tracking')
@@ -145,7 +145,7 @@ class ThemeServiceProvider extends ServiceProvider
             );
         });
 
-        $this->app['events']->listen(RenderingAdminBar::class, function () {
+        $this->app['events']->listen(RenderingAdminBar::class, function (): void {
             admin_bar()
                 ->registerLink(trans('packages/theme::theme.name'), route('theme.index'), 'appearance', 'theme.index')
                 ->registerLink(
@@ -156,7 +156,7 @@ class ThemeServiceProvider extends ServiceProvider
                 );
         });
 
-        $this->app->booted(function () {
+        $this->app->booted(function (): void {
             $this->app->register(HookServiceProvider::class);
         });
 

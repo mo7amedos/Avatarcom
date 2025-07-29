@@ -74,9 +74,7 @@ class OrderController extends BaseController
 
     public function destroy(int|string $id)
     {
-        if (! MarketplaceHelper::allowVendorDeleteTheirOrders()) {
-            abort(403);
-        }
+        abort_unless(MarketplaceHelper::allowVendorDeleteTheirOrders(), 403);
 
         $order = $this->findOrFail($id);
 
@@ -158,17 +156,15 @@ class OrderController extends BaseController
     {
         $address = OrderAddress::query()
             ->where('id', $id)
-            ->whereHas('order', function ($query) {
-                $query->where('store_id', auth('customer')->user()->store->id);
+            ->whereHas('order', function ($query): void {
+                $query->where('store_id', auth('customer')->user()->store?->id);
             })
             ->first();
 
         if ($address) {
             $order = $address->order;
         } else {
-            if (! $orderId = $request->input('order_id')) {
-                abort(404);
-            }
+            abort_unless($orderId = $request->input('order_id'), 404);
 
             $order = $this->findOrFail($orderId);
 
@@ -180,9 +176,7 @@ class OrderController extends BaseController
             }
         }
 
-        if ($order->status == OrderStatusEnum::CANCELED) {
-            abort(401);
-        }
+        abort_if($order->status == OrderStatusEnum::CANCELED, 401);
 
         $address->fill($request->validated());
         $address->save();
@@ -203,9 +197,7 @@ class OrderController extends BaseController
          */
         $order = $this->findOrFail($id);
 
-        if (! $order->canBeCanceledByAdmin()) {
-            abort(403);
-        }
+        abort_unless($order->canBeCanceledByAdmin(), 403);
 
         OrderHelper::cancelOrder($order);
 
@@ -227,7 +219,7 @@ class OrderController extends BaseController
             ->where([
                 'id' => $id,
                 'is_finished' => 1,
-                'store_id' => auth('customer')->user()->store->id,
+                'store_id' => auth('customer')->user()->store?->id,
             ])
             ->firstOrFail();
     }

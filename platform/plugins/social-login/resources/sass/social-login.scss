@@ -22,9 +22,14 @@
 
     .social-login-basic {
         padding: 0 50px;
+        list-style: none;
+
+        li {
+            list-style: none;
+        }
 
         .social-login {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 700;
             display: flex;
             align-items: center;
@@ -164,6 +169,18 @@
                 &:hover {
                     background-color: #222;
                 }
+            }
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .login-options {
+        .social-login-basic {
+            padding: 0;
+
+            .social-login {
+                font-size: 14px !important;
             }
         }
     }

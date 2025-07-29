@@ -7,14 +7,14 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('ec_product_collections', function (Blueprint $table) {
+        Schema::table('ec_product_collections', function (Blueprint $table): void {
             $table->tinyInteger('is_featured')->unsigned()->default(0);
         });
     }
 
     public function down(): void
     {
-        Schema::table('ec_product_collections', function (Blueprint $table) {
+        Schema::table('ec_product_collections', function (Blueprint $table): void {
             $table->dropColumn('is_featured');
         });
     }

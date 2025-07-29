@@ -85,7 +85,7 @@ class ShippingMethodController extends BaseController
              */
             $shipping = Shipping::query()->findOrFail($rule->shipping_id);
 
-            DeleteResourceAction::make($shipping);
+            $shipping->delete();
         }
 
         return $this

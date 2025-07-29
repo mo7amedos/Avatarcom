@@ -7,15 +7,21 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('ec_customers', function (Blueprint $table) {
+        if (Schema::hasColumn('ec_customers', 'block_reason')) {
+            return;
+        }
+
+        Schema::table('ec_customers', function (Blueprint $table): void {
             $table->string('block_reason', 400)->nullable()->after('status');
         });
     }
 
     public function down(): void
     {
-        Schema::table('ec_customers', function (Blueprint $table) {
-            $table->dropColumn('block_reason');
-        });
+        if (Schema::hasColumn('ec_customers', 'block_reason')) {
+            Schema::table('ec_customers', function (Blueprint $table): void {
+                $table->dropColumn('block_reason');
+            });
+        }
     }
 };

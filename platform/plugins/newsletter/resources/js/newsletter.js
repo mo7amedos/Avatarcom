@@ -1,17 +1,46 @@
 $(() => {
     const $newsletterPopup = $('#newsletter-popup')
 
+    const newsletterDelayTime = $newsletterPopup.data('delay') * 1000 || 5000
+
     const dontShowAgain = (time) => {
         const date = new Date()
         date.setTime(date.getTime() + time)
-        document.cookie = `newsletter_popup=1; expires=${date.toUTCString()}; path=/`
+        const secure = window.location.protocol === 'https:' ? '; Secure' : ''
+        document.cookie = `newsletter_popup=1; expires=${date.toUTCString()}; path=/; SameSite=Lax${secure}`
     }
 
     if ($newsletterPopup.length > 0) {
         if (document.cookie.indexOf('newsletter_popup=1') === -1) {
-            setTimeout(() => {
-                $newsletterPopup.modal('show')
-            }, $newsletterPopup.data('delay') * 1000)
+            fetch($newsletterPopup.data('url'), {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(({ data }) => {
+                $newsletterPopup.html(data.html);
+
+                if (typeof Theme !== 'undefined' && typeof Theme.lazyLoadInstance !== 'undefined') {
+                    Theme.lazyLoadInstance.update()
+                }
+
+                setTimeout(() => {
+                    if ($newsletterPopup.find('.newsletter-popup-content').length) {
+                        $newsletterPopup.modal('show')
+                    }
+                }, newsletterDelayTime)
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+            });
         }
 
         $newsletterPopup

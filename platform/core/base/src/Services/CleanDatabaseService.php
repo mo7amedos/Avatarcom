@@ -32,7 +32,10 @@ class CleanDatabaseService
         $except = array_merge($except, $this->getIgnoreTables());
 
         try {
-            $tables = DB::connection()->getDoctrineSchemaManager()->listTableNames();
+            $tables = array_map(function (array $table) {
+                return $table['name'];
+            }, Schema::getTables(Schema::getConnection()->getDatabaseName()));
+
             $tables = array_diff($tables, $except);
         } catch (Throwable) {
             $tables = [];

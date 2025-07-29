@@ -72,6 +72,10 @@
                         <x-core::card.title>{{ trans('packages/menu::menu.structure') }}</x-core::card.title>
                     </x-core::card.header>
                     <x-core::card.body>
+                        <x-core::alert type="info" class="bg-white text-info">
+                            {{ trans('packages/menu::menu.drag_drop_info') }}
+                        </x-core::alert>
+
                         <div
                             class="dd nestable-menu"
                             id="nestable"

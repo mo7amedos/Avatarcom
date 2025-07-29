@@ -28,7 +28,7 @@
                 ></span>
             </div>
             <div class="col text-truncate">
-                <a href="__url__" class="text-body d-block" target="_blank">__name__</a>
+                <a href="__url__" class="text-body d-block text-truncate" target="_blank">__name__</a>
                 <div class="text-secondary text-truncate">
                     __attributes__
                 </div>

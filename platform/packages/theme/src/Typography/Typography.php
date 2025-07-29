@@ -124,25 +124,23 @@ class Typography
                 $value = $fontFamily->getDefault();
             }
 
-            if (in_array($value, $renderedFonts)) {
-                continue;
+            if (! in_array($value, $renderedFonts) && $fontFamily->isGoogleFont()) {
+                $fontWeights = $fontFamily->getFontWeights() ?: ['300', '400', '500', '600', '700'];
+
+                $fontFaces .= BaseHelper::googleFonts('https://fonts.googleapis.com/' . sprintf(
+                    'css2?family=%s:wght@%s&display=swap',
+                    urlencode($value),
+                    implode(';', $fontWeights)
+                ));
+
+                $renderedFonts[] = $value;
             }
-
-            $fontWeights = $fontFamily->getFontWeights() ?: ['300', '400', '500', '600', '700'];
-
-            $fontFaces .= BaseHelper::googleFonts('https://fonts.googleapis.com/' . sprintf(
-                'css2?family=%s:wght@%s&display=swap',
-                urlencode($value),
-                implode(';', $fontWeights)
-            ));
 
             $styles .= sprintf(
                 '--%s-font: "%s", sans-serif;',
                 $fontFamily->getName(),
                 $value
             );
-
-            $renderedFonts[] = $value;
         }
 
         $fontSizes = $this->getFontSizes();
@@ -154,6 +152,8 @@ class Typography
                 theme_option("tp_{$fontSize->getName()}_size", $fontSize->getDefault())
             );
         }
+
+        $styles .= '}';
 
         if ($fontSizes) {
             foreach (['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'body'] as $tag) {
@@ -171,14 +171,14 @@ class Typography
             }
         }
 
-        $styles .= '}</style>';
+        $styles .= '</style>';
 
         return $fontFaces . $styles;
     }
 
     public function renderThemeOptions(): void
     {
-        Event::listen(RenderingThemeOptionSettings::class, function () {
+        Event::listen(RenderingThemeOptionSettings::class, function (): void {
             if (empty($this->fontFamilies) && empty($this->fontSizes)) {
                 return;
             }

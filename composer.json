@@ -5,13 +5,13 @@
     "keywords": ["framework", "laravel"],
     "license": "MIT",
     "require": {
-        "php": "^8.1|^8.2|^8.3",
+        "php": "^8.2|^8.3",
         "ext-curl": "*",
         "ext-gd": "*",
         "ext-json": "*",
         "ext-pdo": "*",
         "ext-zip": "*",
-        "botble/api": "^2.0.0",
+        "botble/api": "^2.1",
         "botble/data-synchronize": "^1.0",
         "botble/get-started": "*@dev",
         "botble/installer": "*@dev",
@@ -27,26 +27,28 @@
         "botble/slug": "*@dev",
         "botble/theme": "*@dev",
         "botble/widget": "*@dev",
-        "doctrine/dbal": "^3.8",
-        "guzzlehttp/guzzle": "^7.7",
-        "laravel/framework": "^10.24",
-        "laravel/sanctum": "^3.3",
-        "laravel/tinker": "^2.9",
-        "predis/predis": "^2.2",
-        "stripe/stripe-php": "*",
+        "doctrine/dbal": "^4.2",
+        "guzzlehttp/guzzle": "^7.9",
+        "laravel/framework": "^12.0",
+        "laravel/sanctum": "^4.0",
+        "laravel/tinker": "^2.10",
+        "predis/predis": "^3.0",
         "wikimedia/composer-merge-plugin": "^2.1"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^3.8",
         "botble/dev-tool": "^1.0.2",
         "botble/git-commit-checker": "^2.1",
+        "driftingly/rector-laravel": "^2.0",
         "fakerphp/faker": "^1.23",
-        "larastan/larastan": "^2.6",
-        "laravel/pint": "^1.5",
-        "laravel/sail": "^1.28",
+        "larastan/larastan": "^3.0",
+        "laravel/pail": "^1.1",
+        "laravel/pint": "^1.13",
+        "laravel/sail": "^1.41",
         "mockery/mockery": "^1.6",
-        "nunomaduro/collision": "^7.0",
-        "phpunit/phpunit": "^10.1",
+        "nunomaduro/collision": "^8.1",
+        "phpunit/phpunit": "^11.0.1",
+        "rector/rector": "^2.0",
         "spatie/laravel-ignition": "^2.0"
     },
     "autoload": {
@@ -69,6 +71,7 @@
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
             "Aws\\Script\\Composer\\Composer::removeUnusedServices",
+            "Google\\Task\\Composer::cleanup",
             "@php artisan cms:publish:assets"
         ],
         "post-root-package-install": [
@@ -99,6 +102,9 @@
             "S3",
             "Ses",
             "Translate"
+        ],
+        "google/apiclient-services": [
+            "Drive"
         ]
     },
     "config": {

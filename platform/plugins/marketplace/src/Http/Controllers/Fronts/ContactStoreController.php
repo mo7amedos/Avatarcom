@@ -14,9 +14,7 @@ class ContactStoreController extends BaseController
 {
     public function store(string $id, ContactStoreRequest $request): BaseHttpResponse
     {
-        if (! MarketplaceHelper::isEnabledMessagingSystem()) {
-            abort(404);
-        }
+        abort_unless(MarketplaceHelper::isEnabledMessagingSystem(), 404);
 
         $store = Store::query()
             ->wherePublished()

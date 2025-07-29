@@ -6,20 +6,17 @@ use Botble\Base\Http\Controllers\BaseController;
 use Botble\Base\Http\Responses\BaseHttpResponse;
 use Botble\Payment\Enums\PaymentStatusEnum;
 use Botble\Payment\Supports\PaymentHelper;
+use Botble\Paystack\Services\Paystack;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Unicodeveloper\Paystack\Facades\Paystack;
 
 class PaystackController extends BaseController
 {
-    public function getPaymentStatus(Request $request, BaseHttpResponse $response)
+    public function getPaymentStatus(Request $request, BaseHttpResponse $response, Paystack $paystack)
     {
         do_action('payment_before_making_api_request', PAYSTACK_PAYMENT_METHOD_NAME, []);
 
-        /**
-         * @var array $result
-         */
-        $result = Paystack::getPaymentData();
+        $result = $paystack->getPaymentData();
 
         do_action('payment_after_api_response', PAYSTACK_PAYMENT_METHOD_NAME, [], $result);
 

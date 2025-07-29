@@ -31,7 +31,7 @@ class OrderReturn extends BaseModel
 
     protected static function booted(): void
     {
-        static::deleted(function (OrderReturn $orderReturn) {
+        static::deleted(function (OrderReturn $orderReturn): void {
             $orderReturn->histories()->delete();
             $orderReturn->items()->delete();
         });

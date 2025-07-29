@@ -62,7 +62,7 @@ class AdsTable extends TableAbstract
                 StatusBulkChange::make(),
                 DateBulkChange::make()->name('expired_at')->title(trans('plugins/ads::ads.expired_at')),
             ])
-            ->queryUsing(function ($query) {
+            ->queryUsing(function ($query): void {
                 $query->select([
                     'id',
                     'image',

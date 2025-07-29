@@ -51,6 +51,7 @@ class ProductCategoryImporter extends Importer implements WithMapping
         return [
             ImportColumn::make('name')->rules(['required', 'string', 'max:250']),
             ImportColumn::make('slug')->rules(['nullable', 'string', 'max:250']),
+            ImportColumn::make('parent')->rules(['nullable', 'string', 'max:250']),
             ImportColumn::make('description')->rules(['nullable', 'string', 'max:100000']),
             ImportColumn::make('status')->rules([Rule::in(BaseStatusEnum::values())]),
             ImportColumn::make('order')->rules(['nullable', 'integer', 'min:0', 'max:10000']),
@@ -69,6 +70,7 @@ class ProductCategoryImporter extends Importer implements WithMapping
             [
                 'name' => 'Electronics',
                 'slug' => 'electronics',
+                'parent' => null,
                 'description' => 'All kinds of electronic items including gadgets, home appliances, and more.',
                 'status' => 'published',
                 'order' => 1,
@@ -80,6 +82,7 @@ class ProductCategoryImporter extends Importer implements WithMapping
             [
                 'name' => 'Books',
                 'slug' => 'books',
+                'parent' => null,
                 'description' => 'Wide variety of books across different genres and languages.',
                 'status' => 'draft',
                 'order' => 2,
@@ -91,6 +94,7 @@ class ProductCategoryImporter extends Importer implements WithMapping
             [
                 'name' => 'Clothing',
                 'slug' => 'clothing',
+                'parent' => null,
                 'description' => 'Fashionable and comfortable clothing for men, women, and children.',
                 'status' => 'published',
                 'order' => 3,
@@ -102,6 +106,7 @@ class ProductCategoryImporter extends Importer implements WithMapping
             [
                 'name' => 'Home & Kitchen',
                 'slug' => 'home-kitchen',
+                'parent' => null,
                 'description' => 'Essentials for your home and kitchen needs.',
                 'status' => 'published',
                 'order' => 4,
@@ -113,6 +118,7 @@ class ProductCategoryImporter extends Importer implements WithMapping
             [
                 'name' => 'Sports & Outdoors',
                 'slug' => 'sports-outdoors',
+                'parent' => null,
                 'description' => 'Equipment and gear for sports and outdoor activities.',
                 'status' => 'draft',
                 'order' => 5,
@@ -130,6 +136,12 @@ class ProductCategoryImporter extends Importer implements WithMapping
 
         foreach ($data as $row) {
             $slug = Arr::pull($row, 'slug');
+
+            $parentName = Arr::pull($row, 'parent');
+
+            if ($parentName) {
+                $row['parent_id'] = ProductCategory::query()->where('name', $parentName)->value('id');
+            }
 
             /**
              * @var ProductCategory $category

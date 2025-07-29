@@ -23,7 +23,7 @@ class TaxRuleForm extends FormAbstract
             ->model(TaxRule::class)
             ->setValidatorClass(TaxRuleRequest::class)
             ->setFormOption('id', 'ecommerce-tax-rule-form')
-            ->when(Request::ajax(), function (FormAbstract $form) {
+            ->when(Request::ajax(), function (FormAbstract $form): void {
                 $form->contentOnly();
             });
 
@@ -34,7 +34,7 @@ class TaxRuleForm extends FormAbstract
                     fn (FormAbstract $form) => $form->add('tax_id', 'hidden', [
                         'value' => $taxId,
                     ]),
-                    function (FormAbstract $form) {
+                    function (FormAbstract $form): void {
                         $taxes = Tax::query()->pluck('title', 'id')->all();
                         $form
                             ->add('tax_id', 'customSelect', [
@@ -56,7 +56,7 @@ class TaxRuleForm extends FormAbstract
                     ->attributes(['step' => '0.01'])
                     ->required()
             )
-            ->when($this->request->ajax(), function (TaxRuleForm $form) {
+            ->when($this->request->ajax(), function (TaxRuleForm $form): void {
                 $form->addSubmitButton(trans('core/base::forms.save'), 'ti ti-device-floppy', [
                     'wrapper' => [
                         'class' => 'd-grid gap-2',

@@ -7,9 +7,11 @@ use Botble\Base\Supports\EmailHandler as BaseEmailHandler;
 use Botble\Ecommerce\Enums\DiscountTypeOptionEnum;
 use Botble\Ecommerce\Facades\OrderHelper;
 use Botble\Ecommerce\Models\Order as OrderModel;
+use Botble\Media\Facades\RvMedia;
 use Botble\Theme\Facades\Theme;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 
 class MarketplaceHelper
 {
@@ -39,12 +41,12 @@ class MarketplaceHelper
 
     public function discountTypes(): array
     {
-        return Arr::except(DiscountTypeOptionEnum::labels(), [DiscountTypeOptionEnum::SAME_PRICE]);
+        return Arr::except(DiscountTypeOptionEnum::labels(), [DiscountTypeOptionEnum::SAME_PRICE, DiscountTypeOptionEnum::SHIPPING]);
     }
 
     public function getAssetVersion(): string
     {
-        return '1.2.2';
+        return '2.1.5';
     }
 
     public function hideStorePhoneNumber(): bool
@@ -70,6 +72,11 @@ class MarketplaceHelper
     public function allowVendorManageShipping(): bool
     {
         return (bool) $this->getSetting('allow_vendor_manage_shipping', false);
+    }
+
+    public function isChargeShippingPerVendor(): bool
+    {
+        return (bool) $this->getSetting('charge_shipping_per_vendor', true);
     }
 
     public function sendMailToVendorAfterProcessingOrder($orders)
@@ -227,5 +234,21 @@ class MarketplaceHelper
     public function isSingleVendorCheckout(): bool
     {
         return (bool) $this->getSetting('single_vendor_checkout', false);
+    }
+
+    public function mediaMimeTypesAllowed(): array
+    {
+        $allowedMimeTypes = $this->getSetting('media_mime_types_allowed', []);
+
+        if (! is_array($allowedMimeTypes) && Str::isJson($allowedMimeTypes)) {
+            $allowedMimeTypes = json_decode($allowedMimeTypes, true);
+        }
+
+        if (empty($allowedMimeTypes)) {
+            $allowedMimeTypes = RvMedia::getConfig('allowed_mime_types');
+            $allowedMimeTypes = explode(',', $allowedMimeTypes);
+        }
+
+        return $allowedMimeTypes;
     }
 }

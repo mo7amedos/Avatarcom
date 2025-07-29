@@ -97,6 +97,8 @@ $(() => {
             .then(({ data }) => {
                 $treeWrapper.html(data.data)
 
+                handleOpenCollapseState()
+
                 if (jQuery().tooltip) {
                     $('[data-bs-toggle="tooltip"]').tooltip({
                         placement: 'top',
@@ -194,4 +196,44 @@ $(() => {
                 })
                 .finally(() => button.closest('.modal').modal('hide'))
         })
+
+    function handleOpenCollapseState() {
+        // Restore state from localStorage
+        $treeWrapper.find('.dd-item').each(function () {
+            const categoryId = $(this).data('id')
+            const isCollapsed = localStorage.getItem('category_' + categoryId) === 'collapsed'
+
+            if (isCollapsed) {
+                $(this).addClass('dd-collapsed')
+                $(this).find('.dd-list').hide()
+            } else {
+                $(this).removeClass('dd-collapsed')
+                $(this).find('.dd-list').show()
+            }
+        })
+
+        // Handle collapse button click
+        $treeWrapper.on('click', '.dd-collapse', function () {
+            const categoryItem = $(this).closest('.dd-item')
+            const categoryId = categoryItem.data('id')
+
+            categoryItem.addClass('dd-collapsed')
+            categoryItem.find('.dd-list').slideUp()
+            localStorage.setItem('category_' + categoryId, 'collapsed')
+        })
+
+        // Handle expand button click
+        $treeWrapper.on('click', '.dd-expand', function () {
+            const categoryItem = $(this).closest('.dd-item')
+            const categoryId = categoryItem.data('id')
+
+            categoryItem.removeClass('dd-collapsed')
+            categoryItem.find('.dd-list').slideDown()
+            localStorage.setItem('category_' + categoryId, 'expanded')
+        })
+    }
+
+    $(document).ready(function () {
+        handleOpenCollapseState()
+    })
 })

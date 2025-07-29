@@ -38,6 +38,7 @@ class InvoiceSettingRequest extends Request
             'disable_order_invoice_until_order_confirmed' => $onOffRule,
             'invoice_font_family' => ['nullable', Rule::in($googleFonts)],
             'invoice_date_format' => [Rule::in(InvoiceHelper::supportedDateFormats())],
+            'invoice_processing_library' => ['nullable', Rule::in(['dompdf', 'mpdf'])],
         ];
     }
 }

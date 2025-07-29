@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\DB;
 
 class ReportGeneralHtml extends Html
 {
+    public function getColumns(): int
+    {
+        return 12; // Full width for detailed analytics
+    }
+
     public function getContent(): string
     {
         if (! is_plugin_active('payment')) {
@@ -31,6 +36,7 @@ class ReportGeneralHtml extends Html
             ->whereIn('payments.status', [PaymentStatusEnum::COMPLETED, PaymentStatusEnum::PENDING])
             ->whereDate('payments.created_at', '>=', $this->startDate)
             ->whereDate('payments.created_at', '<=', $this->endDate)
+            ->where('is_finished', true)
             ->groupBy('payments.status')
             ->get();
 

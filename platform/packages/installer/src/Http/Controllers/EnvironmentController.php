@@ -7,9 +7,9 @@ use Botble\Base\Http\Controllers\BaseController;
 use Botble\Base\Supports\Core;
 use Botble\Installer\Events\EnvironmentSaved;
 use Botble\Installer\Http\Requests\SaveEnvironmentRequest;
+use Botble\Installer\InstallerStep\InstallerStep;
 use Botble\Installer\Services\ImportDatabaseService;
 use Botble\Installer\Supports\EnvironmentManager;
-use Botble\Theme\Facades\Manager;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -53,8 +53,10 @@ class EnvironmentController extends BaseController
 
         event(new EnvironmentSaved($request));
 
-        if (class_exists(Manager::class) && count(Manager::getThemes()) > 1) {
+        if (InstallerStep::hasMoreThemes()) {
             $nextRouteName = 'installers.themes.index';
+        } elseif (InstallerStep::hasMoreThemePresets()) {
+            $nextRouteName = 'installers.theme-presets.index';
         } else {
             $nextRouteName = 'installers.accounts.index';
 
@@ -64,7 +66,7 @@ class EnvironmentController extends BaseController
                 $importDatabaseService->handle($databaseFilePath);
             } else {
                 if (! Schema::hasTable('migrations')) {
-                    Schema::create('migrations', function ($table) {
+                    Schema::create('migrations', function ($table): void {
                         // The migrations table is responsible for keeping track of which of the
                         // migrations have actually run for the application. We'll create the
                         // table to hold the migration file's path as well as the batch ID.

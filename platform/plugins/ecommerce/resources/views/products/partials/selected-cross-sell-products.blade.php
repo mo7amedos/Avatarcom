@@ -1,5 +1,5 @@
 @foreach ($products as $product)
-    <div class="list-group-item">
+    <div class="list-group-item px-0 px-md-2">
         <input
             type="hidden"
             name="cross_sale_products[{{ $product->id }}][id]"
@@ -19,7 +19,7 @@
             </div>
             <div class="col text-truncate">
                 <div class="d-flex align-items-center gap-2">
-                    <a href="{{ route('products.edit', $product->id) }}" class="text-body" target="_blank">{{ $product->name }}</a>
+                    <a href="{{ route('products.edit', $product->id) }}" class="text-body d-block text-truncate" target="_blank">{{ $product->name }}</a>
                     @if ($includeVariation && $product->variationInfo->id)
                         - <div class="text-secondary text-truncate">
                             @foreach ($product->variationInfo->variationItems as $variationItem)
@@ -74,7 +74,7 @@
 
         @if($product->variations->isNotEmpty())
             <x-core::form.on-off.checkbox
-                label="Apply for all variations"
+                :label="trans('plugins/ecommerce::products.apply_for_all_variations')"
                 name="cross_sale_products[{{ $product->id }}][apply_to_all_variations]"
                 :checked="$product->pivot->apply_to_all_variations"
                 data-bb-toggle="collapse"
@@ -89,7 +89,12 @@
                     <input
                         type="hidden"
                         name="cross_sale_products[{{ $variationProduct->product->id }}][id]"
-                        value="1"
+                        value="{{ $variationProduct->product->id }}"
+                    />
+                    <input
+                        type="hidden"
+                        name="cross_sale_products[{{ $variationProduct->product->id }}][parent_id]"
+                        value="{{ $product->id }}"
                     />
                     <input
                         type="hidden"

@@ -16,8 +16,8 @@ class DiscountRequest extends Request
             'can_use_with_promotion' => $this->boolean('can_use_with_promotion'),
             'can_use_with_flash_sale' => $this->boolean('can_use_with_flash_sale'),
             'quantity' => $this->boolean('is_unlimited') ? null : $this->input('quantity'),
-            'start_date' => Carbon::parse("{$this->input('start_date')} {$this->input('start_time')}")->toDateString(),
-            'end_date' => $this->has('end_date') && ! $this->has('unlimited_time') ? Carbon::parse("{$this->input('end_date')} {$this->input('end_time')}")->toDateString() : null,
+            'start_date' => Carbon::parse("{$this->input('start_date')} {$this->input('start_time')}")->toDateTimeString(),
+            'end_date' => $this->has('end_date') && ! $this->has('unlimited_time') ? Carbon::parse("{$this->input('end_date')} {$this->input('end_time')}")->toDateTimeString() : null,
             'apply_via_url' => $this->boolean('apply_via_url'),
             'display_at_checkout' => $this->boolean('display_at_checkout'),
         ]);

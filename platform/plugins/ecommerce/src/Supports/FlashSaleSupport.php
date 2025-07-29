@@ -75,7 +75,7 @@ class FlashSaleSupport
             return $rules;
         }, 10, 2);
 
-        FlashSaleSettingForm::extend(function (FlashSaleSettingForm $form) {
+        FlashSaleSettingForm::extend(function (FlashSaleSettingForm $form): void {
             $form->addAfter(
                 'open_wrapper',
                 'flash_sale_show_sale_count_left',

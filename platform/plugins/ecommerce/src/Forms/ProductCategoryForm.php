@@ -9,6 +9,7 @@ use Botble\Base\Forms\FieldOptions\NameFieldOption;
 use Botble\Base\Forms\FieldOptions\OnOffFieldOption;
 use Botble\Base\Forms\FieldOptions\SelectFieldOption;
 use Botble\Base\Forms\FieldOptions\StatusFieldOption;
+use Botble\Base\Forms\FieldOptions\TextFieldOption;
 use Botble\Base\Forms\Fields\CoreIconField;
 use Botble\Base\Forms\Fields\EditorField;
 use Botble\Base\Forms\Fields\MediaImageField;
@@ -19,26 +20,49 @@ use Botble\Base\Forms\FormAbstract;
 use Botble\Ecommerce\Facades\ProductCategoryHelper;
 use Botble\Ecommerce\Http\Requests\ProductCategoryRequest;
 use Botble\Ecommerce\Models\ProductCategory;
+use Botble\Support\Services\Cache\Cache;
+use Carbon\Carbon;
 
 class ProductCategoryForm extends FormAbstract
 {
     public function setup(): void
     {
-        $categories = ProductCategoryHelper::getTreeCategoriesOptions(ProductCategoryHelper::getTreeCategories());
+        $cache = Cache::make(ProductCategory::class);
 
-        $categories = [0 => trans('plugins/ecommerce::product-categories.none')] + $categories;
+        $cacheKey = 'ecommerce_categories_for_rendering_parent_select' . md5($cache->generateCacheKeyFromInput() . serialize(func_get_args()));
+
+        if ($cache->has($cacheKey) && ($cachedCategories = $cache->get($cacheKey))) {
+            $categories = $cachedCategories;
+        } else {
+            $categories = ProductCategoryHelper::getTreeCategoriesOptions(
+                ProductCategoryHelper::getTreeCategories(false, [
+                    'id',
+                    'name',
+                    'parent_id',
+                    'status',
+                    'order',
+                ])
+            );
+
+            $categories = [0 => trans('plugins/ecommerce::product-categories.none')] + $categories;
+
+            $cache->put($cacheKey, $categories, Carbon::now()->addHours(2));
+        }
 
         $maxOrder = ProductCategory::query()
             ->whereIn('parent_id', [0, null])
-            ->orderByDesc('order')
+            ->latest('order')
             ->value('order');
 
         $this
             ->model(ProductCategory::class)
             ->setValidatorClass(ProductCategoryRequest::class)
-            ->add('order', 'hidden', [
-                'value' => $this->getModel()->exists ? $this->getModel()->order : $maxOrder + 1,
-            ])
+            ->add(
+                'order',
+                'hidden',
+                TextFieldOption::make()
+                    ->value($this->getModel()->exists ? $this->getModel()->order : $maxOrder + 1)
+            )
             ->add('name', TextField::class, NameFieldOption::make())
             ->add(
                 'parent_id',
@@ -51,13 +75,15 @@ class ProductCategoryForm extends FormAbstract
             ->add(
                 'description',
                 EditorField::class,
-                ContentFieldOption::make()->label(trans('core/base::forms.description'))
+                ContentFieldOption::make()
+                    ->label(trans('core/base::forms.description'))
+                    ->allowedShortcodes()
             )
             ->add('status', SelectField::class, StatusFieldOption::make())
             ->add('image', MediaImageField::class, MediaImageFieldOption::make())
             ->add(
                 'icon',
-                $this->getFormHelper()->hasCustomField('themeIcon') ? 'themeIcon' : CoreIconField::class,
+                CoreIconField::class,
                 CoreIconFieldOption::make()
             )
             ->add('icon_image', MediaImageField::class, [

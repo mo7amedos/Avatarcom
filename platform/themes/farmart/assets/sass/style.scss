@@ -16,7 +16,7 @@
 @import 'partials/store';
 @import 'partials/dashboard';
 
-/* purgecss start ignore */
+/*! purgecss start ignore */
 
 .container-xxxl {
     margin: 0 auto;
@@ -630,6 +630,10 @@ input[type='submit'] {
 
 .lg-outer {
     z-index: 10002;
+}
+
+.lg-sub-html {
+    display: none;
 }
 
 .coming-soon-page {
@@ -1458,6 +1462,16 @@ body.show-admin-bar {
     .store-toolbar__view {
         display: none !important;
     }
+
+    .bb-product-filter {
+        background: #fff;
+        margin-bottom: 0;
+        padding: 10px 20px;
+    }
+
+    .bb-product-form-filter {
+        margin: 20px 0;
+    }
 }
 
 #footer {
@@ -1743,4 +1757,82 @@ a.sl-button.sl-button-zalo.mt-2 {
     padding: 0 !important;
 }
 
-/* purgecss end ignore */
+@media (max-width: 1199px) {
+    .header-mobile {
+        background-color: var(--header-mobile-background-color);
+
+        .svg-icon, .search-form--mobile .open-search-panel .svg-icon {
+            color: var(--header-mobile-icon-color);
+        }
+    }
+
+    .mega-menu {
+        .mega-menu__column {
+            margin-bottom: 0;
+            width: 100%;
+        }
+
+        .mega-menu-wrapper {
+            padding: 0;
+        }
+    }
+}
+
+.menu li a > svg, .header-info > ul li a > svg {
+    width: 18px;
+    height: 18px;
+    vertical-align: top;
+    margin-inline-end: 3px;
+}
+
+.widget-custom-menu ul li a > svg {
+    width: 20px;
+    height: 20px;
+    vertical-align: top;
+    margin-inline-end: 3px;
+}
+
+.header-info > ul li a > svg {
+    margin-top: -3px;
+}
+
+.btn-primary {
+    padding: 8px 16px;
+}
+
+.widget {
+    .form-widget {
+        .captcha-disclaimer {
+            margin-top: 15px !important;
+            padding: 8px !important;
+            font-size: 13px;
+
+            a {
+                color: var(--primary-color);
+
+                &:hover {
+                    text-decoration: underline;
+                }
+            }
+        }
+
+        .btn-primary {
+            border-top-left-radius: 3px !important;
+            border-bottom-left-radius: 3px !important;
+        }
+    }
+}
+
+.mega-menu-wrapper {
+    max-height: 100vh;
+    overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+    .widget-mobile-apps {
+        background-position: top;
+        background-size: cover;
+    }
+}
+
+/*! purgecss end ignore */

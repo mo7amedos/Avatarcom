@@ -14,10 +14,7 @@
                     <div class="entry-meta-categories">
                         <span>{{ ($post->author && theme_option('blog_show_author_name', 'yes') == 'yes') ? __('in') : ucfirst(__('in')) }}</span>
                         @foreach ($post->categories as $category)
-                            <a href="{{ $category->url }}">{{ $category->name }}</a>
-                            @if (!$loop->last)
-                                ,
-                            @endif
+                            <a href="{{ $category->url }}">{{ $category->name }}</a>@if (!$loop->last), @endif
                         @endforeach
                     </div>
                 @endif
@@ -37,11 +34,16 @@
                         <a
                             class="text-link"
                             href="{{ $tag->url }}"
-                        >{{ $tag->name }}</a>
-                        @if (!$loop->last)
-                            ,
-                        @endif
+                        >{{ $tag->name }}</a>@if (!$loop->last), @endif
                     @endforeach
+                </div>
+            @endif
+
+            @if (theme_option('social_share_enabled', 'yes') == 'yes')
+                <div class="mt-3">
+                    <p><strong>{{ __('Share') }}:</strong></p>
+
+                    {!! Theme::partial('share-socials', ['product' => $post]) !!}
                 </div>
             @endif
 

@@ -49,7 +49,7 @@ class LanguageSettingForm extends FormAbstract
             )
             ->add(
                 'language_switcher_display',
-                'customRadio',
+                RadioField::class,
                 RadioFieldOption::make()
                     ->label(trans('plugins/language::language.switcher_display'))
                     ->choices([
@@ -80,24 +80,18 @@ class LanguageSettingForm extends FormAbstract
             }
         }
 
-        $this->add(
-            'hide_languages_helper_display_hidden',
-            AlertField::class,
-            AlertFieldOption::make()
-                ->content(
-                    trans_choice(
-                        'plugins/language::language.hide_languages_helper_display_hidden',
-                        count(json_decode(setting('language_hide_languages', '[]'), true)),
-                        ['language' => Language::getHiddenLanguageText()]
-                    )
-                )
-        )
+        $this
             ->add(
-                'language_show_default_item_if_current_version_not_existed',
-                OnOffCheckboxField::class,
-                OnOffFieldOption::make()
-                    ->label(trans('plugins/language::language.language_show_default_item_if_current_version_not_existed'))
-                    ->value(setting('language_show_default_item_if_current_version_not_existed', true))
+                'hide_languages_helper_display_hidden',
+                AlertField::class,
+                AlertFieldOption::make()
+                    ->content(
+                        trans_choice(
+                            'plugins/language::language.hide_languages_helper_display_hidden',
+                            count(json_decode(setting('language_hide_languages', '[]'), true)),
+                            ['language' => Language::getHiddenLanguageText()]
+                        )
+                    )
             )
             ->add(
                 'language_auto_detect_user_language',

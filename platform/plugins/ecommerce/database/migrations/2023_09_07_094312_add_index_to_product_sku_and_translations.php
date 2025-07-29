@@ -11,7 +11,7 @@ return new class () extends Migration {
             return;
         }
 
-        Schema::table('ec_products', function (Blueprint $table) {
+        Schema::table('ec_products', function (Blueprint $table): void {
             $table->index('sku');
         });
     }

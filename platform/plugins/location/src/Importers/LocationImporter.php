@@ -36,8 +36,8 @@ class LocationImporter extends Importer
                 ->rules(['nullable', 'string', 'max:120'], trans('plugins/location::location.import.rules.nationality')),
         ];
 
-        if (defined('LANGUAGE_MODULE_SCREEN_NAME')) {
-            $defaultLanguage = Language::getDefaultLanguage(['lang_code'])->lang_code;
+        if (defined('LANGUAGE_MODULE_SCREEN_NAME') && defined('LANGUAGE_ADVANCED_MODULE_SCREEN_NAME')) {
+            $defaultLanguage = Language::getDefaultLanguage(['lang_code'])?->lang_code;
             $supportedLocales = Language::getSupportedLocales();
 
             foreach ($supportedLocales as $properties) {
@@ -85,10 +85,12 @@ class LocationImporter extends Importer
 
     public function handle(array $data): int
     {
-        /** @var ImportLocationService $service */
+        /**
+         * @var ImportLocationService $service
+         */
         $service = app(ImportLocationService::class);
 
-        $service->handle($data);
+        $service->handle($data, request()->boolean('skip_existing_records'));
 
         return $service->count();
     }
@@ -153,8 +155,8 @@ class LocationImporter extends Importer
             ],
         ];
 
-        if (defined('LANGUAGE_MODULE_SCREEN_NAME')) {
-            $defaultLanguage = Language::getDefaultLanguage(['lang_code'])->lang_code;
+        if (defined('LANGUAGE_MODULE_SCREEN_NAME') && defined('LANGUAGE_ADVANCED_MODULE_SCREEN_NAME')) {
+            $defaultLanguage = Language::getDefaultLanguage(['lang_code'])?->lang_code;
 
             $supportedLocales = Language::getSupportedLocales();
             foreach ($supportedLocales as $properties) {

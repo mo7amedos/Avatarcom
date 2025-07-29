@@ -5,6 +5,7 @@ namespace Botble\SeoHelper\Entities\OpenGraph;
 use Botble\SeoHelper\Contracts\Entities\MetaCollectionContract;
 use Botble\SeoHelper\Contracts\Entities\OpenGraphContract;
 use Botble\SeoHelper\Contracts\Helpers\MetaContract;
+use Botble\Theme\Facades\Theme;
 use Illuminate\Support\Collection;
 
 class Graph implements OpenGraphContract
@@ -14,7 +15,7 @@ class Graph implements OpenGraphContract
     public function __construct()
     {
         $this->meta = new MetaCollection();
-        $this->setSiteName(theme_option('site_title'));
+        $this->setSiteName(Theme::getSiteTitle());
     }
 
     /**

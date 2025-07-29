@@ -86,7 +86,7 @@ class BrandController extends BaseController
 
     public function getSearch(Request $request)
     {
-        $term = $request->input('search');
+        $term = $request->input('search', $request->input('q'));
 
         $categories = Brand::query()
             ->select(['id', 'name'])

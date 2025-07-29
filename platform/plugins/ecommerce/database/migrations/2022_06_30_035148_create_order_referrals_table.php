@@ -9,7 +9,7 @@ return new class () extends Migration {
     {
         Schema::dropIfExists('ec_order_referrals');
 
-        Schema::create('ec_order_referrals', function (Blueprint $table) {
+        Schema::create('ec_order_referrals', function (Blueprint $table): void {
             $table->id();
             $table->string('ip', 39)->nullable();
             $table->string('landing_domain')->nullable();

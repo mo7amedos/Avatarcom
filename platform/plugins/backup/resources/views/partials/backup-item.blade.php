@@ -23,15 +23,17 @@
                 />
             @endif
 
-            <x-core::button
-                tag="a"
-                size="sm"
-                :href="route('backups.download.uploads.folder', $key)"
-                :tooltip="trans('plugins/backup::backup.download_uploads_folder')"
-                icon="ti ti-download"
-                :icon-only="true"
-                color="primary"
-            />
+            @if ($backupManager->isStorageBackupAvailable($key))
+                <x-core::button
+                    tag="a"
+                    size="sm"
+                    :href="route('backups.download.uploads.folder', $key)"
+                    :tooltip="trans('plugins/backup::backup.download_uploads_folder')"
+                    icon="ti ti-download"
+                    :icon-only="true"
+                    color="primary"
+                />
+            @endif
 
             @if (
                 $driver === 'mysql' &&

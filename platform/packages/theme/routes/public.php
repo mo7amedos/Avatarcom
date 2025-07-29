@@ -8,16 +8,19 @@ use Botble\Theme\Facades\Theme;
 use Botble\Theme\Http\Controllers\PublicController;
 use Illuminate\Support\Facades\Route;
 
-Theme::registerRoutes(function () {
-    Route::group(['controller' => PublicController::class], function () {
+Theme::registerRoutes(function (): void {
+    Route::group(['controller' => PublicController::class], function (): void {
         event(new ThemeRoutingBeforeEvent(app()->make('router')));
 
         Route::get('/', 'getIndex')->name('public.index');
 
-        Route::get('{key}.{extension}', 'getSiteMapIndex')
-            ->where('key', '^' . collect(SiteMapManager::getKeys())->map(fn ($item) => '(?:' . $item . ')')->implode('|') . '$')
-            ->whereIn('extension', SiteMapManager::allowedExtensions())
-            ->name('public.sitemap.index');
+        if (setting('sitemap_enabled', true)) {
+            Route::get('sitemap.xml', 'getSiteMap')->name('public.sitemap');
+
+            Route::get('{key}.{extension}', 'getSiteMapIndex')
+                ->whereIn('extension', SiteMapManager::allowedExtensions())
+                ->name('public.sitemap.index');
+        }
 
         Route::get('{slug?}', 'getView')->name('public.single');
 

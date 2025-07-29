@@ -7,7 +7,7 @@ use Botble\Theme\Services\ThemeService;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem as File;
 use Symfony\Component\Console\Attribute\AsCommand;
-use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Input\InputArgument;
 
 #[AsCommand('cms:theme:assets:publish', 'Publish assets for a theme')]
 class ThemeAssetsPublishCommand extends Command
@@ -16,7 +16,7 @@ class ThemeAssetsPublishCommand extends Command
 
     public function handle(File $files, ThemeService $themeService): int
     {
-        $name = $this->option('name');
+        $name = $this->getTheme();
 
         if ($name && ! preg_match('/^[a-z0-9\-]+$/i', $name)) {
             $this->components->error('Only alphabetic characters are allowed.');
@@ -25,7 +25,7 @@ class ThemeAssetsPublishCommand extends Command
         }
 
         if ($name && ! $files->isDirectory($this->getPath())) {
-            $this->components->error(sprintf('Theme "%s" is not exists.', $this->getTheme()));
+            $this->components->error(sprintf('Theme "%s" is not exists.', $name));
 
             return self::FAILURE;
         }
@@ -45,7 +45,6 @@ class ThemeAssetsPublishCommand extends Command
 
     protected function configure(): void
     {
-        $this->addOption('name', null, InputOption::VALUE_REQUIRED, 'The theme name that you want to remove assets');
-        $this->addOption('path', null, InputOption::VALUE_REQUIRED, 'Path to theme directory');
+        $this->addArgument('name', InputArgument::OPTIONAL, 'The theme name that you want to remove assets');
     }
 }

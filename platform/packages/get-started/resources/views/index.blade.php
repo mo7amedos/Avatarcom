@@ -100,7 +100,7 @@
                             for="site-logo"
                             :label="trans('packages/get-started::get-started.logo')"
                         />
-                        {!! Form::mediaImage('logo', theme_option('logo'), ['allow_thumb' => false]) !!}
+                        {!! Form::mediaImage('logo', Theme::getLogo(), ['allow_thumb' => false]) !!}
                     </div>
                 </div>
                 <div class="col-sm-6">

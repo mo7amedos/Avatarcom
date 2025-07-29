@@ -160,13 +160,15 @@ class OrderController extends BaseController
                 'user_id' => $userId,
             ]);
 
-            $createPaymentForOrderService->execute(
-                $order,
-                $request->input('payment_method'),
-                $paymentStatus,
-                $customerId,
-                $request->input('transaction_id')
-            );
+            if (is_plugin_active('payment')) {
+                $createPaymentForOrderService->execute(
+                    $order,
+                    $request->input('payment_method'),
+                    $paymentStatus,
+                    $customerId,
+                    $request->input('transaction_id')
+                );
+            }
 
             if ($request->input('customer_address.name')) {
                 OrderAddress::query()->create([
@@ -218,21 +220,19 @@ class OrderController extends BaseController
                     continue;
                 }
 
-                $ids = [$product->getKey()];
-                if ($product->is_variation && $product->original_product) {
-                    $ids[] = $product->original_product->id;
+                // Only decrease quantity if storehouse management is enabled and sufficient stock
+                if ($product->with_storehouse_management && $product->quantity >= $quantity) {
+                    $product->quantity -= $quantity;
+                    $product->save();
+
+                    // Trigger event to update parent product if this is a variation
+                    event(new ProductQuantityUpdatedEvent($product));
                 }
-
-                Product::query()
-                    ->whereIn('id', $ids)
-                    ->where('with_storehouse_management', 1)
-                    ->where('quantity', '>=', $quantity)
-                    ->decrement('quantity', $quantity);
-
-                event(new ProductQuantityUpdatedEvent($product));
             }
 
             event(new OrderCreated($order));
+
+            OrderHelper::sendOrderConfirmationEmail($order, true);
         }
 
         if (Arr::get($data, 'is_available_shipping')) {
@@ -318,9 +318,7 @@ class OrderController extends BaseController
 
     public function getGenerateInvoice(Order $order, Request $request)
     {
-        if (! $order->isInvoiceAvailable()) {
-            abort(404);
-        }
+        abort_unless($order->isInvoiceAvailable(), 404);
 
         if ($request->input('type') == 'print') {
             return InvoiceHelper::streamInvoice($order->invoice);
@@ -405,6 +403,10 @@ class OrderController extends BaseController
     {
         $result = $this->httpResponse();
 
+        if (Shipment::query()->where(['order_id' => $order->getKey()])->exists()) {
+            return $result->setMessage(trans('plugins/ecommerce::order.order_was_sent_to_shipping_team'));
+        }
+
         $shipment = [
             'order_id' => $order->getKey(),
             'user_id' => Auth::id(),
@@ -482,9 +484,7 @@ class OrderController extends BaseController
         $address->fill($request->input());
         $address->save();
 
-        if ($address->order->status == OrderStatusEnum::CANCELED) {
-            abort(401);
-        }
+        abort_if($address->order->status == OrderStatusEnum::CANCELED, 401);
 
         return $this
             ->httpResponse()
@@ -498,19 +498,17 @@ class OrderController extends BaseController
     public function postUpdateTaxInformation(OrderTaxInformation $taxInformation, Request $request)
     {
         $validated = $request->validate([
-            'company_tax_code' => 'required|string|min:3|max:20',
-            'company_name' => 'required|string|min:3|max:120',
-            'company_address' => 'required|string|min:3|max:255',
-            'company_email' => 'required|email|min:6|max:60',
+            'company_tax_code' => ['required', 'string', 'min:3', 'max:20'],
+            'company_name' => ['required', 'string', 'min:3', 'max:120'],
+            'company_address' => ['required', 'string', 'min:3', 'max:255'],
+            'company_email' => ['required', 'email', 'min:6', 'max:60'],
         ]);
 
         $taxInformation->load(['order']);
 
         $taxInformation->update($validated);
 
-        if ($taxInformation->order->status === OrderStatusEnum::CANCELED) {
-            abort(401);
-        }
+        abort_if($taxInformation->order->status == OrderStatusEnum::CANCELED, 401);
 
         return $this
             ->httpResponse()
@@ -520,9 +518,7 @@ class OrderController extends BaseController
 
     public function postCancelOrder(Order $order)
     {
-        if (! $order->canBeCanceledByAdmin()) {
-            abort(403);
-        }
+        abort_unless($order->canBeCanceledByAdmin(), 403);
 
         OrderHelper::cancelOrder($order);
 
@@ -823,7 +819,7 @@ class OrderController extends BaseController
             $customer->avatar = (string) $customer->avatar_url;
 
             if ($customer) {
-                $customerOrderNumbers = $customer->orders()->count();
+                $customerOrderNumbers = $customer->completedOrders()->count();
             }
 
             $customerAddresses = CustomerAddressResource::collection($customer->addresses);
@@ -881,19 +877,23 @@ class OrderController extends BaseController
         MarkOrderAsCompletedRequest $request,
         CreatePaymentForOrderService $createPaymentForOrderService
     ) {
-        DB::transaction(function () use ($order, $createPaymentForOrderService, $request) {
-            /** @var User $user */
+        DB::transaction(function () use ($order, $createPaymentForOrderService, $request): void {
+            /**
+             * @var User $user
+             */
             $user = Auth::user();
 
             $order->update(['is_finished' => true]);
 
-            $createPaymentForOrderService->execute(
-                $order,
-                $request->input('payment_method'),
-                $request->input('payment_status'),
-                $order->user_id != 0 ? $order->user_id : null,
-                $request->input('transaction_id')
-            );
+            if (is_plugin_active('payment')) {
+                $createPaymentForOrderService->execute(
+                    $order,
+                    $request->input('payment_method'),
+                    $request->input('payment_status'),
+                    $order->user_id != 0 ? $order->user_id : null,
+                    $request->input('transaction_id')
+                );
+            }
 
             $order->histories()->create([
                 'order_id' => $order->getKey(),
@@ -966,7 +966,7 @@ class OrderController extends BaseController
             'variationInfo.configurableProduct',
             'variationProductAttributes',
         ];
-        if (is_plugin_active('marketplacce')) {
+        if (is_plugin_active('marketplace')) {
             $with = array_merge($with, ['store', 'variationInfo.configurableProduct.store']);
         }
 
@@ -1303,9 +1303,7 @@ class OrderController extends BaseController
 
     public function generateInvoice(Order $order)
     {
-        if ($order->isInvoiceAvailable()) {
-            abort(404);
-        }
+        abort_if($order->isInvoiceAvailable(), 404);
 
         InvoiceHelper::store($order);
 
@@ -1316,15 +1314,11 @@ class OrderController extends BaseController
 
     public function downloadProof(Order $order)
     {
-        if (! $order->proof_file) {
-            abort(404);
-        }
+        abort_unless($order->proof_file, 404);
 
         $storage = Storage::disk('local');
 
-        if (! $storage->exists($order->proof_file)) {
-            abort(404);
-        }
+        abort_unless($storage->exists($order->proof_file), 404);
 
         return $storage->download($order->proof_file);
     }

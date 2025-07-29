@@ -33,41 +33,43 @@
             </div>
         @endif
 
-        @if (! empty($shipping))
-            @foreach ($shipping as $shippingItem)
-                <div class="p-3 wrap-table-shipping-{{ $shippingItem->id }}">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <x-core::form.label>
-                            {{ trans('plugins/ecommerce::shipping.country') }}
-                            <strong>{{ Arr::get(EcommerceHelper::getAvailableCountries(), $shippingItem->title, $shippingItem->title) }}</strong>
-                        </x-core::form.label>
+        @if (! empty($shipping) && $shipping->isNotEmpty())
+            <div class="shipping-options-wrapper">
+                @foreach ($shipping as $shippingItem)
+                    <div class="p-3 shipping-option-item wrap-table-shipping-{{ $shippingItem->id }}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <x-core::form.label>
+                                {{ trans('plugins/ecommerce::shipping.country') }}
+                                <strong>{{ $countryName = EcommerceHelper::getCountryNameById($shippingItem->title) }}</strong>
+                            </x-core::form.label>
 
-                        <div class="btn-list">
-                            <a
-                                href="javascript:void(0);"
-                                data-shipping-id="{{ $shippingItem->id }}"
-                                data-country="{{ $shippingItem->country}}"
-                                class="btn-add-shipping-rule-trigger"
-                            >
-                                {{ trans('plugins/ecommerce::shipping.add_shipping_rule') }}
-                            </a>
-                            <a
-                                href="javascript:void(0);"
-                                data-id="{{ $shippingItem->id }}"
-                                data-name="{{ Arr::get(EcommerceHelper::getAvailableCountries(), $shippingItem->title, $shippingItem->title) }}"
-                                class="btn-confirm-delete-region-item-modal-trigger text-danger"
-                            >
-                                {{ trans('plugins/ecommerce::shipping.delete') }}
-                            </a>
+                            <div class="btn-list">
+                                <a
+                                    href="javascript:void(0);"
+                                    data-shipping-id="{{ $shippingItem->id }}"
+                                    data-country="{{ $shippingItem->country}}"
+                                    class="btn-add-shipping-rule-trigger"
+                                >
+                                    {{ trans('plugins/ecommerce::shipping.add_shipping_rule') }}
+                                </a>
+                                <a
+                                    href="javascript:void(0);"
+                                    data-id="{{ $shippingItem->id }}"
+                                    data-name="{{ $countryName }}"
+                                    class="btn-confirm-delete-region-item-modal-trigger text-danger"
+                                >
+                                    {{ trans('plugins/ecommerce::shipping.delete') }}
+                                </a>
+                            </div>
+                        </div>
+                        <div>
+                            @foreach ($shippingItem->rules as $rule)
+                                @include('plugins/ecommerce::shipping.rules.item', compact('rule'))
+                            @endforeach
                         </div>
                     </div>
-                    <div>
-                        @foreach ($shippingItem->rules as $rule)
-                            @include('plugins/ecommerce::shipping.rules.item', compact('rule'))
-                        @endforeach
-                    </div>
-                </div>
-            @endforeach
+                @endforeach
+            </div>
         @endif
 
         @php
@@ -78,7 +80,7 @@
             <div class="p-3">
                 {!! apply_filters(SHIPPING_METHODS_SETTINGS_PAGE, null) !!}
             </div>
-        @else
+        @elseif ($shipping->isEmpty())
             <x-core::empty-state
                 :title="trans('plugins/ecommerce::shipping.empty_shipping_options.title')"
                 :subtitle="trans('plugins/ecommerce::shipping.empty_shipping_options.subtitle')"

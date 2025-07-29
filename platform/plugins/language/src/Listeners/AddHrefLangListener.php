@@ -21,9 +21,16 @@ class AddHrefLangListener
             }
 
             add_filter(THEME_FRONT_HEADER, function ($header) use ($event) {
+                $referenceType = $event->slug->reference_type;
+                $referenceId = $event->slug->reference_id;
+
+                if (! $referenceType && ! $referenceId) {
+                    $referenceType = Page::class;
+                }
+
                 if (
-                    ! in_array($event->slug->reference_type, Language::supportedModels()) &&
-                    (! is_plugin_active('language-advanced') || ! in_array($event->slug->reference_type, LanguageAdvancedManager::supportedModels()))
+                    ! in_array($referenceType, Language::supportedModels()) &&
+                    (! is_plugin_active('language-advanced') || ! in_array($referenceType, LanguageAdvancedManager::supportedModels()))
                 ) {
                     return $header;
                 }
@@ -34,7 +41,7 @@ class AddHrefLangListener
 
                 $currentLocaleCode = Language::getCurrentLocaleCode();
 
-                if ($event->slug->reference_type == Page::class && BaseHelper::isHomepage($event->slug->reference_id)) {
+                if ($referenceType == Page::class && ! $referenceId) {
                     foreach (Language::getSupportedLocales() as $localeCode => $properties) {
                         $urls[] = [
                             'url' => Language::getLocalizedURL($localeCode, url()->current(), [], false),
@@ -42,20 +49,19 @@ class AddHrefLangListener
                         ];
                     }
                 } else {
-                    $languageMeta = LanguageMeta::query()->where(
-                        'language_meta.lang_meta_code',
-                        '!=',
-                        $currentLocaleCode
-                    )
+                    $languageMeta = LanguageMeta::query()
+                        ->whereNot('language_meta.lang_meta_code', $currentLocaleCode)
                         ->join('language_meta as meta', 'meta.lang_meta_origin', 'language_meta.lang_meta_origin')
                         ->where([
-                            'meta.reference_type' => $event->slug->reference_type,
-                            'meta.reference_id' => $event->slug->reference_id,
+                            'meta.reference_type' => $referenceType,
+                            'meta.reference_id' => $referenceId,
                         ])
-                        ->pluck('language_meta.lang_meta_code', 'language_meta.reference_id')->all();
+                        ->pluck('language_meta.lang_meta_code', 'language_meta.reference_id')
+                        ->all();
 
-                    $slug = Slug::query()->whereIn('reference_id', array_keys($languageMeta))
-                        ->where('reference_type', $event->slug->reference_type)
+                    $slug = Slug::query()
+                        ->whereIn('reference_id', array_keys($languageMeta))
+                        ->where('reference_type', $referenceType)
                         ->select(['key', 'prefix', 'reference_id'])
                         ->get();
 

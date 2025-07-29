@@ -2,6 +2,7 @@
 
 namespace Botble\Sitemap;
 
+use Botble\Base\Facades\BaseHelper;
 use Carbon\Carbon;
 use Datetime;
 
@@ -86,7 +87,7 @@ class Model
 
     public function getCacheKey(): string
     {
-        return $this->cacheKey . url('/');
+        return $this->cacheKey . BaseHelper::getHomepageUrl();
     }
 
     public function getCacheDuration(): int|string

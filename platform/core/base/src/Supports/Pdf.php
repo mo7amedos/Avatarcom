@@ -4,13 +4,17 @@ namespace Botble\Base\Supports;
 
 use ArPHP\I18N\Arabic;
 use Barryvdh\DomPDF\Facade\Pdf as PdfFacade;
+use Barryvdh\DomPDF\PDF as DomPDF;
 use Botble\Base\Facades\BaseHelper;
 use Botble\Base\Facades\Html;
 use Closure;
 use Dompdf\Adapter\CPDF;
 use Dompdf\Image\Cache;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\File;
+use Mpdf\Mpdf;
 use Throwable;
+use TijsVerkoyen\CssToInlineStyles\CssToInlineStyles;
 use Twig\Extension\DebugExtension;
 
 class Pdf
@@ -30,6 +34,8 @@ class Pdf
     protected ?Closure $formatContentUsing = null;
 
     protected array $twigExtensions = [];
+
+    protected string $processingLibrary = 'dompdf';
 
     public function templatePath(string $templatePath): static
     {
@@ -95,17 +101,47 @@ class Pdf
         return $this;
     }
 
-    public function compile(): \Barryvdh\DomPDF\PDF
+    public function compile(): DomPDF
     {
+        // Check if libxml extension is available
+        if (! extension_loaded('libxml')) {
+            throw new \Exception('The libxml extension is required for PDF generation. Please install the PHP libxml extension or switch to mPDF in your settings.');
+        }
+
         $fontsPath = storage_path('fonts');
 
         if (! File::isDirectory($fontsPath)) {
             File::makeDirectory($fontsPath);
         }
 
-        $this->content = $this->getContent($this->templatePath, $this->destinationPath);
+        $this->content = $this->getContent($this->templatePath, $this->destinationPath, true);
 
-        if ($this->content) {
+        Cache::$error_message = null;
+
+        return PdfFacade::setWarnings(false)
+            ->setOption('chroot', [public_path(), base_path()])
+            ->setOption('tempDir', storage_path('app'))
+            ->setOption('logOutputFile', false)
+            ->setOption('isRemoteEnabled', true)
+            ->loadHTML($this->content, 'UTF-8')
+            ->setPaper($this->paperSize ?? CPDF::$PAPER_SIZES['a4']);
+    }
+
+    public function getContent(string $templatePath, ?string $customizedPath = null, bool $compiled = false): string
+    {
+        if (! $customizedPath) {
+            $customizedPath = storage_path('app/templates/' . basename($templatePath));
+        }
+
+        if (File::exists($customizedPath)) {
+            $content = BaseHelper::getFileData($customizedPath, false);
+        } else {
+            $content = File::exists($templatePath) ? BaseHelper::getFileData($templatePath, false) : '';
+        }
+
+        $content = (string) $content;
+
+        if ($content && $compiled) {
             $defaultData = [
                 'settings' => [
                     'font_family' => apply_filters('pdf_font_family', 'DejaVu Sans'),
@@ -131,56 +167,40 @@ class Pdf
                     break;
             }
 
-            $this->content = $this->compileContent($this->content, $data);
+            $content = $this->compileContent($content, $data);
 
             if ($this->formatContentUsing) {
-                $this->content = call_user_func($this->formatContentUsing, $this->content);
+                $content = call_user_func($this->formatContentUsing, $content);
             }
 
-            $currencies = [
-                '₼' => 'azeri-manat',
-                '₹' => 'indian-rupee',
-                '৳' => 'bangladeshi-taka',
-                '₺' => 'turkish-lira',
-            ];
+            if ($this->getProcessingLibrary() == 'dompdf') {
+                $currencies = [
+                    '₼' => 'azeri-manat',
+                    '₹' => 'indian-rupee',
+                    '৳' => 'bangladeshi-taka',
+                    '₺' => 'turkish-lira',
+                    '﷼' => 'iranian-rial',
+                ];
+
+                if ($this->supportLanguage === 'arabic') {
+                    $content = $this->compileArabic($content);
+                }
+            } else {
+                $currencies = [
+                    '﷼' => 'iranian-rial',
+                ];
+            }
 
             foreach ($currencies as $currency => $icon) {
-                $this->content = str_replace(
+                $content = str_replace(
                     $currency,
-                    Html::image(asset("vendor/core/core/base/images/pdf-symbols/$icon.svg"), 'currency', ['width' => 10, 'style' => 'margin-right: 2px;']),
-                    $this->content
+                    Html::image(asset("vendor/core/core/base/images/pdf-symbols/$icon.svg"), 'currency', ['width' => 10, 'style' => 'margin-right: 2px; display: inline-block;']),
+                    $content
                 );
             }
-
-            if ($this->supportLanguage === 'arabic') {
-                $this->content = $this->compileArabic($this->content);
-            }
         }
 
-        Cache::$error_message = null;
-
-        return PdfFacade::setWarnings(false)
-            ->setOption('chroot', [public_path(), base_path()])
-            ->setOption('tempDir', storage_path('app'))
-            ->setOption('logOutputFile', storage_path('logs/pdf.log'))
-            ->setOption('isRemoteEnabled', true)
-            ->loadHTML($this->content, 'UTF-8')
-            ->setPaper($this->paperSize ?? CPDF::$PAPER_SIZES['a4']);
-    }
-
-    public function getContent(string $templatePath, ?string $customizedPath = null): string
-    {
-        if (! $customizedPath) {
-            $customizedPath = storage_path('app/templates/' . basename($templatePath));
-        }
-
-        if (File::exists($customizedPath)) {
-            $content = BaseHelper::getFileData($customizedPath, false);
-        } else {
-            $content = File::exists($templatePath) ? BaseHelper::getFileData($templatePath, false) : '';
-        }
-
-        return (string) $content;
+        return $content;
     }
 
     protected function compileContent(string $content, array $data = []): string
@@ -218,5 +238,89 @@ class Pdf
         }
 
         return $content;
+    }
+
+    public function setProcessingLibrary(string $library): static
+    {
+        $this->processingLibrary = $library;
+
+        return $this;
+    }
+
+    public function getProcessingLibrary(): string
+    {
+        return $this->processingLibrary;
+    }
+
+    public function compileMpdf(string $fileName, string $mode = 'D'): ?string
+    {
+        $format = $this->convertPaperSizeForMpdf($this->paperSize ?? 'A4');
+
+        $config = [
+            'mode' => 'utf-8',
+            'format' => $format,
+            'tempDir' => storage_path('app'),
+        ];
+
+        $mpdf = new Mpdf($config);
+
+        $mpdf->autoLangToFont = true;
+
+        $inlineCss = new CssToInlineStyles();
+
+        $content = $this->getContent($this->templatePath, $this->destinationPath, true);
+
+        $content = $inlineCss->convert($content);
+
+        $mpdf->WriteHTML($content);
+
+        return $mpdf->Output($fileName, $mode);
+    }
+
+    protected function convertPaperSizeForMpdf(array|string $paperSize): array|string
+    {
+        if (is_string($paperSize)) {
+            return $paperSize;
+        }
+
+        if (is_array($paperSize) && count($paperSize) === 4) {
+            $widthMm = ($paperSize[2] - $paperSize[0]) * 0.352778;
+            $heightMm = ($paperSize[3] - $paperSize[1]) * 0.352778;
+
+            return [round($widthMm, 2), round($heightMm, 2)];
+        }
+
+        if (is_array($paperSize) && count($paperSize) === 2) {
+            return $paperSize;
+        }
+
+        return 'A4';
+    }
+
+    public function stream(string $fileName = 'document.pdf'): Response|string|null
+    {
+        if ($this->getProcessingLibrary() == 'mpdf' || ! extension_loaded('libxml')) {
+            return $this->compileMpdf($fileName, 'I');
+        }
+
+        return $this->compile()->stream($fileName);
+    }
+
+    public function download(string $fileName): Response|string|null
+    {
+        if ($this->getProcessingLibrary() == 'mpdf' || ! extension_loaded('libxml')) {
+            return $this->compileMpdf($fileName);
+        }
+
+        return $this->compile()->download($fileName);
+    }
+
+    public function save(string $filePath): DomPDF|string|null
+    {
+        if ($this->getProcessingLibrary() == 'mpdf' || ! extension_loaded('libxml')) {
+            return $this->compileMpdf($filePath, 'F');
+        }
+
+        return $this->compile()->save($filePath);
     }
 }

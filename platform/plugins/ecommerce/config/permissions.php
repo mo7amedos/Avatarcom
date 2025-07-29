@@ -335,6 +335,16 @@ return [
         'flag' => 'customers.destroy',
         'parent_flag' => 'customers.index',
     ],
+    [
+        'name' => 'Import',
+        'flag' => 'ecommerce.customers.import',
+        'parent_flag' => 'customers.index',
+    ],
+    [
+        'name' => 'Export',
+        'flag' => 'ecommerce.customers.export',
+        'parent_flag' => 'customers.index',
+    ],
 
     [
         'name' => 'Flash sales',
@@ -515,6 +525,31 @@ return [
         'name' => 'Shipping',
         'flag' => 'ecommerce.settings.shipping',
         'parent_flag' => 'ecommerce.settings',
+    ],
+    [
+        'name' => 'Shipping Rules',
+        'flag' => 'ecommerce.shipping-rule-items.index',
+        'parent_flag' => 'ecommerce.settings',
+    ],
+    [
+        'name' => 'Create',
+        'flag' => 'ecommerce.shipping-rule-items.create',
+        'parent_flag' => 'ecommerce.shipping-rule-items.index',
+    ],
+    [
+        'name' => 'Edit',
+        'flag' => 'ecommerce.shipping-rule-items.edit',
+        'parent_flag' => 'ecommerce.shipping-rule-items.index',
+    ],
+    [
+        'name' => 'Delete',
+        'flag' => 'ecommerce.shipping-rule-items.destroy',
+        'parent_flag' => 'ecommerce.shipping-rule-items.index',
+    ],
+    [
+        'name' => 'Bulk Import',
+        'flag' => 'ecommerce.shipping-rule-items.bulk-import',
+        'parent_flag' => 'ecommerce.shipping-rule-items.index',
     ],
     [
         'name' => 'Tracking',

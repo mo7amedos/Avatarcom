@@ -336,6 +336,14 @@
         }
 
         init() {
+            // Add error handling for DataTables AJAX requests
+            if ($.fn.dataTable) {
+                $.fn.dataTable.ext.errMode = 'none';
+                $(document).on('error.dt', (e, settings, techNote, message) => {
+                    Botble.handleDatatableError({ responseJSON: { message } });
+                });
+            }
+
             $(document).on('change', '.table-check-all', (event) => {
                 let _self = $(event.currentTarget)
                 let set = _self.attr('data-set')
@@ -605,6 +613,9 @@
 
                         _self.closest('.modal').modal('hide')
                     })
+                    .catch(() => {
+                        _self.closest('.modal').modal('hide')
+                    })
                     .finally(() => {
                         Botble.hideButtonLoading(_self)
                     })
@@ -678,8 +689,8 @@
 
                         typeof onSuccess === 'function' && onSuccess.apply(this, data)
                     })
-                    .catch((error) => {
-                        typeof onError === 'function' && onError.apply(this, error)
+                    .finally(() => {
+                        Botble.hideButtonLoading(_self)
                     })
             }
 

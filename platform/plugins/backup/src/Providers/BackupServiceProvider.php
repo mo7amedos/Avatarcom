@@ -24,7 +24,7 @@ class BackupServiceProvider extends ServiceProvider
 
         $this->app->register(CommandServiceProvider::class);
 
-        PanelSectionManager::group('system')->beforeRendering(function () {
+        PanelSectionManager::group('system')->beforeRendering(function (): void {
             PanelSectionManager::registerItem(
                 SystemPanelSection::class,
                 fn () => PanelSectionItem::make('backup')
@@ -36,7 +36,7 @@ class BackupServiceProvider extends ServiceProvider
             );
         });
 
-        $this->app->booted(function () {
+        $this->app->booted(function (): void {
             $this->app->register(HookServiceProvider::class);
         });
     }

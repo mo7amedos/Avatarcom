@@ -22,7 +22,7 @@ class StateRepository extends RepositoriesAbstract implements StateInterface
             $data = $data
                 ->where(function (Builder $query) use ($keyword) {
                     return $query
-                        ->whereHas('translations', function ($query) use ($keyword) {
+                        ->whereHas('translations', function ($query) use ($keyword): void {
                             $query->where('name', 'LIKE', '%' . $keyword . '%');
                         });
                 });

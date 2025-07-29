@@ -24,7 +24,7 @@ trait LoadAndPublishDataTrait
         return $this;
     }
 
-    protected function getPath(string $path = null): string
+    protected function getPath(?string $path = null): string
     {
         $reflection = new ReflectionClass($this);
 
@@ -63,12 +63,12 @@ trait LoadAndPublishDataTrait
 
     protected function getDashedNamespace(): string
     {
-        return str_replace('.', '/', $this->namespace);
+        return str_replace('.', '/', (string) $this->namespace);
     }
 
     protected function getDotedNamespace(): string
     {
-        return str_replace('/', '.', $this->namespace);
+        return str_replace('/', '.', (string) $this->namespace);
     }
 
     protected function loadRoutes(array|string $fileNames = ['web']): static
@@ -139,7 +139,7 @@ trait LoadAndPublishDataTrait
         return $this->getPath('/database/migrations');
     }
 
-    protected function publishAssets(string $path = null): static
+    protected function publishAssets(?string $path = null): static
     {
         if (empty($path)) {
             $path = 'vendor/core/' . $this->getDashedNamespace();
@@ -166,7 +166,7 @@ trait LoadAndPublishDataTrait
     {
         $this->app['blade.compiler']->anonymousComponentPath(
             $this->getViewsPath() . '/components',
-            str_replace('/', '-', $this->namespace)
+            str_replace('/', '-', (string) $this->namespace)
         );
 
         return $this;

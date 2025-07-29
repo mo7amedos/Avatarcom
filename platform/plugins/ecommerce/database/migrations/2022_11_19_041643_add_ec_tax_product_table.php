@@ -10,7 +10,7 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasTable('ec_tax_products')) {
-            Schema::create('ec_tax_products', function (Blueprint $table) {
+            Schema::create('ec_tax_products', function (Blueprint $table): void {
                 $table->foreignId('tax_id')->index();
                 $table->foreignId('product_id')->index();
                 $table->primary(['product_id', 'tax_id'], 'tax_products_primary_key');

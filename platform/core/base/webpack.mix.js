@@ -9,7 +9,6 @@ mix
     .vue()
     .sass(`${source}/resources/sass/core.scss`, `${dist}/css`)
     .sass(`${source}/resources/sass/libraries/select2/select2.scss`, `${dist}/css/libraries`)
-    .sass(`${source}/resources/sass/components/email.scss`, `${dist}/css`)
     .sass(`${source}/resources/sass/components/error-pages.scss`, `${dist}/css`)
     .sass(`${source}/resources/sass/components/tree-category.scss`, `${dist}/css`)
     .sass(`${source}/resources/sass/components/crop-image.scss`, `${dist}/css`)
@@ -46,7 +45,6 @@ if (mix.inProduction()) {
     mix
         .copy(`${dist}/css/core.css`, `${source}/public/css`)
         .copy(`${dist}/css/libraries/select2.css`, `${source}/public/css/libraries`)
-        .copy(`${dist}/css/email.css`, `${source}/public/css`)
         .copy(`${dist}/css/error-pages.css`, `${source}/public/css`)
         .copy(`${dist}/css/tree-category.css`, `${source}/public/css`)
         .copy(`${dist}/css/crop-image.css`, `${source}/public/css`)

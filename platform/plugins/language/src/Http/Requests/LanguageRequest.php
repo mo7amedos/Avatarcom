@@ -11,7 +11,7 @@ class LanguageRequest extends Request
     public function rules(): array
     {
         return [
-            'lang_name' => 'required|string|max:30|min:2',
+            'lang_name' => ['required', 'string', 'max:30', 'min:2'],
             'lang_code' => [
                 'required',
                 'string',
@@ -22,9 +22,9 @@ class LanguageRequest extends Request
                 'string',
                 Rule::in(Language::getLocaleKeys()),
             ],
-            'lang_flag' => 'required|string',
-            'lang_is_rtl' => 'required|boolean',
-            'lang_order' => 'required|numeric',
+            'lang_flag' => ['required', 'string'],
+            'lang_is_rtl' => ['required', 'boolean'],
+            'lang_order' => ['required', 'numeric'],
         ];
     }
 }

@@ -1,4 +1,14 @@
-@php Theme::layout('full-width'); @endphp
+@php
+    Theme::layout('full-width');
+
+    $currentMainFilterUrl = $store->url;
+
+    $categories = ProductCategoryHelper::getProductCategoriesWithUrl();
+    $categoriesRequest = (array) request()->input('categories', []);
+    $categoryId = Arr::get($categoriesRequest, 0);
+
+    Theme::asset()->container('footer')->add('store-search-fix-js', 'themes/farmart/assets/js/store-search-fix.js', ['jquery']);
+@endphp
 
 {!! Theme::partial('page-header') !!}
 
@@ -28,54 +38,15 @@
                             </span>
                         </a>
                     </div>
-                    @php
-                        $categories = ProductCategoryHelper::getProductCategoriesWithUrl();
-                        $categoriesRequest = (array) request()->input('categories', []);
-                        $urlCurrent = URL::current();
-                        $activeCategoryId = Arr::get($categoriesRequest, 0);
-                    @endphp
 
-                    @if($categories->isNotEmpty())
-                        <div class="catalog-filter-sidebar-content px-3 px-md-0">
-                            <form
-                                id="products-filter-form"
-                                data-action="{{ $store->url }}"
-                                data-title="{{ $store->name }}"
-                                action="{{ URL::current() }}"
-                                method="GET"
-                            >
-                                <input
-                                    class="product-filter-item"
-                                    name="sort-by"
-                                    type="hidden"
-                                    value="{{ BaseHelper::stringify(request()->input('sort-by')) }}"
-                                >
-                                <input
-                                    class="product-filter-item"
-                                    name="layout"
-                                    type="hidden"
-                                    value="{{ BaseHelper::stringify(request()->input('layout')) }}"
-                                >
-                                <div class="widget-wrapper widget-product-categories">
-                                    <h4 class="widget-title">{{ __('All Categories') }}</h4>
-                                    <input
-                                        class="product-filter-item"
-                                        name="categories[]"
-                                        type="hidden"
-                                        value="{{ $activeCategoryId }}"
-                                    >
-                                    <div class="widget-layered-nav-list">
-                                        @include(Theme::getThemeNamespace('views.ecommerce.includes.categories'),
-                                            compact(
-                                                'categories',
-                                                'categoriesRequest',
-                                                'urlCurrent',
-                                                'activeCategoryId'))
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    @endif
+                    <div class="catalog-filter-sidebar-content px-3 px-md-0">
+                        <form action="{{ $store->url }}" method="GET" class="bb-product-form-filter">
+                            @include(EcommerceHelper::viewPath('includes.filters.filter-hidden-fields'))
+                            <input name="categories[]" type="hidden" value="{{ $categoryId }}">
+
+                            @include(EcommerceHelper::viewPath('includes.filters.categories'))
+                        </form>
+                    </div>
                 </div>
             </aside>
             <aside
@@ -102,56 +73,36 @@
                         </a>
                     </div>
 
-                    <div class="catalog-filter-sidebar-content px-3 px-md-0">
-                        <div class="widget-wrapper widget-contact-store">
-                            <h4 class="widget-title">{{ __('Contact Vendor') }}</h4>
-                            <form
-                                class="form-contact-store"
-                                action="{{ route('public.ajax.contact-seller') }}"
-                                method="post"
-                            >
-                                @csrf
-                                <input type="hidden" name="store_id" value="{{ $store->id }}">
-                                <div class="mb-3">
-                                    <input
-                                        class="form-control"
-                                        name="name"
-                                        type="text"
-                                        @if ($customer = auth('customer')->user()) value="{{ $customer->name }}" @endif
-                                        placeholder="{{ __('Your Name') }}"
-                                        @if ($customer) disabled @else minlength="5" required="required" @endif
-                                    >
+                    @if (MarketplaceHelper::isEnabledMessagingSystem() && (! auth('customer')->check() || $store->id != auth('customer')->user()->store->id))
+                        <div class="catalog-filter-sidebar-content px-3 px-md-0">
+                            <div class="widget-wrapper widget-contact-store">
+                                <h4 class="widget-title">{{ __('Contact Vendor') }}</h4>
+                                <div class="mb-4">
+                                    <p>{{ __('All messages are recorded and spam is not tolerated. Your email address will be shown to the recipient.') }}</p>
+                                    {!!
+                                        $contactForm
+                                        ->setFormOption('class', 'form-contact-store bb-contact-store-form')
+                                        ->setFormInputClass('form-control')
+                                        ->setFormLabelClass('d-none sr-only')
+                                        ->modify(
+                                            'submit',
+                                            'submit',
+                                            Botble\Base\Forms\FieldOptions\ButtonFieldOption::make()
+                                                ->addAttribute('data-bb-loading', 'button-loading')
+                                                ->cssClass('btn btn-primary')
+                                                ->label(__('Send message'))
+                                                ->wrapperAttributes(['class' => 'd-grid'])
+                                                ->toArray(),
+                                            true
+                                        )
+                                        ->renderForm()
+                                    !!}
                                 </div>
-                                <div class="mb-3">
-                                    <input
-                                        class="form-control"
-                                        name="email"
-                                        type="email"
-                                        @if ($customer) value="{{ $customer->email }}" @endif
-                                        placeholder="you@example.com"
-                                        @if ($customer) disabled @else required="required" @endif
-                                    >
-                                </div>
-                                <div class="mb-3">
-                                    <textarea
-                                        class="form-control"
-                                        name="content"
-                                        maxlength="5000"
-                                        cols="25"
-                                        rows="6"
-                                        placeholder="{{ __('Type your message...') }}"
-                                        required="required"
-                                    ></textarea>
-                                </div>
-                                <div class="d-grid">
-                                    <button
-                                        class="btn btn-primary"
-                                        type="submit"
-                                    >{{ __('Send Message') }}</button>
-                                </div>
-                            </form>
+
+                                @include(MarketplaceHelper::viewPath('includes.contact-form-script'))
+                            </div>
                         </div>
-                    </div>
+                    @endif
                 </div>
             </aside>
         </div>
@@ -171,7 +122,6 @@
                                 <input
                                     class="form-control"
                                     name="q"
-                                    form="products-filter-form"
                                     type="text"
                                     value="{{ BaseHelper::stringify(request()->query('q')) }}"
                                     placeholder="{{ __('Search in this store...') }}"
@@ -226,7 +176,7 @@
                     </div>
                 </div>
             </div>
-            <div class="products-listing position-relative">
+            <div class="products-listing position-relative bb-product-items-wrapper">
                 @include(Theme::getThemeNamespace('views.marketplace.stores.items'))
             </div>
         </div>

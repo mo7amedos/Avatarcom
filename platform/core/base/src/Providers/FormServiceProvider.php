@@ -38,7 +38,7 @@ class FormServiceProvider extends ServiceProvider
             ],
         ]);
 
-        $this->app['events']->listen(FormComponentRegistering::class, function (FormComponentRegistering $event) {
+        $this->app['events']->listen(FormComponentRegistering::class, function (FormComponentRegistering $event): void {
             $form = $event->form;
             $form->component('mediaImage', 'core/base::forms.partials.image', [
                 'name',

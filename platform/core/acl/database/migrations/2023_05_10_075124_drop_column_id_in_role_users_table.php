@@ -10,7 +10,7 @@ return new class () extends Migration {
     {
         try {
             if (Schema::hasColumn('role_users', 'id')) {
-                Schema::table('role_users', function (Blueprint $table) {
+                Schema::table('role_users', function (Blueprint $table): void {
                     $table->dropColumn('id');
                 });
             }
@@ -21,11 +21,11 @@ return new class () extends Migration {
 
             DB::statement('TRUNCATE TABLE role_users');
 
-            Schema::table('role_users', function (Blueprint $table) {
+            Schema::table('role_users', function (Blueprint $table): void {
                 $table->primary(['user_id', 'role_id']);
             });
 
-            DB::table('role_users_tmp')->oldest()->chunk(1000, function ($chunked) {
+            DB::table('role_users_tmp')->oldest()->chunk(1000, function ($chunked): void {
                 DB::table('role_users')->insertOrIgnore(array_map(fn ($item) => (array) $item, $chunked->toArray()));
             });
 
@@ -37,11 +37,11 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::table('role_users', function (Blueprint $table) {
+        Schema::table('role_users', function (Blueprint $table): void {
             $table->dropPrimary(['user_id', 'role_id']);
         });
 
-        Schema::table('role_users', function (Blueprint $table) {
+        Schema::table('role_users', function (Blueprint $table): void {
             $table->id();
         });
     }

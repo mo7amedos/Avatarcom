@@ -4,6 +4,7 @@ namespace Botble\Ecommerce\Forms\Fronts\Auth;
 
 use Botble\Base\Facades\BaseHelper;
 use Botble\Base\Forms\Fields\HtmlField;
+use Botble\Ecommerce\Facades\EcommerceHelper;
 use Botble\Theme\Facades\Theme;
 use Botble\Theme\FormFront;
 
@@ -11,7 +12,7 @@ abstract class AuthForm extends FormFront
 {
     public function setup(): void
     {
-        Theme::asset()->add('auth-css', 'vendor/core/plugins/ecommerce/css/front-auth.css', version: get_cms_version());
+        Theme::asset()->add('auth-css', 'vendor/core/plugins/ecommerce/css/front-auth.css', version: EcommerceHelper::getAssetVersion());
 
         Theme::addBodyAttributes(['id' => 'page-auth']);
 
@@ -20,7 +21,7 @@ abstract class AuthForm extends FormFront
             ->template('plugins/ecommerce::customers.forms.auth');
     }
 
-    public function submitButton(string $label, string $icon = null, string $iconPosition = 'append'): static
+    public function submitButton(string $label, ?string $icon = null, string $iconPosition = 'append'): static
     {
         $iconHtml = $icon ? BaseHelper::renderIcon($icon) : '';
 
@@ -39,7 +40,8 @@ abstract class AuthForm extends FormFront
             ])
             ->add('closeButtonWrap', HtmlField::class, [
                 'html' => '</div>',
-            ]);
+            ])
+            ->setFormEndKey('openButtonWrap');
     }
 
     public function banner(string $banner): static

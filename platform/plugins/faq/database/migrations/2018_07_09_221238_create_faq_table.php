@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::create('faq_categories', function (Blueprint $table) {
+        Schema::create('faq_categories', function (Blueprint $table): void {
             $table->id();
             $table->string('name', 120);
             $table->tinyInteger('order')->default(0);
@@ -15,7 +15,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('faqs', function (Blueprint $table) {
+        Schema::create('faqs', function (Blueprint $table): void {
             $table->id();
             $table->text('question');
             $table->text('answer');

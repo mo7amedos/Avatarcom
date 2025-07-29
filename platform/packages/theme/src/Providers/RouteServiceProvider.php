@@ -12,8 +12,12 @@ class RouteServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->app->booted(function () {
-            $this->loadRoutesFromTheme(Theme::hasInheritTheme() ? Theme::getInheritTheme() : Theme::getThemeName());
+        $this->app->booted(function (): void {
+            $this->loadRoutesFromTheme(Theme::getThemeName());
+
+            if (Theme::hasInheritTheme()) {
+                $this->loadRoutesFromTheme(Theme::getInheritTheme());
+            }
         });
     }
 

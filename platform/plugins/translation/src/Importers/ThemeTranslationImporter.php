@@ -25,6 +25,7 @@ class ThemeTranslationImporter extends Importer implements WithMapping
     {
         $columns = [
             ImportColumn::make('en')
+                ->label('en')
                 ->rules(
                     ['nullable', 'string', 'max:10000'],
                     trans(
@@ -40,6 +41,7 @@ class ThemeTranslationImporter extends Importer implements WithMapping
             }
 
             $columns[] = ImportColumn::make($locale['locale'])
+                ->label($locale['locale'])
                 ->rules(
                     ['nullable', 'string', 'max:10000'],
                     trans(
@@ -80,33 +82,38 @@ class ThemeTranslationImporter extends Importer implements WithMapping
 
         $manager = app(Manager::class);
 
-        foreach (Language::getAvailableLocales() as $locale) {
-            if ($locale['locale'] === 'en') {
+        foreach (Language::getAvailableLocales(true) as $locale) {
+            $locale = $locale['locale'];
+
+            if ($locale === 'en') {
                 continue;
             }
 
-            $translations = $manager->getThemeTranslations($locale['locale']);
-
-            $localeName = $locale['locale'];
+            $translations = $manager->getThemeTranslations($locale);
 
             foreach ($data as $row) {
-                if (! $localeName || ! isset($row[$localeName])) {
+                if (! $locale || ! isset($row[$locale])) {
                     continue;
                 }
 
                 if (isset($translations[$row['en']])) {
-                    $translations[$row['en']] = $row[$localeName];
+                    $translations[$row['en']] = $row[$locale];
                 } else {
-                    $translations[] = [$row['en'] => $row[$localeName]];
+                    $translations[] = [$row['en'] => $row[$locale]];
                 }
             }
 
             if ($translations) {
-                $manager->saveThemeTranslations($locale['locale'], $translations);
+                $manager->saveThemeTranslations($locale, $translations);
                 $count += count($translations);
             }
         }
 
         return $count;
+    }
+
+    public function headerToSnakeCase(): bool
+    {
+        return false;
     }
 }

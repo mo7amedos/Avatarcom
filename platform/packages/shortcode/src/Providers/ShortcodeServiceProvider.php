@@ -53,9 +53,12 @@ class ShortcodeServiceProvider extends ServiceProvider
             ->loadHelpers()
             ->loadAndPublishTranslations()
             ->loadAndPublishViews()
+            ->loadAndPublishConfigurations(['shortcode'])
             ->publishAssets();
 
-        $this->app->booted(function () {
+        $this->app->booted(function (): void {
+            $this->loadRoutes(['fronts']);
+
             add_filter(BASE_FILTER_FORM_EDITOR_BUTTONS, function (?string $buttons, array $attributes, string $id) {
                 if (! $this->hasWithShortcode($attributes)) {
                     return $buttons;
@@ -96,6 +99,8 @@ class ShortcodeServiceProvider extends ServiceProvider
                 return $footer;
             }, 120, 2);
         });
+
+        $this->app->register(HookServiceProvider::class);
     }
 
     protected function hasWithShortcode(array $attributes): bool

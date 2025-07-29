@@ -4,27 +4,27 @@
             <h4>{{ $store->name }}</h4>
         </a>
 
-        @if (EcommerceHelper::isReviewEnabled())
+        @if (EcommerceHelper::isReviewEnabled() && (!EcommerceHelper::hideRatingWhenNoReviews() || $store->reviews->count() > 0))
             <div class="d-flex align-items-center gap-1 bb-store-item-rating">
                 @include(EcommerceHelper::viewPath('includes.rating-star'), ['avg' => $store->reviews()->avg('star')])
                 <a href="{{ $store->url }}" class="small">{{ __('(:count reviews)', ['count' => number_format($store->reviews->count())]) }}</a>
             </div>
         @endif
 
-        @if($store->full_address)
+        @if (! MarketplaceHelper::hideStoreAddress() && $store->full_address)
             <p class="bb-store-item-info text-truncate" title="{{ $store->full_address }}">
                 <x-core::icon name="ti ti-map-pin" />{{ $store->full_address }}
             </p>
         @endif
 
-        @if (!MarketplaceHelper::hideStorePhoneNumber() && $store->phone)
+        @if (! MarketplaceHelper::hideStorePhoneNumber() && $store->phone)
             <p class="bb-store-item-info">
                 <x-core::icon name="ti ti-phone" />
                 <a href="tel:{{ $store->phone }}">{{ $store->phone }}</a>
             </p>
         @endif
 
-        @if (!MarketplaceHelper::hideStoreEmail() && $store->email)
+        @if (! MarketplaceHelper::hideStoreEmail() && $store->email)
             <p class="bb-store-item-info">
                 <x-core::icon name="ti ti-mail" />
                 {{ Html::mailto($store->email) }}

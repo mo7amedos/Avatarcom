@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html {!! Theme::htmlAttributes() !!} }>
-
+<html {!! Theme::htmlAttributes() !!}>
 <head>
     <meta charset="utf-8">
     <meta
@@ -21,7 +20,10 @@
     >
 
     @if ($favicon = theme_option('favicon'))
-        {{ Html::favicon(RvMedia::getImageUrl($favicon)) }}
+        {{ Html::favicon(
+            RvMedia::getImageUrl($favicon),
+            ['type' => rescue(fn () => RvMedia::getMimeType($favicon), 'image/x-icon')]
+        ) }}
     @endif
 
     <meta
@@ -42,6 +44,7 @@
 
     <script>
         window.siteUrl = "{{ BaseHelper::getHomepageUrl() }}";
+        window.siteEditorLocale = "{{ apply_filters('cms_site_editor_locale', App::getLocale()) }}";
     </script>
 
     <script type="text/javascript">
@@ -66,7 +69,7 @@
     @stack('header')
 </head>
 
-<body {!! Theme::bodyAttributes() !!}>
+<body @if (session('locale_direction', 'ltr') == 'rtl') dir="rtl" @endif>
 
 @yield('body', view(MarketplaceHelper::viewPath('vendor-dashboard.layouts.body')))
 

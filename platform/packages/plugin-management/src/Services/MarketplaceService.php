@@ -12,7 +12,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
-use Throwable;
 
 class MarketplaceService
 {
@@ -28,7 +27,7 @@ class MarketplaceService
 
     protected string $licenseApiKey;
 
-    public function __construct(string $url = null, string $token = null)
+    public function __construct(?string $url = null, ?string $token = null)
     {
         $core = Core::make()->getCoreFileData();
 
@@ -36,7 +35,7 @@ class MarketplaceService
 
         $this->token = $token ?? $core['marketplaceToken'];
 
-        $this->publishedPath = storage_path('app/marketplace/');
+        $this->publishedPath = storage_path('app/marketplace');
 
         $this->productId = $core['productId'];
 
@@ -47,31 +46,21 @@ class MarketplaceService
 
     public function callApi(string $method, string $path, array $request = []): JsonResponse|Response
     {
-        if (! config('packages.plugin-management.general.enable_marketplace_feature')) {
-            abort(404);
+        abort_unless(config('packages.plugin-management.general.enable_marketplace_feature'), 404);
+
+        $request = array_merge($request, [
+            'product_id' => $this->productId,
+            'site_url' => rtrim(url('')),
+            'core_version' => get_core_version(),
+        ]);
+
+        $response = $this->request()->{$method}($this->url . $path, $request);
+
+        if ($response->failed()) {
+            throw new Exception($response->json('message') ?: trans('packages/plugin-management::marketplace.could_not_connect'));
         }
 
-        try {
-            $request = array_merge($request, [
-                'product_id' => $this->productId,
-                'site_url' => rtrim(url('')),
-                'core_version' => get_core_version(),
-            ]);
-
-            $response = $this->request()->{$method}($this->url . $path, $request);
-
-            if ($response->status() !== 200) {
-                $body = json_decode($response->body(), true);
-
-                throw new Exception(Arr::get($body, 'message') ?: trans('packages/plugin-management::marketplace.could_not_connect'));
-            }
-
-            return $response;
-        } catch (Throwable $e) {
-            report($e);
-
-            throw new Exception(trans('packages/plugin-management::marketplace.could_not_connect'));
-        }
+        return $response;
     }
 
     protected function request(): PendingRequest
@@ -86,7 +75,7 @@ class MarketplaceService
             ->timeout(300);
     }
 
-    public function beginInstall(string $id, string $name): bool|JsonResponse
+    public function beginInstall(string $id, string $name, ?PluginService $pluginService = null): bool|JsonResponse
     {
         $core = Core::make();
         $licenseFilePath = $core->getLicenseFilePath();
@@ -95,14 +84,24 @@ class MarketplaceService
             throw new RequiresLicenseActivatedException();
         }
 
+        $requestData = [
+            'license_url' => $this->licenseUrl,
+            'license_api_key' => $this->licenseApiKey,
+            'license_file' => $core->getLicenseFile(),
+        ];
+
+        // Add plugin purchase code if available
+        if ($pluginService) {
+            $pluginPurchaseCode = $pluginService->getPluginPurchaseCode($name);
+            if ($pluginPurchaseCode) {
+                $requestData['plugin_purchase_code'] = $pluginPurchaseCode;
+            }
+        }
+
         $data = $this->callApi(
             'post',
             '/products/' . $id . '/download',
-            [
-                'license_url' => $this->licenseUrl,
-                'license_api_key' => $this->licenseApiKey,
-                'license_file' => $core->getLicenseFile(),
-            ]
+            $requestData
         );
 
         if ($data->getStatusCode() != 200) {
@@ -111,24 +110,25 @@ class MarketplaceService
             throw new Exception(Arr::get($content, 'message') ?: $data);
         }
 
-        File::ensureDirectoryExists($this->publishedPath . $id);
+        $storageTempPath = $this->publishedPath . '/' . $id;
 
-        $destination = $this->publishedPath . $id . '/' . $name . '.zip';
+        File::ensureDirectoryExists($storageTempPath, 0775);
 
-        File::cleanDirectory($this->publishedPath . $id);
+        $destination = $storageTempPath . '/' . $name . '.zip';
+
+        File::cleanDirectory($storageTempPath);
 
         File::put($destination, $data);
 
-        $this->extractFile($id, $name);
-        $this->copyToPath($id, plugin_path($name));
+        $this->extractFile($storageTempPath, $name);
+        $this->copyToPath($storageTempPath, plugin_path($name));
 
         return true;
     }
 
-    protected function extractFile(string $id, string $name): string
+    protected function extractFile(string $pathTo, string $name): string
     {
-        $destination = $this->publishedPath . $id . '/' . $name . '.zip';
-        $pathTo = $this->publishedPath . $id;
+        $destination = $pathTo . '/' . $name . '.zip';
 
         $zipper = new Zipper();
 
@@ -141,15 +141,15 @@ class MarketplaceService
         return $pathTo;
     }
 
-    protected function copyToPath(string $id, string $path): string
+    protected function copyToPath(string $fromPath, string $destinationPath): string
     {
-        $pathTemp = $this->publishedPath . $id;
+        File::ensureDirectoryExists($destinationPath, 0775);
 
-        if (File::isDirectory($pathTemp)) {
-            File::copyDirectory($pathTemp, $path);
-            File::deleteDirectory($pathTemp);
+        if (File::isDirectory($fromPath)) {
+            File::copyDirectory($fromPath, $destinationPath);
+            File::deleteDirectory($fromPath);
         }
 
-        return $path;
+        return $destinationPath;
     }
 }

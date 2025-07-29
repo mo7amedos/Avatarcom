@@ -8,13 +8,19 @@ use Illuminate\Support\Str;
 
 class ShortcodeField
 {
-    public function tabs(array $fields, array $attributes = [], int $max = 20, int $min = 1, ?string $tabKey = null): string
+    public function tabs(array $fields, array $attributes = [], int $max = 20, int $min = 1, ?string $tabKey = null, $wrapperAttributes = []): string
     {
         if (! $fields) {
             return '';
         }
 
-        $current = (int) Arr::get($attributes, $tabKey ? "{$tabKey}_quantity" : 'quantity') ?: 6;
+        $current = Arr::get($attributes, $tabKey ? "{$tabKey}_quantity" : 'quantity') ?: 6;
+
+        if (str_contains($current, ',')) {
+            $current = Str::afterLast($current, ',');
+        }
+
+        $current = (int) $current;
 
         $selector = 'quantity_' . Str::random(20);
 
@@ -23,7 +29,7 @@ class ShortcodeField
 
         return view(
             'packages/shortcode::fields.tabs',
-            compact('fields', 'attributes', 'current', 'selector', 'choices', 'max', 'min', 'tabKey')
+            compact('fields', 'attributes', 'current', 'selector', 'choices', 'max', 'min', 'tabKey', 'wrapperAttributes')
         )->render();
     }
 

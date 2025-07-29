@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::create('media_folders', function (Blueprint $table) {
+        Schema::create('media_folders', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->index();
             $table->string('name')->nullable();
@@ -17,7 +17,7 @@ return new class () extends Migration {
             $table->softDeletes();
         });
 
-        Schema::create('media_files', function (Blueprint $table) {
+        Schema::create('media_files', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->index();
             $table->string('name');
@@ -30,7 +30,7 @@ return new class () extends Migration {
             $table->softDeletes();
         });
 
-        Schema::create('media_settings', function (Blueprint $table) {
+        Schema::create('media_settings', function (Blueprint $table): void {
             $table->id();
             $table->string('key', 120);
             $table->text('value')->nullable();

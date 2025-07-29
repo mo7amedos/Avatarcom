@@ -84,8 +84,8 @@ class StateController extends BaseController
             ->where('name', 'LIKE', '%' . $keyword . '%')
             ->select(['id', 'name'])
             ->take(10)
-            ->orderBy('order')
-            ->orderBy('name')
+            ->oldest('order')
+            ->oldest('name')
             ->get();
 
         $data->prepend(new State(['id' => 0, 'name' => trans('plugins/location::city.select_state')]));
@@ -106,7 +106,12 @@ class StateController extends BaseController
         $countryId = $request->input('country_id');
 
         if ($countryId && $countryId != 'null') {
-            $data = $data->where('country_id', $countryId);
+            $data = $data
+                ->whereHas('country', function ($query) use ($countryId): void {
+                    $query
+                        ->where('id', $countryId)
+                        ->orWhere('code', $countryId);
+                });
         }
 
         $data = $data->get();

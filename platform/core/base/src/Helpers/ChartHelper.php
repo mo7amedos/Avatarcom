@@ -15,8 +15,8 @@ class ChartHelper
         $now = Carbon::now();
 
         $validator = Validator::make($request->only(['date_from', 'date_to']), [
-            'date_from' => 'nullable|date',
-            'date_to' => 'nullable|date',
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date'],
         ]);
 
         if ($validator->fails()) {

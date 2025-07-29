@@ -7,7 +7,11 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::create('ec_shared_wishlists', function (Blueprint $table) {
+        if (Schema::hasTable('ec_shared_wishlists')) {
+            return;
+        }
+
+        Schema::create('ec_shared_wishlists', function (Blueprint $table): void {
             $table->id();
             $table->string('code')->unique();
             $table->text('product_ids')->nullable();

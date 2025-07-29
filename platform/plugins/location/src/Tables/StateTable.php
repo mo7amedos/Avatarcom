@@ -79,7 +79,7 @@ class StateTable extends TableAbstract
                             return $query;
                         }
 
-                        return $query->where(function (Builder $query) use ($keyword) {
+                        return $query->where(function (Builder $query) use ($keyword): void {
                             $query
                                 ->where('id', $keyword)
                                 ->orWhere('name', 'LIKE', '%' . $keyword . '%')

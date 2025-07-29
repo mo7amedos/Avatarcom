@@ -4,10 +4,12 @@ namespace Botble\Base\Http\Middleware;
 
 use Botble\Base\Supports\Core;
 use Closure;
+use Exception;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class EnsureLicenseHasBeenActivated
+readonly class EnsureLicenseHasBeenActivated
 {
     public function __construct(private Core $core)
     {
@@ -19,9 +21,23 @@ class EnsureLicenseHasBeenActivated
             ! is_in_admin(true)
             || Auth::guest()
             || $this->core->isSkippedLicenseReminder()
-            || $this->core->verifyLicense(true)
         ) {
             return $next($request);
+        }
+
+        try {
+            if ($this->core->verifyLicense(true, 15)) {
+                return $next($request);
+            }
+        } catch (Exception $e) {
+            // If we can't connect to the license server, allow the request to proceed
+            if ($e instanceof ConnectionException) {
+                $this->core->skipLicenseReminder();
+
+                return $next($request);
+            }
+
+            throw $e;
         }
 
         $whitelistRoutes = [

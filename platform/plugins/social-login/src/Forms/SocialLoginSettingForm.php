@@ -26,9 +26,7 @@ class SocialLoginSettingForm extends SettingForm
         $this
             ->setSectionTitle(trans('plugins/social-login::social-login.settings.title'))
             ->setSectionDescription(trans('plugins/social-login::social-login.settings.description'))
-            ->setValidatorClass(SocialLoginSettingRequest::class);
-
-        $this
+            ->setValidatorClass(SocialLoginSettingRequest::class)
             ->add(
                 'social_login_enable',
                 OnOffCheckboxField::class,
@@ -66,6 +64,17 @@ class SocialLoginSettingForm extends SettingForm
             }
 
             $this
+                ->when($provider === 'google' && false, function (FormAbstract $form): void {
+                    $form
+                        ->add(
+                            'social_login_google_use_google_button',
+                            OnOffCheckboxField::class,
+                            CheckboxFieldOption::make()
+                                ->label(trans('plugins/social-login::social-login.settings.google.use_google_button'))
+                                ->helperText(trans('plugins/social-login::social-login.settings.google.use_google_button_helper'))
+                                ->value(setting('social_login_google_use_google_button', false))
+                        );
+                })
                 ->add(
                     'social_login_' . $provider . '_helper',
                     AlertField::class,
@@ -74,7 +83,7 @@ class SocialLoginSettingForm extends SettingForm
                             'callback' => '<code class=\'text-danger\'>' . route('auth.social.callback', $provider) . '</code>',
                         ])))
                 )
-                ->when($provider === 'facebook', function (FormAbstract $form) {
+                ->when($provider === 'facebook', function (FormAbstract $form): void {
                     $form
                         ->add(
                             'social_login_facebook_data_deletion_request_callback_url',

@@ -17,6 +17,11 @@ return [
         'parent_flag' => 'contacts.index',
     ],
     [
+        'name' => 'Custom Fields',
+        'flag' => 'contact.custom-fields',
+        'parent_flag' => 'contacts.index',
+    ],
+    [
         'name' => 'Contact',
         'flag' => 'contact.settings',
         'parent_flag' => 'settings.others',

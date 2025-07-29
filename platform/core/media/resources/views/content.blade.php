@@ -482,6 +482,15 @@
     :form-attrs="['class' => 'form-delete-items']"
 >
     <p>{{ trans('core/media::media.confirm_trash') }}</p>
+
+    <x-core::form.checkbox
+        :label="trans('core/media::media.skip_trash')"
+        :helper_text="trans('core/media::media.skip_trash_description')"
+        name="skip_trash"
+        :checked="false"
+        id="skip_trash"
+    />
+
     <div class="modal-notice"></div>
 
     <x-slot:footer>
@@ -834,6 +843,7 @@
         </x-core::table.body.cell>
         <x-core::table.body.cell>
             <span class="file-status text-__status__">__message__</span>
+            <span class="progress-percent"></span>
         </x-core::table.body.cell>
     </x-core::table.body.row>
 </x-core::custom-template>

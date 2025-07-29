@@ -5,6 +5,7 @@ namespace Botble\Ecommerce\Http\Controllers\Customers;
 use Botble\ACL\Traits\RegistersUsers;
 use Botble\Base\Facades\BaseHelper;
 use Botble\Base\Http\Controllers\BaseController;
+use Botble\Ecommerce\Events\CustomerEmailVerified;
 use Botble\Ecommerce\Facades\EcommerceHelper;
 use Botble\Ecommerce\Forms\Fronts\Auth\RegisterForm;
 use Botble\Ecommerce\Http\Requests\RegisterRequest;
@@ -31,6 +32,8 @@ class RegisterController extends BaseController
 
     public function showRegistrationForm()
     {
+        abort_unless(EcommerceHelper::isCustomerRegistrationEnabled(), 404);
+
         SeoHelper::setTitle(__('Register'));
 
         Theme::breadcrumb()->add(__('Register'), route('customer.register'));
@@ -59,6 +62,8 @@ class RegisterController extends BaseController
 
     public function register(RegisterRequest $request)
     {
+        abort_unless(EcommerceHelper::isCustomerRegistrationEnabled(), 404);
+
         do_action('customer_register_validation', $request);
 
         /**
@@ -68,7 +73,10 @@ class RegisterController extends BaseController
 
         event(new Registered($customer));
 
-        if (EcommerceHelper::isEnableEmailVerification()) {
+        if (
+            EcommerceHelper::isEnableEmailVerification() &&
+            (! EcommerceHelper::isLoginUsingPhone() || get_ecommerce_setting('keep_email_field_in_registration_form', true))
+        ) {
             $this->registered($request, $customer);
 
             $message = __('We have sent you an email to verify your email. Please check and confirm your email address!');
@@ -95,7 +103,7 @@ class RegisterController extends BaseController
     {
         return Customer::query()->create([
             'name' => BaseHelper::clean($data['name']),
-            'email' => BaseHelper::clean($data['email']),
+            'email' => BaseHelper::clean($data['email'] ?? null),
             'phone' => BaseHelper::clean($data['phone'] ?? null),
             'password' => Hash::make($data['password']),
         ]);
@@ -109,7 +117,11 @@ class RegisterController extends BaseController
     public function confirm(int|string $id, Request $request)
     {
         if (! URL::hasValidSignature($request)) {
-            abort(404);
+            return $this
+                ->httpResponse()
+                ->setError()
+                ->setNextUrl(route('customer.login'))
+                ->setMessage(trans('plugins/ecommerce::customer.email_verification_link_expired'));
         }
 
         /**
@@ -121,6 +133,8 @@ class RegisterController extends BaseController
         $customer->save();
 
         $this->guard()->login($customer);
+
+        CustomerEmailVerified::dispatch($customer);
 
         return $this
             ->httpResponse()

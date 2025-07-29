@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use Faker\Factory;
 use Faker\Generator;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Composer;
@@ -45,7 +46,7 @@ class BaseSeeder extends Seeder
             throw new FileNotFoundException('Folder not found: ' . $folderPath);
         }
 
-        $storage = Storage::disk('public');
+        $storage = $this->getMediaStorage();
 
         if ($storage->exists($folder)) {
             $storage->deleteDirectory($folder);
@@ -57,7 +58,12 @@ class BaseSeeder extends Seeder
         $files = [];
 
         foreach (File::allFiles($folderPath) as $file) {
-            $files[] = RvMedia::uploadFromPath($file, 0, $folder);
+            try {
+                $files[] = RvMedia::uploadFromPath($file, 0, $folder);
+            } catch (Throwable $exception) {
+                $this->command->warn('Error when uploading file: ' . $file->getRealPath());
+                $this->command->warn($exception->getMessage());
+            }
         }
 
         return $files;
@@ -68,7 +74,7 @@ class BaseSeeder extends Seeder
         $filePath = ($basePath ? sprintf('%s/%s', $basePath, $path) : $this->getBasePath() . '/' . $path);
         $path = str_replace(database_path('seeders/files/'), '', $filePath);
 
-        if (Storage::disk('public')->exists($path)) {
+        if ($this->getMediaStorage()->exists($path)) {
             return $path;
         }
 
@@ -147,7 +153,7 @@ class BaseSeeder extends Seeder
 
                 $process->start();
 
-                $process->wait(function ($type, $buffer) {
+                $process->wait(function ($type, $buffer): void {
                     $this->command->line($buffer);
                 });
 
@@ -220,5 +226,12 @@ class BaseSeeder extends Seeder
         foreach ($data['metadata'] as $key => $value) {
             MetaBoxFacade::saveMetaBoxData($model, $key, $value);
         }
+    }
+
+    protected function getMediaStorage(): Filesystem
+    {
+        RvMedia::setUploadPathAndURLToPublic();
+
+        return Storage::disk('public');
     }
 }

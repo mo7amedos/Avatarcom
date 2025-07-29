@@ -51,11 +51,13 @@ class User extends BaseModel implements
     protected $fillable = [
         'username',
         'email',
+        'phone',
         'first_name',
         'last_name',
         'password',
         'avatar_id',
         'permissions',
+        'last_login',
     ];
 
     protected $hidden = [
@@ -70,6 +72,7 @@ class User extends BaseModel implements
         'username' => SafeContent::class,
         'first_name' => SafeContent::class,
         'last_name' => SafeContent::class,
+        'last_login' => 'datetime',
     ];
 
     public function avatar(): BelongsTo

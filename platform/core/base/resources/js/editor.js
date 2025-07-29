@@ -39,7 +39,7 @@ class EditorManagement {
 
         const ckFileRepository = editor.plugins.get('FileRepository')
 
-        if (ckFileRepository && RV_MEDIA_URL.media_upload_from_editor) {
+        if (ckFileRepository && typeof RV_MEDIA_URL != 'undefined' && RV_MEDIA_URL.media_upload_from_editor) {
             ckFileRepository.createUploadAdapter = (loader) => {
                 return new CKEditorUploadAdapter(loader, RV_MEDIA_URL.media_upload_from_editor, editor.t)
             }
@@ -110,6 +110,7 @@ class EditorManagement {
                     'blockQuote',
                     'insertTable',
                     'mediaEmbed',
+                    'bootstrapGrid',
                     'undo',
                     'redo',
                     'findAndReplace',
@@ -322,6 +323,7 @@ class EditorManagement {
                     this.uploadImageFromEditor(e.target.files[0], callback)
                 })
             },
+            directionality: $('body').prop('dir') || 'ltr',
         }
 
         if (localStorage.getItem('themeMode') === 'dark') {

@@ -244,9 +244,9 @@ class OrderSeeder extends BaseSeeder
                 /**
                  * @var StoreLocator|null $storeLocator
                  */
-                $storeLocator = $storeLocatorsCount > 1 ? $storeLocators->random(1) : null;
+                $storeLocator = $storeLocatorsCount > 1 ? $storeLocators->random() : null;
 
-                if ($isAvailableShipping) {
+                if ($isAvailableShipping && ! Shipment::query()->where(['order_id' => $order->getKey()])->exists()) {
                     $shipment = Shipment::query()->create([
                         'status' => $shipmentStatus,
                         'order_id' => $order->getKey(),
@@ -343,7 +343,7 @@ class OrderSeeder extends BaseSeeder
                     'user_id' => 0,
                 ]);
 
-                if ($isMarketplace && $order->store->id && $order->store->customer->id) {
+                if ($isMarketplace && $order->store?->id && $order->store->customer->id) {
                     $customer = $order->store->customer;
                     $vendorInfo = $customer->vendorInfo;
 
@@ -440,10 +440,7 @@ class OrderSeeder extends BaseSeeder
             }
             $product = Product::with(['categories'])->find($id);
             $listCategories = $product->categories->pluck('id')->all();
-            $commissionSetting = CategoryCommission::query()->whereIn('product_category_id', $listCategories)->orderBy(
-                'commission_percentage',
-                'desc'
-            )->first();
+            $commissionSetting = CategoryCommission::query()->whereIn('product_category_id', $listCategories)->latest('commission_percentage')->first();
             $commissionFeePercentage = MarketplaceHelper::getSetting('fee_per_order', 0);
             if (! empty($commissionSetting)) {
                 $commissionFeePercentage = $commissionSetting->commission_percentage;

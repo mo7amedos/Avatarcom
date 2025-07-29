@@ -12,7 +12,6 @@ use Botble\Contact\Models\CustomField;
 use Botble\Shortcode\Compilers\Shortcode;
 use Botble\Shortcode\Facades\Shortcode as ShortcodeFacade;
 use Botble\Support\Services\Cache\Cache;
-use Botble\Theme\Facades\Theme;
 use Botble\Theme\FormFrontManager;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
@@ -43,7 +42,7 @@ class HookServiceProvider extends ServiceProvider
         add_filter('form_extra_fields_render', function (?string $fields = null, ?string $form = null): ?string {
             $customFields = CustomField::query()
                 ->wherePublished()->with('options')
-                ->orderBy('order')
+                ->oldest('order')
                 ->get();
 
             if ($customFields->isEmpty()) {
@@ -64,8 +63,7 @@ class HookServiceProvider extends ServiceProvider
             } else {
                 $contacts = Contact::query()
                     ->where('status', ContactStatusEnum::UNREAD)
-                    ->select(['id', 'name', 'email', 'phone', 'created_at'])
-                    ->orderByDesc('created_at')
+                    ->select(['id', 'name', 'email', 'phone', 'created_at'])->latest()
                     ->paginate(10);
 
                 $cache->put('unread-contacts', $contacts, 60 * 60 * 24);
@@ -117,25 +115,6 @@ class HookServiceProvider extends ServiceProvider
     public function form(Shortcode $shortcode): string
     {
         $view = apply_filters(CONTACT_FORM_TEMPLATE_VIEW, 'plugins/contact::forms.contact');
-
-        if (defined('THEME_OPTIONS_MODULE_SCREEN_NAME')) {
-            $this->app->booted(function () {
-                Theme::asset()
-                    ->usePath(false)
-                    ->add('contact-css', asset('vendor/core/plugins/contact/css/contact-public.css'), [], [], '1.0.0');
-
-                Theme::asset()
-                    ->container('footer')
-                    ->usePath(false)
-                    ->add(
-                        'contact-public-js',
-                        asset('vendor/core/plugins/contact/js/contact-public.js'),
-                        ['jquery'],
-                        [],
-                        '1.0.0'
-                    );
-            });
-        }
 
         if ($shortcode->view && view()->exists($shortcode->view)) {
             $view = $shortcode->view;

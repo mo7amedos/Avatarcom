@@ -2,7 +2,6 @@
 
 namespace Botble\Base\Providers;
 
-use App\Http\Middleware\VerifyCsrfToken;
 use Botble\ACL\Events\RoleAssignmentEvent;
 use Botble\ACL\Events\RoleUpdateEvent;
 use Botble\Base\Events\AdminNotificationEvent;
@@ -34,11 +33,11 @@ use Botble\Base\Listeners\UpdatedContentListener;
 use Botble\Base\Models\AdminNotification;
 use Botble\Dashboard\Events\RenderingDashboardWidgets;
 use Botble\Support\Http\Middleware\BaseMiddleware;
-use Botble\Support\Services\Cache\Cache;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Config\Repository;
 use Illuminate\Database\Events\MigrationsStarted;
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Illuminate\Routing\Events\RouteMatched;
 use Illuminate\Routing\Router;
@@ -87,7 +86,7 @@ class EventServiceProvider extends ServiceProvider
     {
         $events = $this->app['events'];
 
-        $events->listen(RouteMatched::class, function () {
+        $events->listen(RouteMatched::class, function (): void {
             /**
              * @var Router $router
              */
@@ -106,16 +105,18 @@ class EventServiceProvider extends ServiceProvider
             });
 
             add_filter(BASE_FILTER_TOP_HEADER_LAYOUT, function ($options) {
+                if (! Auth::guard()->check()) {
+                    return $options;
+                }
+
                 try {
-                    $cache = Cache::make(AdminNotification::class);
-
-                    if ($cache->has('admin-notifications-count')) {
-                        $countNotificationUnread = $cache->get('admin-notifications-count');
-                    } else {
-                        $countNotificationUnread = AdminNotification::countUnread();
-
-                        $cache->put('admin-notifications-count', $countNotificationUnread, 60 * 60 * 24);
-                    }
+                    $countNotificationUnread = cache()->remember(
+                        'admin-notifications-count-' . Auth::guard()->id(),
+                        86400,
+                        function () {
+                            return AdminNotification::countUnread();
+                        }
+                    );
                 } catch (Throwable) {
                     $countNotificationUnread = 0;
                 }
@@ -136,28 +137,27 @@ class EventServiceProvider extends ServiceProvider
             $this->disableCsrfProtection();
         });
 
-        $events->listen(MigrationsStarted::class, function () {
-            rescue(function () {
+        $events->listen(MigrationsStarted::class, function (): void {
+            rescue(function (): void {
                 if (DB::getDefaultConnection() === 'mysql') {
                     DB::statement('SET SESSION sql_require_primary_key=0');
                 }
             }, report: false);
         });
 
-        $events->listen(['cache:cleared'], function () {
+        $events->listen(['cache:cleared'], function (): void {
             $files = $this->app['files'];
 
             $files->delete(storage_path('cache_keys.json'));
 
             $files->deleteDirectory(storage_path('app/chunks'));
-            $files->deleteDirectory(storage_path('app/data-synchronize'));
             $files->deleteDirectory(storage_path('app/marketplace'));
         });
 
         $events->listen(PanelSectionsRendering::class, PushDashboardMenuToSystemPanel::class);
 
         if ($this->app->isLocal()) {
-            DB::listen(function (QueryExecuted $queryExecuted) {
+            DB::listen(function (QueryExecuted $queryExecuted): void {
                 if ($queryExecuted->time < 500) {
                     return;
                 }
@@ -166,7 +166,7 @@ class EventServiceProvider extends ServiceProvider
             });
         }
 
-        $this->app['events']->listen(RenderingDashboardWidgets::class, function () {
+        $this->app['events']->listen(RenderingDashboardWidgets::class, function (): void {
             add_filter(DASHBOARD_FILTER_ADMIN_NOTIFICATIONS, function (?string $html) {
 
                 $size = File::size(storage_path('framework/cache'));
@@ -194,7 +194,7 @@ class EventServiceProvider extends ServiceProvider
             || $config->get('core.base.general.disable_verify_csrf_token', false)
             || ($this->app->environment('production') && AdminHelper::isInAdmin())
         ) {
-            $this->app->instance(VerifyCsrfToken::class, new BaseMiddleware());
+            $this->app->instance(ValidateCsrfToken::class, new BaseMiddleware());
         }
     }
 }

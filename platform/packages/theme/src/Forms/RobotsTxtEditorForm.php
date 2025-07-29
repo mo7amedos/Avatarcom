@@ -22,7 +22,7 @@ class RobotsTxtEditorForm extends FormAbstract
             ->setUrl(route('theme.robots-txt.post'))
             ->setValidatorClass(RobotsTxtRequest::class)
             ->setActionButtons(view('core/base::forms.partials.form-actions', ['onlySave' => true])->render())
-            ->when(! $isRobotsTxtWritable, function (FormAbstract $form) use ($path) {
+            ->when(! $isRobotsTxtWritable, function (FormAbstract $form) use ($path): void {
                 $form->add(
                     'robots_txt_not_writable',
                     AlertField::class,

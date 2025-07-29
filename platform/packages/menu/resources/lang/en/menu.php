@@ -31,4 +31,5 @@ return [
     'items' => 'Items',
     'locations' => 'Locations',
     'main_navigation' => 'Main Navigation',
+    'drag_drop_info' => 'Rearrange menu items by dragging and dropping them to change their order or nest them as submenus.',
 ];

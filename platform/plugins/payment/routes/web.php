@@ -4,15 +4,15 @@ use Botble\Base\Facades\AdminHelper;
 use Botble\Payment\Http\Controllers\PaymentLogController;
 use Illuminate\Support\Facades\Route;
 
-AdminHelper::registerRoutes(function () {
-    Route::group(['prefix' => 'payments/logs', 'as' => 'payments.logs.', 'permission' => 'payments.logs'], function () {
+AdminHelper::registerRoutes(function (): void {
+    Route::group(['prefix' => 'payments/logs', 'as' => 'payments.logs.', 'permission' => 'payments.logs'], function (): void {
         Route::match(['GET', 'POST'], '', [PaymentLogController::class, 'index'])->name('index');
         Route::get('{paymentLog}', [PaymentLogController::class, 'show'])->name('show');
         Route::delete('{paymentLog}', [PaymentLogController::class, 'destroy'])->name('destroy');
     });
 
-    Route::group(['namespace' => 'Botble\Payment\Http\Controllers'], function () {
-        Route::group(['prefix' => 'payments/methods', 'permission' => 'payments.settings'], function () {
+    Route::group(['namespace' => 'Botble\Payment\Http\Controllers'], function (): void {
+        Route::group(['prefix' => 'payments/methods', 'permission' => 'payments.settings'], function (): void {
             Route::get('', [
                 'as' => 'payments.methods',
                 'uses' => 'PaymentController@methods',
@@ -37,7 +37,7 @@ AdminHelper::registerRoutes(function () {
             ]);
         });
 
-        Route::group(['prefix' => 'payments/transactions', 'as' => 'payment.'], function () {
+        Route::group(['prefix' => 'payments/transactions', 'as' => 'payment.'], function (): void {
             Route::resource('', 'PaymentController')->parameters(['' => 'payment'])->only(['index', 'destroy']);
 
             Route::get('{payment}', [

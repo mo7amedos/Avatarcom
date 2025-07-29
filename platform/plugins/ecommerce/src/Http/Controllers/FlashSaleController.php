@@ -21,9 +21,7 @@ class FlashSaleController extends BaseController
     public function __construct()
     {
         $this->middleware(function (Request $request, Closure $next) {
-            if (! FlashSaleFacade::isEnabled()) {
-                abort(404);
-            }
+            abort_unless(FlashSaleFacade::isEnabled(), 404);
 
             return $next($request);
         });

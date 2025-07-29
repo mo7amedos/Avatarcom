@@ -8,7 +8,7 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasTable('ec_customer_used_coupons')) {
-            Schema::create('ec_customer_used_coupons', function (Blueprint $table) {
+            Schema::create('ec_customer_used_coupons', function (Blueprint $table): void {
                 $table->foreignId('discount_id');
                 $table->foreignId('customer_id');
                 $table->primary(['discount_id', 'customer_id']);

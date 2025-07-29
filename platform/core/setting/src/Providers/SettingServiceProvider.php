@@ -23,7 +23,6 @@ use Botble\Setting\Supports\DatabaseSettingStore;
 use Botble\Setting\Supports\SettingStore;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\AliasLoader;
-use Illuminate\Routing\Events\RouteMatched;
 
 class SettingServiceProvider extends ServiceProvider
 {
@@ -63,7 +62,7 @@ class SettingServiceProvider extends ServiceProvider
             ->loadMigrations()
             ->publishAssets();
 
-        DashboardMenu::default()->beforeRetrieving(function () {
+        DashboardMenu::default()->beforeRetrieving(function (): void {
             DashboardMenu::make()
                 ->registerItem(
                     DashboardMenuItem::make()
@@ -78,12 +77,12 @@ class SettingServiceProvider extends ServiceProvider
 
         $events = $this->app['events'];
 
-        $events->listen(RouteMatched::class, function () {
+        $this->app->booted(function (): void {
             EmailHandler::addTemplateSettings('base', config('core.setting.email', []), 'core');
         });
 
         PanelSectionManager::default()
-            ->beforeRendering(function () {
+            ->beforeRendering(function (): void {
                 PanelSectionManager::setGroupName(trans('core/setting::setting.title'))
                     ->register([
                         SettingCommonPanelSection::class,
@@ -91,7 +90,7 @@ class SettingServiceProvider extends ServiceProvider
                     ]);
             });
 
-        PanelSectionManager::group('system')->beforeRendering(function () {
+        PanelSectionManager::group('system')->beforeRendering(function (): void {
             PanelSectionManager::registerItem(
                 SystemPanelSection::class,
                 fn () => PanelSectionItem::make('cronjob')
@@ -110,8 +109,8 @@ class SettingServiceProvider extends ServiceProvider
                 CronJobTestCommand::class,
             ]);
 
-            $this->app->afterResolving(Schedule::class, function (Schedule $schedule) {
-                rescue(function () use ($schedule) {
+            $this->app->afterResolving(Schedule::class, function (Schedule $schedule): void {
+                rescue(function () use ($schedule): void {
                     $schedule
                         ->command(CronJobTestCommand::class)
                         ->everyMinute();

@@ -19,6 +19,7 @@ class City extends BaseModel
         'state_id',
         'country_id',
         'record_id',
+        'zip_code',
         'slug',
         'image',
         'order',
@@ -35,7 +36,7 @@ class City extends BaseModel
 
     protected static function booted(): void
     {
-        self::saving(function (self $model) {
+        self::saving(function (self $model): void {
             $model->slug = self::createSlug($model->slug ?: $model->name, $model->getKey());
         });
     }

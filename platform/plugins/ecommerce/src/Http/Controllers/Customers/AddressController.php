@@ -76,8 +76,9 @@ class AddressController extends BaseController
     public function edit(Address $address)
     {
         return AddressForm::createFromModel($address)
-            ->setUrl(route('customers.addresses.edit.update', $address->getKey()))
+            ->setUrl(route('customers.addresses.update', $address->getKey()))
             ->add('customer_id', 'hidden', ['value' => $address->customer_id])
+            ->remove('submit')
             ->renderForm();
     }
 }

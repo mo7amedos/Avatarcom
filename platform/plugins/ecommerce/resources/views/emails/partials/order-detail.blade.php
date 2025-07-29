@@ -30,6 +30,10 @@
                 @if ($attributes = Arr::get($orderProduct->options, 'attributes'))
                     <span class="bb-text-muted">{{ $attributes }}</span>
                 @endif
+
+                @if ($orderProduct->product_options_implode)
+                    <span class="bb-text-muted">{{ $orderProduct->product_options_implode }}</span>
+                @endif
             </td>
             <td class="bb-text-center">x {{ $orderProduct->qty }}</td>
             <td class="bb-text-right">{{ format_price($orderProduct->price) }}</td>
@@ -62,6 +66,13 @@
                 <tr>
                     <td colspan="2" class="bb-text-right">{{ trans('plugins/ecommerce::products.form.discount') }}</td>
                     <td colspan="2" class="bb-text-right">{{ format_price($order->discount_amount) }}</td>
+                </tr>
+            @endif
+
+            @if ((float)$order->payment_fee)
+                <tr>
+                    <td colspan="2" class="bb-text-right">{{ trans('plugins/payment::payment.payment_fee') }}</td>
+                    <td colspan="2" class="bb-text-right">{{ format_price($order->payment_fee) }}</td>
                 </tr>
             @endif
             <tr>

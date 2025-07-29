@@ -112,7 +112,7 @@ class ChunkStorage
 
         // Filter the collection with files that are not correct chunk file
         // Loop all current files and filter them by the time
-        $files->each(function ($file) use ($timeToCheck, $collection) {
+        $files->each(function ($file) use ($timeToCheck, $collection): void {
             // get the last modified time to check if the chunk is not new
             try {
                 $modified = $this->disk()->lastModified($file);

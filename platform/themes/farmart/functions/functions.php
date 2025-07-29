@@ -10,10 +10,10 @@ use Botble\Ecommerce\Supports\FlashSaleSupport;
 use Botble\Marketplace\Facades\MarketplaceHelper;
 use Botble\Marketplace\Forms\StoreForm;
 use Botble\Marketplace\Forms\VendorStoreForm;
+use Botble\Marketplace\Models\Store;
 use Botble\Media\Facades\RvMedia;
 use Botble\Menu\Facades\Menu;
 use Botble\Newsletter\Facades\Newsletter;
-use Botble\SocialLogin\Facades\SocialService;
 use Botble\Theme\Facades\Theme;
 use Botble\Theme\Supports\ThemeSupport;
 use Botble\Theme\Typography\TypographyItem;
@@ -42,12 +42,13 @@ function available_socials_store(): array
     ];
 }
 
-app()->booted(function () {
+app()->booted(function (): void {
     ThemeSupport::registerSocialLinks();
     ThemeSupport::registerSocialSharing();
     ThemeSupport::registerSiteLogoHeight(45);
     ThemeSupport::registerSiteCopyright();
     ThemeSupport::registerDateFormatOption();
+    ThemeSupport::registerToastNotification();
 
     if (is_plugin_active('newsletter')) {
         Newsletter::registerNewsletterPopup();
@@ -55,6 +56,7 @@ app()->booted(function () {
 
     if (is_plugin_active('ecommerce')) {
         EcommerceHelper::registerProductVideo();
+        EcommerceHelper::registerProductGalleryOptions();
         EcommerceHelper::registerThemeAssets();
     }
 
@@ -104,8 +106,8 @@ app()->booted(function () {
         FlashSale::addShowSaleCountLeftSetting();
     }
 
-    if (is_plugin_active('marketplace')) {
-        StoreForm::extend(function (StoreForm $form) {
+    if (is_plugin_active('ecommerce') && is_plugin_active('marketplace')) {
+        StoreForm::extend(function (StoreForm $form): void {
             $form->addAfter('cover_image', 'background', MediaImageField::class, [
                 'label' => __('Background'),
                 'metadata' => true,
@@ -113,14 +115,17 @@ app()->booted(function () {
             ]);
         });
 
-        VendorStoreForm::extend(function (VendorStoreForm $form) {
+        VendorStoreForm::extend(function (VendorStoreForm $form): void {
             $form
                 ->addAfter('cover_image', 'background', MediaImageField::class, [
                     'label' => __('Background'),
                     'metadata' => true,
                     'colspan' => 2,
                 ])
-                ->when(! MarketplaceHelper::hideStoreSocialLinks(), function (VendorStoreForm $form) {
+                ->when(! MarketplaceHelper::hideStoreSocialLinks(), function (VendorStoreForm $form): void {
+                    /**
+                     * @var Store $store
+                     */
                     $store = $form->getModel();
 
                     $background = $store->getMetaData('background', true);
@@ -135,7 +140,7 @@ app()->booted(function () {
                 });
         });
 
-        VendorStoreForm::afterSaving(function (VendorStoreForm $form) {
+        VendorStoreForm::afterSaving(function (VendorStoreForm $form): void {
             $request = $form->getRequest();
 
             $store = $form->getModel();
@@ -164,7 +169,7 @@ app()->booted(function () {
         }, 230);
     }
 
-    app('events')->listen(RouteMatched::class, function () {
+    app('events')->listen(RouteMatched::class, function (): void {
         EmailHandler::addTemplateSettings(Theme::getThemeName(), [
             'name' => __('Theme emails'),
             'description' => __('Config email templates for theme'),
@@ -190,15 +195,6 @@ app()->booted(function () {
             ],
         ], 'themes');
     });
-
-    if (is_plugin_active('social-login')) {
-        $data = SocialService::getModule('customer');
-        if ($data) {
-            $data['view'] = Theme::getThemeNamespace('partials.social-login-options');
-            $data['use_css'] = false;
-            SocialService::registerModule($data);
-        }
-    }
 });
 
 if (! function_exists('theme_get_autoplay_speed_options')) {

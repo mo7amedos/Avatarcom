@@ -48,7 +48,7 @@ class GeneralSettingForm extends SettingForm
             ])
             ->when(
                 apply_filters(BASE_FILTER_AFTER_SETTING_CONTENT, null),
-                function (GeneralSettingForm $form, $settingContent) {
+                function (GeneralSettingForm $form, $settingContent): void {
                     $form
                         ->add(
                             'html',

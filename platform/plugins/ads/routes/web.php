@@ -4,13 +4,13 @@ use Botble\Base\Facades\AdminHelper;
 use Botble\Theme\Facades\Theme;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['namespace' => 'Botble\Ads\Http\Controllers'], function () {
-    AdminHelper::registerRoutes(function () {
-        Route::group(['prefix' => 'ads', 'as' => 'ads.'], function () {
+Route::group(['namespace' => 'Botble\Ads\Http\Controllers'], function (): void {
+    AdminHelper::registerRoutes(function (): void {
+        Route::group(['prefix' => 'ads', 'as' => 'ads.'], function (): void {
             Route::resource('', 'AdsController')->parameters(['' => 'ads']);
         });
 
-        Route::group(['prefix' => 'settings'], function () {
+        Route::group(['prefix' => 'settings'], function (): void {
             Route::get('ads', [
                 'as' => 'ads.settings',
                 'uses' => 'Settings\AdsSettingController@edit',
@@ -25,7 +25,7 @@ Route::group(['namespace' => 'Botble\Ads\Http\Controllers'], function () {
     });
 
     if (defined('THEME_MODULE_SCREEN_NAME')) {
-        Theme::registerRoutes(function () {
+        Theme::registerRoutes(function (): void {
             Route::get('ads-click/{key}', [
                 'as' => 'public.ads-click',
                 'uses' => 'PublicController@getAdsClick',

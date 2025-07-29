@@ -35,9 +35,7 @@ class EmailTemplateController extends SettingController
 
         $routeParams = [$type, $module, $template];
 
-        if (count($routeParams) !== 3) {
-            abort(404);
-        }
+        abort_if(count($routeParams) !== 3, 404);
 
         try {
             $updateUrl = route('settings.email.template.update', $routeParams);

@@ -45,14 +45,22 @@ class ContactRequest extends Request
             'phone' => ['nullable', new PhoneNumberRule()],
             'address' => ['nullable', 'string', 'max:500'],
             'subject' => ['nullable', 'string', 'max:500'],
-            'agree_terms_and_policy' => ['sometimes', 'accepted:1'],
         ];
 
+        if (setting('contact_form_show_terms_checkbox', true)) {
+            $rules['agree_terms_and_policy'] = ['required', 'accepted:1'];
+        }
+
         try {
+            // Get display_fields and required_fields from request
+            // These could be strings or arrays depending on how the form is submitted
+            $displayFields = $this->input('display_fields');
+            $requiredFields = $this->input('required_fields');
+
             $rules = $this->applyRules(
                 $rules,
-                $this->request->getString('display_fields'),
-                $this->request->getString('required_fields')
+                $displayFields,
+                $requiredFields
             );
         } catch (Throwable $exception) {
             BaseHelper::logError($exception);
@@ -67,7 +75,9 @@ class ContactRequest extends Request
         foreach ($customFields as $customField) {
             $customFieldRules = [$customField->required ? 'required' : 'nullable'];
 
-            $rules["contact_custom_fields.$customField->id"] = match ($customField->type->getValue()) {
+            $fieldKey = "contact_custom_fields.$customField->id";
+
+            $rules[$fieldKey] = match ($customField->type->getValue()) {
                 CustomFieldType::TEXT, CustomFieldType::DROPDOWN, CustomFieldType::RADIO => [...$customFieldRules, 'string', 'max:255'],
                 CustomFieldType::TEXTAREA => [...$customFieldRules, 'string', 'max:1000'],
                 CustomFieldType::NUMBER => [...$customFieldRules, 'numeric'],
@@ -86,6 +96,10 @@ class ContactRequest extends Request
             'email' => __('Email'),
             'phone' => __('Phone'),
             'content' => __('Content'),
+            'subject' => __('Subject'),
+            'address' => __('Address'),
+            'agree_terms_and_policy' => __('Agree terms and policy'),
+            'contact_custom_fields' => __('Custom Fields'),
         ];
 
         $customFields = $this->getCustomFields();
@@ -95,6 +109,13 @@ class ContactRequest extends Request
         }
 
         return $attributes;
+    }
+
+    public function messages(): array
+    {
+        return [
+            'agree_terms_and_policy.accepted' => __('You must agree to the terms and policy.'),
+        ];
     }
 
     protected function getCustomFields(): Collection
@@ -155,13 +176,33 @@ class ContactRequest extends Request
 
     protected function alwaysMandatoryFields(): array
     {
-        return ['name', 'content'];
+        $mandatoryFields = ['name', 'content'];
+
+        if (setting('contact_form_show_terms_checkbox', true)) {
+            $mandatoryFields[] = 'agree_terms_and_policy';
+        }
+
+        return $mandatoryFields;
     }
 
-    public function applyRules(array $rules, ?string $displayFields, ?string $mandatoryFields): array
+    public function applyRules(array $rules, $displayFields = null, $mandatoryFields = null): array
     {
-        $this->mandatoryFields(array_filter(explode(',', (string) $mandatoryFields)));
-        $this->displayFields(array_filter(explode(',', (string) $displayFields)));
+        // Handle both string and array inputs for fields
+        if (is_array($mandatoryFields)) {
+            $this->mandatoryFields(array_filter($mandatoryFields));
+        } elseif (is_string($mandatoryFields) && $mandatoryFields !== '') {
+            $this->mandatoryFields(array_filter(explode(',', $mandatoryFields)));
+        } else {
+            $this->mandatoryFields([]);
+        }
+
+        if (is_array($displayFields)) {
+            $this->displayFields(array_filter($displayFields));
+        } elseif (is_string($displayFields) && $displayFields !== '') {
+            $this->displayFields(array_filter(explode(',', $displayFields)));
+        } else {
+            $this->displayFields([]);
+        }
 
         $rules = $this->filtersByDisplayFields($rules);
 

@@ -2,8 +2,8 @@
 
 namespace Botble\Marketplace\Tables;
 
-use Botble\Base\Enums\BaseStatusEnum;
 use Botble\Base\Facades\Html;
+use Botble\Marketplace\Enums\StoreStatusEnum;
 use Botble\Marketplace\Models\Store;
 use Botble\Table\Abstracts\TableAbstract;
 use Botble\Table\Actions\Action;
@@ -129,8 +129,8 @@ class StoreTable extends TableAbstract
             'status' => [
                 'title' => trans('core/base::tables.status'),
                 'type' => 'select',
-                'choices' => BaseStatusEnum::labels(),
-                'validate' => 'required|in:' . implode(',', BaseStatusEnum::values()),
+                'choices' => StoreStatusEnum::labels(),
+                'validate' => 'required|in:' . implode(',', StoreStatusEnum::values()),
             ],
             'created_at' => [
                 'title' => trans('core/base::tables.created_at'),

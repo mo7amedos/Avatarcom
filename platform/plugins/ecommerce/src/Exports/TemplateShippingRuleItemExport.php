@@ -82,7 +82,7 @@ class TemplateShippingRuleItemExport implements
         $results = [];
 
         $shippingRule = ShippingRule::query()->where('type', ShippingRuleTypeEnum::BASED_ON_ZIPCODE)
-            ->whereHas('shipping', function (Builder $query) use ($countryCode) {
+            ->whereHas('shipping', function (Builder $query) use ($countryCode): void {
                 $query->where('country', $countryCode);
             })
             ->first();
@@ -118,10 +118,10 @@ class TemplateShippingRuleItemExport implements
                     if ($this->isLoadFromLocation) {
                         $country = Country::query()->where('code', $shippingRule->shipping->country)
                             ->with([
-                                'states' => function ($query) {
+                                'states' => function ($query): void {
                                     $query->limit(3);
                                 },
-                                'states.cities' => function ($query) {
+                                'states.cities' => function ($query): void {
                                     $query->limit(3);
                                 },
                             ])
@@ -199,7 +199,7 @@ class TemplateShippingRuleItemExport implements
     public function registerEvents(): array
     {
         return [
-            AfterSheet::class => function (AfterSheet $event) {
+            AfterSheet::class => function (AfterSheet $event): void {
                 $isEnabledColumn = 'G';
                 $adjustmentPriceColumn = 'F';
                 $typeColumn = 'H';
@@ -256,7 +256,7 @@ class TemplateShippingRuleItemExport implements
         return $this->getDropDownListValidation(ShippingRuleTypeEnum::keysAllowRuleItems());
     }
 
-    protected function getDecimalValidation(float $min = 0, float $max = null): DataValidation
+    protected function getDecimalValidation(float $min = 0, ?float $max = null): DataValidation
     {
         // set dropdown list for first data row
         $validation = new DataValidation();

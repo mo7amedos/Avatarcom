@@ -32,6 +32,10 @@ class SocialLoginSettingController extends SettingController
 
             $data["{$prefix}enable"] = $request->input("{$prefix}enable");
 
+            if ($provider === 'google') {
+                $data["{$prefix}use_google_button"] = $request->boolean("{$prefix}use_google_button");
+            }
+
             foreach ($item['data'] as $input) {
                 if (
                     ! in_array(app()->environment(), SocialService::getEnvDisableData()) ||

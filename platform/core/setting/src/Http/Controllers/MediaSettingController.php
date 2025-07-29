@@ -25,8 +25,10 @@ class MediaSettingController extends SettingController
 
     public function update(MediaSettingRequest $request): BaseHttpResponse
     {
+        $data = $request->validated();
+
         $this->saveSettings([
-            ...$request->validated(),
+            ...$data,
             'media_folders_can_add_watermark' => $request->boolean('media_folders_can_add_watermark_all')
                 ? []
                 : $request->input('media_folders_can_add_watermark', []),
@@ -41,9 +43,9 @@ class MediaSettingController extends SettingController
     public function generateThumbnails(Request $request): BaseHttpResponse
     {
         $request->validate([
-            'total' => ['required', 'numeric'],
-            'offset' => ['required', 'numeric'],
-            'limit' => ['required', 'numeric'],
+            'total' => ['required', 'numeric', 'min:0'],
+            'offset' => ['required', 'numeric', 'min:0'],
+            'limit' => ['required', 'numeric', 'min:1'],
         ]);
 
         BaseHelper::maximumExecutionTimeAndMemoryLimit();
@@ -80,7 +82,11 @@ class MediaSettingController extends SettingController
             return $this
                 ->httpResponse()
                 ->setError()
-                ->setMessage(trans('core/setting::setting.generate_thumbnails_error', ['count' => count($errors)]));
+                ->setMessage(trans('core/setting::setting.generate_thumbnails_error', ['count' => count($errors)]))
+                ->setData([
+                    'total' => $totalFiles,
+                    'next' => $offset + $limit,
+                ]);
         }
 
         return $this

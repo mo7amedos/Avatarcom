@@ -2,7 +2,6 @@
 
 namespace Botble\Ecommerce\Http\Controllers;
 
-use Botble\Base\Events\BeforeEditContentEvent;
 use Botble\Base\Events\CreatedContentEvent;
 use Botble\Base\Events\DeletedContentEvent;
 use Botble\Base\Events\UpdatedContentEvent;
@@ -101,8 +100,6 @@ class ShippingRuleItemController extends BaseController
          * @var ShippingRuleItem $item
          */
         $item = ShippingRuleItem::query()->findOrFail($id);
-
-        event(new BeforeEditContentEvent($request, $item));
 
         $title = trans('core/base::forms.edit_item', ['name' => $item->name_item]);
 
@@ -280,9 +277,8 @@ class ShippingRuleItemController extends BaseController
             $items = $items->orderBy($orderBy, $orderDir);
         }
         if (! in_array($orderBy, ['created_at', 'id'])) {
-            $items = $items
-                ->orderByDesc('created_at')
-                ->orderByDesc('id');
+            $items = $items->latest()
+                ->latest('id');
         }
 
         $items = $items->paginate($perPage ?: 12);

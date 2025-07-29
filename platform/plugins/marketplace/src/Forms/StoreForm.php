@@ -123,7 +123,7 @@ class StoreForm extends FormAbstract
                     ->all(),
                 'colspan' => 3,
             ])
-            ->when(! MarketplaceHelper::hideStoreSocialLinks(), function () {
+            ->when(! MarketplaceHelper::hideStoreSocialLinks(), function (): void {
                 $this
                     ->add('extended_info_content', HtmlField::class, [
                         'html' => view('plugins/marketplace::partials.extra-content', ['model' => $this->getModel()]),

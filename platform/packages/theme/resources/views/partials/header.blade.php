@@ -1,7 +1,10 @@
 {!! SeoHelper::render() !!}
 
 @if ($favicon = theme_option('favicon'))
-    {{ Html::favicon(RvMedia::getImageUrl($favicon)) }}
+    {{ Html::favicon(
+        RvMedia::getImageUrl($favicon),
+        ['type' => theme_option('favicon_type', 'image/x-icon')]
+    ) }}
 @endif
 
 @if (Theme::has('headerMeta'))
@@ -9,15 +12,6 @@
 @endif
 
 {!! apply_filters('theme_front_meta', null) !!}
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "{{ rescue(fn() => SeoHelper::openGraph()->getProperty('site_name')) }}",
-  "url": "{{ url('') }}"
-}
-</script>
 
 {!! Theme::typography()->renderCssVariables() !!}
 

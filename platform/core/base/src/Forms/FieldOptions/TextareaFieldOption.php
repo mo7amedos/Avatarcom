@@ -7,7 +7,7 @@ class TextareaFieldOption extends TextFieldOption
     public static function make(): static
     {
         return parent::make()
-            ->maxLength(1000)
+            ->maxLength(10000)
             ->rows(3);
     }
 

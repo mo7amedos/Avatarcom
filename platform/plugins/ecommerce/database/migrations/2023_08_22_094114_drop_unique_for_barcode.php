@@ -8,7 +8,7 @@ return new class () extends Migration {
     public function up(): void
     {
         try {
-            Schema::table('ec_products', function (Blueprint $table) {
+            Schema::table('ec_products', function (Blueprint $table): void {
                 $table->dropUnique('ec_products_barcode_unique');
             });
         } catch (Throwable) {
@@ -18,14 +18,14 @@ return new class () extends Migration {
             return;
         }
 
-        Schema::table('ec_products', function (Blueprint $table) {
+        Schema::table('ec_products', function (Blueprint $table): void {
             $table->string('barcode', 50)->nullable()->change();
         });
     }
 
     public function down(): void
     {
-        Schema::table('ec_products', function (Blueprint $table) {
+        Schema::table('ec_products', function (Blueprint $table): void {
             $table->string('barcode', 50)->unique()->nullable()->change();
         });
     }

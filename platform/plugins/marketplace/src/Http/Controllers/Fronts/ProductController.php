@@ -6,6 +6,7 @@ use Botble\Base\Enums\BaseStatusEnum;
 use Botble\Base\Events\CreatedContentEvent;
 use Botble\Base\Facades\EmailHandler;
 use Botble\Base\Http\Controllers\BaseController;
+use Botble\Base\Rules\MediaImageRule;
 use Botble\Ecommerce\Enums\ProductTypeEnum;
 use Botble\Ecommerce\Facades\EcommerceHelper;
 use Botble\Ecommerce\Http\Requests\DeleteProductVariationsRequest;
@@ -27,7 +28,9 @@ use Botble\Marketplace\Facades\MarketplaceHelper;
 use Botble\Marketplace\Forms\ProductForm;
 use Botble\Marketplace\Tables\ProductTable;
 use Botble\Marketplace\Tables\ProductVariationTable;
+use Botble\Media\Facades\RvMedia;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 
 class ProductController extends BaseController
 {
@@ -45,7 +48,7 @@ class ProductController extends BaseController
         return $table->renderTable();
     }
 
-    public function create(Request $request)
+    public function create()
     {
         if (EcommerceHelper::getCurrentCreationContextProductType() == ProductTypeEnum::DIGITAL) {
             $this->pageTitle(trans('plugins/ecommerce::products.create_product_type.digital'));
@@ -64,6 +67,8 @@ class ProductController extends BaseController
         StoreAttributesOfProductService $storeAttributesOfProductService,
         StoreProductTagService $storeProductTagService
     ) {
+        $request->merge(['video_media' => $this->uploadVideoMedia($request)]);
+
         $request = $this->processRequestData($request);
 
         $product = new Product();
@@ -83,7 +88,7 @@ class ProductController extends BaseController
 
         $product = $service->execute($request, $product);
 
-        $product->store_id = auth('customer')->user()->store->id;
+        $product->store_id = auth('customer')->user()->store?->id;
         $product->created_by_id = auth('customer')->id();
         $product->created_by_type = Customer::class;
         $product->save();
@@ -153,9 +158,7 @@ class ProductController extends BaseController
     {
         $product = Product::query()->findOrFail($id);
 
-        if ($product->is_variation || $product->store->id != auth('customer')->user()->store->id) {
-            abort(404);
-        }
+        abort_if($product->is_variation || $product->store?->id != auth('customer')->user()->store?->id, 404);
 
         $this->pageTitle(trans('plugins/ecommerce::products.edit', ['name' => $product->name]));
 
@@ -173,13 +176,13 @@ class ProductController extends BaseController
          */
         $product = Product::query()->findOrFail($id);
 
-        if ($product->is_variation || $product->store->id != auth('customer')->user()->store->id) {
-            abort(404);
-        }
+        abort_if($product->is_variation || $product->store?->id != auth('customer')->user()->store?->id, 404);
+
+        $request->merge(['video_media' => $this->uploadVideoMedia($request)]);
 
         $request = $this->processRequestData($request);
 
-        $product->store_id = auth('customer')->user()->store->id;
+        $product->store_id = auth('customer')->user()->store?->id;
 
         $product = $service->execute($request, $product);
         $storeProductTagService->execute($request, $product);
@@ -250,6 +253,16 @@ class ProductController extends BaseController
             'content' => $shortcodeCompiler->strip($request->input('content'), $shortcodeCompiler->whitelistShortcodes()),
             'images' => array_filter((array) $request->input('images', [])),
         ]);
+
+        $customer = auth('customer')->user();
+
+        if ($request->hasFile('image_input')) {
+            $result = RvMedia::handleUpload($request->file('image_input'), 0, $customer->upload_folder);
+            if (! $result['error']) {
+                $file = $result['data'];
+                $request->merge(['image' => $file->url]);
+            }
+        }
 
         $except = [
             'is_featured',
@@ -348,9 +361,7 @@ class ProductController extends BaseController
 
         $product = $variation->configurableProduct;
 
-        if (! $product || $product->original_product->store_id != auth('customer')->user()->store->id) {
-            abort(404);
-        }
+        abort_if(! $product || $product->original_product->store_id != auth('customer')->user()->store?->id, 404);
 
         return $this->baseDeleteVersionItem($variationId);
     }
@@ -380,9 +391,7 @@ class ProductController extends BaseController
         foreach ($variations as $variation) {
             $product = $variation->product;
 
-            if (! $product || $product->original_product->store_id != auth('customer')->user()->store->id) {
-                abort(404);
-            }
+            abort_if(! $product || $product->original_product->store_id != auth('customer')->user()->store?->id, 404);
         }
 
         return $this->baseDeleteVersions($request, $this->httpResponse());
@@ -395,7 +404,7 @@ class ProductController extends BaseController
             ->where('is_variation', 0)
             ->where('id', '!=', $request->input('product_id', 0))
             ->where('name', 'LIKE', '%' . $request->input('keyword') . '%')
-            ->where('store_id', auth('customer')->user()->store->id)
+            ->where('store_id', auth('customer')->user()->store?->id)
             ->select([
                 'id',
                 'name',
@@ -434,7 +443,7 @@ class ProductController extends BaseController
         $product = Product::query()
             ->where([
                 'is_variation' => 0,
-                'store_id' => auth('customer')->user()->store->id,
+                'store_id' => auth('customer')->user()->store?->id,
             ])
             ->findOrFail($id);
 
@@ -451,9 +460,7 @@ class ProductController extends BaseController
     {
         $variation = ProductVariation::query()->findOrFail($id);
 
-        if ($variation->configurableProduct->store_id != auth('customer')->user()->store->id) {
-            abort(404);
-        }
+        abort_if($variation->configurableProduct->store_id != auth('customer')->user()->store?->id, 404);
 
         ProductVariation::query()
             ->where('configurable_product_id', $variation->configurable_product_id)
@@ -467,5 +474,49 @@ class ProductController extends BaseController
         return $this
             ->httpResponse()
             ->withUpdatedSuccessMessage();
+    }
+
+    protected function uploadVideoMedia(ProductRequest $request)
+    {
+        $imageRules = [];
+
+        foreach ($request->allFiles() as $key => $file) {
+            if (! str_starts_with($key, 'video_media___')) {
+                continue;
+            }
+
+            $imageRules[$key] = ['nullable', new MediaImageRule()];
+        }
+
+        if ($imageRules) {
+            $request->validate($imageRules);
+        }
+
+        /**
+         * @var Customer $customer
+         */
+        $customer = auth('customer')->user();
+
+        $uploadFolder = $customer->upload_folder;
+
+        $videoMedias = $request->input('video_media');
+
+        foreach ($request->allFiles() as $key => $file) {
+            if (! str_starts_with($key, 'video_media___')) {
+                continue;
+            }
+
+            $result = RvMedia::handleUpload($file, 0, $uploadFolder);
+
+            if (! $result['error']) {
+                $key = str_replace('video_media___', '', $key);
+                $key = str_replace('_input', '', $key);
+                $key = str_replace('___', '.', $key);
+
+                Arr::set($videoMedias, $key, $result['data']->url);
+            }
+        }
+
+        return $videoMedias;
     }
 }

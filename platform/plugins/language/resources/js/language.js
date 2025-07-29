@@ -41,7 +41,10 @@ class LanguageManagement {
             let flag = $('#flag_list').val()
             let order = $('#lang_order').val()
             let isRTL = $('input[name=lang_rtl]:checked').val()
-            LanguageManagement.createOrUpdateLanguage(id, name, locale, code, flag, order, isRTL, 1)
+
+            const $button = $(event.currentTarget)
+
+            LanguageManagement.createOrUpdateLanguage(id, name, locale, code, flag, order, isRTL, 1, $button)
         })
 
         languageTable.on('click', '.deleteDialog', (event) => {
@@ -115,8 +118,8 @@ class LanguageManagement {
 
                     $('#lang_id').val(language.lang_id)
                     $('#lang_name').val(language.lang_name)
-                    $('#lang_locale').val(language.lang_locale)
-                    $('#lang_code').val(language.lang_code)
+                    $('#lang_locale').val(language.lang_locale).trigger('change')
+                    $('#lang_code').val(language.lang_code).trigger('change')
                     $('#flag_list').val(language.lang_flag).trigger('change')
                     $(`input[name=lang_rtl][value="${language.lang_is_rtl ? 1 : 0}"]`).prop('checked', true)
                     $('#lang_order').val(language.lang_order)
@@ -168,8 +171,12 @@ class LanguageManagement {
         )
     }
 
-    static createOrUpdateLanguage(id, name, locale, code, flag, order, isRTL, edit) {
-        const $buttonSubmit = $('#btn-language-submit')
+    static createOrUpdateLanguage(id, name, locale, code, flag, order, isRTL, edit, button = null) {
+        let $buttonSubmit = $('#btn-language-submit')
+
+        if (button) {
+            $buttonSubmit = button;
+        }
 
         let url = $buttonSubmit.data('store-url')
 
@@ -203,8 +210,8 @@ class LanguageManagement {
             .finally(() => {
                 $('#language_id').val('').trigger('change')
                 $('#lang_name').val('')
-                $('#lang_locale').val('')
-                $('#lang_code').val('')
+                $('#lang_locale').val('').trigger('change')
+                $('#lang_code').val('').trigger('change')
                 $('input[name=lang_rtl][value="0"]').prop('checked', true)
                 $('#flag_list').val('').trigger('change')
 

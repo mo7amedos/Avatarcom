@@ -30,7 +30,11 @@ class ApiLayerExchangeRateService implements ExchangeRateInterface
             ->get();
 
         foreach ($currencies as $currency) {
-            $currency->update(['exchange_rate' => number_format($rates[$currency->title], 8, '.', '')]);
+            if (! isset($rates[strtoupper($currency->title)])) {
+                continue;
+            }
+
+            $currency->update(['exchange_rate' => number_format($rates[strtoupper($currency->title)], 8, '.', '')]);
         }
 
         return CurrencyModel::query()->get();

@@ -37,11 +37,11 @@ class Role extends BaseModel
 
     protected static function booted(): void
     {
-        self::saving(function (self $model) {
+        self::saving(function (self $model): void {
             $model->slug = self::createSlug($model->slug ?: $model->name, $model->getKey());
         });
 
-        self::deleted(function (self $model) {
+        self::deleted(function (self $model): void {
             $model->users()->detach();
 
             Helper::clearCache();

@@ -5,6 +5,7 @@ namespace Botble\SeoHelper\Entities;
 use Botble\Base\Facades\BaseHelper;
 use Botble\SeoHelper\Contracts\Entities\TitleContract;
 use Botble\SeoHelper\Exceptions\InvalidArgumentException;
+use Botble\Theme\Facades\Theme;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
@@ -25,16 +26,22 @@ class Title implements TitleContract
         $this->init();
     }
 
-    protected function init()
+    protected function init(): void
     {
         $this->set(null);
-        $this->title = theme_option('site_title');
+        $this->title = Theme::getSiteTitle();
 
         if (theme_option('show_site_name', false)) {
             $this->setSiteName($this->title);
         }
 
-        $this->setSeparator(config('packages.seo-helper.general.title.separator', '-'));
+        $separator = theme_option('site_title_separator', '-');
+
+        if (! $separator) {
+            $separator = config('packages.seo-helper.general.title.separator', '-');
+        }
+
+        $this->setSeparator($separator);
         $this->switchPosition(config('packages.seo-helper.general.title.first', true));
         $this->setMax(config('packages.seo-helper.general.title.max', 55));
     }
@@ -51,48 +58,24 @@ class Title implements TitleContract
         return $this;
     }
 
-    /**
-     * Get site name.
-     *
-     * @return string
-     */
-    public function getSiteName()
+    public function getSiteName(): string
     {
         return $this->siteName;
     }
 
-    /**
-     * Set site name.
-     *
-     * @param string $siteName
-     *
-     * @return Title
-     */
-    public function setSiteName($siteName)
+    public function setSiteName($siteName): static
     {
         $this->siteName = $siteName;
 
         return $this;
     }
 
-    /**
-     * Get title separator.
-     *
-     * @return string
-     */
-    public function getSeparator()
+    public function getSeparator(): string
     {
         return $this->separator;
     }
 
-    /**
-     * Set title separator.
-     *
-     * @param string $separator
-     *
-     * @return Title
-     */
-    public function setSeparator($separator)
+    public function setSeparator($separator): static
     {
         $this->separator = trim($separator);
 
@@ -109,24 +92,12 @@ class Title implements TitleContract
         return $this->switchPosition(true);
     }
 
-    /**
-     * Set title last.
-     *
-     * @return Title
-     */
-    public function setLast()
+    public function setLast(): Title
     {
         return $this->switchPosition(false);
     }
 
-    /**
-     * Switch title position.
-     *
-     * @param bool $first
-     *
-     * @return Title
-     */
-    protected function switchPosition($first)
+    protected function switchPosition($first): Title
     {
         $this->titleFirst = boolval($first);
 
@@ -215,31 +186,20 @@ class Title implements TitleContract
     }
 
     /**
-     * Check title max length.
-     *
-     * @param int $max
-     *
      * @throws InvalidArgumentException
      */
-    protected function checkMax($max)
+    protected function checkMax(string|int $max): void
     {
         if (! is_int($max)) {
-            throw new InvalidArgumentException('The title maximum lenght must be integer.');
+            throw new InvalidArgumentException('The title maximum length must be integer.');
         }
 
         if ($max <= 0) {
-            throw new InvalidArgumentException('The title maximum lenght must be greater 0.');
+            throw new InvalidArgumentException('The title maximum length must be greater 0.');
         }
     }
 
-    /**
-     * Render title first.
-     *
-     * @param string $separator
-     *
-     * @return string
-     */
-    protected function renderTitleFirst($separator)
+    protected function renderTitleFirst(?string $separator): ?string
     {
         $output = [];
         $output[] = $this->getTitleOnly();
@@ -258,14 +218,7 @@ class Title implements TitleContract
         return Arr::first($output);
     }
 
-    /**
-     * Render title last.
-     *
-     * @param string $separator
-     *
-     * @return string
-     */
-    protected function renderTitleLast($separator)
+    protected function renderTitleLast(string $separator): string
     {
         $output = [];
 

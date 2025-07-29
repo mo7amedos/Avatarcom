@@ -9,6 +9,7 @@ use Botble\Page\Models\Page;
 use Botble\Page\Services\PageService;
 use Botble\SeoHelper\Facades\SeoHelper;
 use Botble\Slug\Facades\SlugHelper;
+use Botble\Slug\Models\Slug;
 use Botble\Theme\Events\RenderingHomePageEvent;
 use Botble\Theme\Events\RenderingSingleEvent;
 use Botble\Theme\Events\RenderingSiteMapEvent;
@@ -26,12 +27,14 @@ class PublicController extends BaseController
         if (defined('PAGE_MODULE_SCREEN_NAME') && BaseHelper::getHomepageId()) {
             $data = (new PageService())->handleFrontRoutes(null);
 
+            event(new RenderingSingleEvent(new Slug()));
+
             if ($data) {
                 return Theme::scope($data['view'], $data['data'], $data['default_view'])->render();
             }
         }
 
-        SeoHelper::setTitle(theme_option('site_title'));
+        SeoHelper::setTitle(Theme::getSiteTitle());
 
         event(RenderingHomePageEvent::class);
 
@@ -46,9 +49,7 @@ class PublicController extends BaseController
 
         $slug = SlugHelper::getSlug($key, $prefix);
 
-        if (! $slug) {
-            abort(404);
-        }
+        abort_unless($slug, 404);
 
         if (
             defined('PAGE_MODULE_SCREEN_NAME') &&
@@ -71,7 +72,7 @@ class PublicController extends BaseController
         }
 
         if (isset($result['slug']) && $result['slug'] !== $key) {
-            $prefix = SlugHelper::getPrefix(get_class(Arr::first($result['data'])));
+            $prefix = SlugHelper::getPrefix(Arr::first($result['data'])::class);
 
             return redirect()->route('public.single', empty($prefix) ? $result['slug'] : "$prefix/{$result['slug']}");
         }
@@ -96,7 +97,7 @@ class PublicController extends BaseController
         return $this->getSiteMapIndex();
     }
 
-    public function getSiteMapIndex(string $key = null, string $extension = 'xml')
+    public function getSiteMapIndex(?string $key = null, string $extension = 'xml')
     {
         if ($key == 'sitemap') {
             $key = null;
@@ -106,7 +107,7 @@ class PublicController extends BaseController
             event(new RenderingSiteMapEvent($key));
         }
 
-        // show your site map (options: 'xml' (default), 'html', 'txt', 'ror-rss', 'ror-rdf')
+        // show your site map (options: 'xml' (default), 'xml-mobile', 'html', 'txt', 'ror-rss', 'ror-rdf', 'google-news')
         return SiteMapManager::render($key ? $extension : 'sitemapindex');
     }
 

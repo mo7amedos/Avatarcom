@@ -100,13 +100,22 @@ class EmailHandler
             'css' => trans('core/base::base.email_template.email_css'),
             'date_time' => trans('core/base::base.email_template.date_time'),
             'date_year' => trans('core/base::base.email_template.date_year'),
+            'html_attributes' => trans('core/base::base.email_template.html_attributes'),
+            'body_attributes' => trans('core/base::base.email_template.body_attributes'),
         ];
     }
 
-    protected function getCoreVariableValues(): array
+    public function getCoreVariableValues(): array
     {
+        $language = Language::getCurrentLocale();
 
         return $this->coreVariableValues ??= [
+            'html_attributes' => trim(Html::attributes([
+                'lang' => $language['locale'],
+            ])),
+            'body_attributes' => trim(Html::attributes([
+                'dir' => $language['is_rtl'] ? 'rtl' : 'ltr',
+            ])),
             'now' => ($now = Carbon::now()),
             'header' => apply_filters(
                 BASE_FILTER_EMAIL_TEMPLATE_HEADER,

@@ -11,7 +11,7 @@ return new class () extends Migration {
             return;
         }
 
-        Schema::create('ec_discount_product_categories', function (Blueprint $table) {
+        Schema::create('ec_discount_product_categories', function (Blueprint $table): void {
             $table->foreignId('discount_id');
             $table->foreignId('product_category_id');
             $table->primary(['discount_id', 'product_category_id'], 'discount_product_categories_primary_key');

@@ -1,8 +1,8 @@
 <?php
 
 return [
-    'name' => 'Marketplace',
-    'description' => 'Config email templates for Marketplace',
+    'name' => 'plugins/marketplace::marketplace.email.title',
+    'description' => 'plugins/marketplace::marketplace.email.description',
     'templates' => [
         'store_new_order' => [
             'title' => 'plugins/marketplace::marketplace.email.store_new_order_title',
@@ -152,6 +152,10 @@ return [
             'can_off' => true,
             'enabled' => true,
             'variables' => [
+                'store_name' => 'plugins/marketplace::marketplace.store_name',
+                'store_phone' => 'plugins/marketplace::marketplace.store_phone',
+                'store_address' => 'plugins/marketplace::marketplace.store_address',
+                'store_url' => 'plugins/marketplace::marketplace.store_url',
                 'block_reason' => 'plugins/marketplace::marketplace.email.block_reason',
                 'block_date' => 'plugins/marketplace::marketplace.email.block_date',
             ],
@@ -163,7 +167,24 @@ return [
             'can_off' => true,
             'enabled' => true,
             'variables' => [
+                'store_name' => 'plugins/marketplace::marketplace.store_name',
+                'store_phone' => 'plugins/marketplace::marketplace.store_phone',
+                'store_address' => 'plugins/marketplace::marketplace.store_address',
+                'store_url' => 'plugins/marketplace::marketplace.store_url',
                 'unblock_date' => 'plugins/marketplace::marketplace.email.unblock_date',
+            ],
+        ],
+        'order_cancellation_to_vendor' => [
+            'title' => 'plugins/marketplace::marketplace.email.order_cancellation_to_vendor_title',
+            'description' => 'plugins/marketplace::marketplace.email.order_cancellation_to_vendor_description',
+            'subject' => 'plugins/marketplace::marketplace.email.order_cancellation_to_vendor_subject',
+            'can_off' => true,
+            'enabled' => false,
+            'variables' => [
+                'customer_name' => 'plugins/ecommerce::ecommerce.customer_name',
+                'order_id' => 'plugins/ecommerce::ecommerce.order_id',
+                'cancellation_reason' => 'plugins/ecommerce::order.order_cancellation_reason',
+                'product_list' => 'plugins/ecommerce::ecommerce.product_list',
             ],
         ],
     ],

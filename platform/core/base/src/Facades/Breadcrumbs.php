@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \stdClass|null current()
  * @method static void setCurrentRoute(string $name, ...$params)
  * @method static void clearCurrentRoute()
- * @method static void macro(string $name, object|callable $macro)
+ * @method static void macro(string $name, object|callable $macro, object|callable $macro = null)
  * @method static void mixin(object $mixin, bool $replace = true)
  * @method static bool hasMacro(string $name)
  * @method static void flushMacros()

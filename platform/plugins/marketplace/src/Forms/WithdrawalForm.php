@@ -68,7 +68,7 @@ class WithdrawalForm extends FormAbstract
                 'label' => trans('plugins/ecommerce::products.form.image'),
                 'values' => $withdrawal ? $withdrawal->images : [],
             ])
-            ->when(! $withdrawal->canEditStatus(), function (FormAbstract $form) use ($withdrawal) {
+            ->when(! $withdrawal->canEditStatus(), function (FormAbstract $form) use ($withdrawal): void {
                 $form->add(
                     'download_invoice',
                     HtmlField::class,

@@ -14,6 +14,12 @@
         @endif
     </x-slot:label>
 
+    @php
+        if ($options['choices'] instanceof \Illuminate\Contracts\Support\Arrayable) {
+            $options['choices'] = $options['choices']->toArray();
+        }
+    @endphp
+
     {!! Form::customSelect(
         $name,
         ($options['empty_value'] ? ['' => $options['empty_value']] : []) + $options['choices'],

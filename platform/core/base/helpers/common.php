@@ -18,7 +18,21 @@ if (! function_exists('language_flag')) {
 
         $flag = apply_filters('cms_language_flag', $flag, $name);
 
-        return Html::image(asset(BASE_LANGUAGE_FLAG_PATH . $flag . '.svg'), sprintf('%s flag', $name), [
+        $flagPath = BASE_LANGUAGE_FLAG_PATH . $flag . '.svg';
+
+        if (file_exists(public_path($flagPath))) {
+            $contents = file_get_contents(public_path($flagPath));
+
+            $contents = trim(preg_replace('/^(<\?xml.+?\?>)/', '', $contents));
+
+            return str_replace(
+                '<svg',
+                rtrim(sprintf('<svg style="height: %spx; width: auto;" class="flag"', $width)),
+                $contents
+            );
+        }
+
+        return Html::image(asset($flagPath), sprintf('%s flag', $name), [
             'title' => $name,
             'class' => 'flag',
             'style' => "height: {$width}px",
@@ -73,7 +87,7 @@ if (! function_exists('get_cms_version')) {
 if (! function_exists('get_core_version')) {
     function get_core_version(): string
     {
-        return '7.4.3';
+        return '7.5.7';
     }
 }
 

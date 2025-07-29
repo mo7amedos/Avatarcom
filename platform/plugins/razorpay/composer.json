@@ -3,6 +3,6 @@
     "description": "Razorpay",
     "type": "package",
     "require": {
-        "razorpay/razorpay": "^2.8"
+        "razorpay/razorpay": "^2.9"
     }
 }

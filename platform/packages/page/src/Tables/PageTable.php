@@ -59,7 +59,7 @@ class PageTable extends TableAbstract
                 StatusBulkChange::make(),
                 CreatedAtBulkChange::make(),
             ])
-            ->queryUsing(function (Builder $query) {
+            ->queryUsing(function (Builder $query): void {
                 $query->select([
                     'id',
                     'name',

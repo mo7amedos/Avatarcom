@@ -8,6 +8,8 @@ use Botble\Base\Facades\Assets;
 use Botble\Base\Facades\BaseHelper;
 use Botble\Base\Http\Controllers\BaseSystemController;
 use Botble\Base\Supports\Helper;
+use Botble\Media\Facades\RvMedia;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -50,9 +52,16 @@ class BackupController extends BaseSystemController
         try {
             BaseHelper::maximumExecutionTimeAndMemoryLimit();
 
+            $backupOnlyDb = $request->boolean('backup_only_db');
+
+            $key = Carbon::now()->format('Y-m-d-H-i-s');
+
             $data = $this->backup->createBackupFolder($request->input('name'), $request->input('description'));
-            $this->backup->backupDb();
-            $this->backup->backupFolder(config('filesystems.disks.public.root'));
+            $this->backup->backupDb($key);
+
+            if (! $backupOnlyDb) {
+                $this->backup->backupFolder(RvMedia::getUploadPath(), $key);
+            }
 
             do_action(BACKUP_ACTION_AFTER_BACKUP, BACKUP_MODULE_SCREEN_NAME, $request);
 

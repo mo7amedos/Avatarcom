@@ -103,7 +103,7 @@ class CurrencySupport
 
         if ($this->currencies->count() == 0) {
             $this->currencies = Currency::query()
-                ->orderBy('order')
+                ->oldest('order')
                 ->get();
         }
 
@@ -134,7 +134,9 @@ class CurrencySupport
             $httpAcceptLanguage = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2);
         }
 
-        return Arr::get($currencies, strtoupper(substr($httpAcceptLanguage, 0, 2)));
+        $detectedCurrencyCode = Arr::get($currencies, strtoupper(substr($httpAcceptLanguage, 0, 2)));
+
+        return apply_filters('cms_currency_detected_currency', $detectedCurrencyCode);
     }
 
     public function countryCurrencies(): array

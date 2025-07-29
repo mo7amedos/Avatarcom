@@ -9,22 +9,6 @@ class CustomResourceRegistrar extends ResourceRegistrar
 {
     protected $resourceDefaults = ['index', 'create', 'store', 'edit', 'update', 'destroy'];
 
-    protected function getResourceRouteName($resource, $method, $options): string
-    {
-        switch ($method) {
-            case 'store':
-                $method = 'create';
-
-                break;
-            case 'update':
-                $method = 'edit';
-
-                break;
-        }
-
-        return parent::getResourceRouteName($resource, $method, $options);
-    }
-
     protected function addResourceEdit($name, $base, $controller, $options): Route
     {
         $uri = $this->getResourceUri($name) . '/' . static::$verbs['edit'] . '/{' . $base . '}';
@@ -40,7 +24,7 @@ class CustomResourceRegistrar extends ResourceRegistrar
 
         $action = $this->getResourceAction($name, $controller, 'update', $options);
 
-        return $this->router->post($uri, $action)->name($name . '.update')->wherePrimaryKey($base);
+        return $this->router->post($uri, $action)->wherePrimaryKey($base);
     }
 
     protected function addResourceStore($name, $base, $controller, $options): Route
@@ -49,7 +33,7 @@ class CustomResourceRegistrar extends ResourceRegistrar
 
         $action = $this->getResourceAction($name, $controller, 'store', $options);
 
-        return $this->router->post($uri, $action)->name($name . '.store');
+        return $this->router->post($uri, $action);
     }
 
     protected function addResourceIndex($name, $base, $controller, $options): Route

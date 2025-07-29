@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 class UnlicensedController extends BaseController
 {
-    public function __construct(private Core $core)
+    public function __construct(private readonly Core $core)
     {
     }
 

@@ -24,4 +24,14 @@ class RazorpayPaymentService extends RazorpayPaymentAbstract
     {
         return apply_filters('razorpay_order_notes', []);
     }
+
+    public function redirectToCheckoutPage(array $data): void
+    {
+        echo view('plugins/razorpay::form', [
+            'data' => $data,
+            'action' => 'https://api.razorpay.com/v1/checkout/embedded',
+        ]);
+
+        exit();
+    }
 }

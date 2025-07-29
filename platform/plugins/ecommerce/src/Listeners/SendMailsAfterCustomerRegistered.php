@@ -17,16 +17,14 @@ class SendMailsAfterCustomerRegistered
             return;
         }
 
-        if (! is_plugin_active('marketplace') || ! $customer->is_vendor) {
+        if (EcommerceHelper::isEnableEmailVerification()) {
+            $customer->sendEmailVerificationNotification();
+        } elseif (! is_plugin_active('marketplace') || ! $customer->is_vendor) {
             EmailHandler::setModule(ECOMMERCE_MODULE_SCREEN_NAME)
                 ->setVariableValues([
                     'customer_name' => $customer->name,
                 ])
                 ->sendUsingTemplate('welcome', $customer->email);
-        }
-
-        if (EcommerceHelper::isEnableEmailVerification()) {
-            $customer->sendEmailVerificationNotification();
         }
     }
 }

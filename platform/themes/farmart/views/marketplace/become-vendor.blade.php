@@ -7,7 +7,7 @@
     </style>
 
     <div class="form__header">
-        <h3>{{ SeoHelper::getTitle() }}</h3>
+        <h3>{{ SeoHelper::getTitleOnly() }}</h3>
 
         {!! $form->renderForm() !!}
     </div>

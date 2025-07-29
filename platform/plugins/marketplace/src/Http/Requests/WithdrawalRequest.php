@@ -12,9 +12,9 @@ class WithdrawalRequest extends Request
     public function rules(): array
     {
         return [
-            'images' => 'nullable|array',
+            'images' => ['nullable', 'array'],
             'status' => Rule::in(WithdrawalStatusEnum::values()),
-            'description' => 'nullable|max:400',
+            'description' => ['nullable', 'max:400'],
             'payment_channel' => Rule::in(array_keys(PayoutPaymentMethodsEnum::payoutMethodsEnabled())),
         ];
     }

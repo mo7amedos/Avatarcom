@@ -7,6 +7,7 @@ use Botble\Base\Events\UpdatedEvent;
 use Botble\Base\Events\UpdatingEvent;
 use Botble\Base\Facades\Assets;
 use Botble\Base\Facades\BaseHelper;
+use Botble\Base\Http\Responses\BaseHttpResponse;
 use Botble\Base\Services\CleanDatabaseService;
 use Botble\Base\Supports\Core;
 use Botble\Base\Supports\MembershipAuthorization;
@@ -15,7 +16,7 @@ use Exception;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 class SystemController extends BaseSystemController
@@ -27,14 +28,14 @@ class SystemController extends BaseSystemController
         return view('core/base::system.index');
     }
 
-    public function postAuthorize(MembershipAuthorization $authorization)
+    public function postAuthorize(MembershipAuthorization $authorization): BaseHttpResponse
     {
         $authorization->authorize();
 
         return $this->httpResponse();
     }
 
-    public function getMenuItemsCount()
+    public function getMenuItemsCount(): BaseHttpResponse
     {
         $data = apply_filters(BASE_FILTER_MENU_ITEMS_COUNT, []);
 
@@ -79,9 +80,7 @@ class SystemController extends BaseSystemController
 
     public function getUpdater(Core $core)
     {
-        if (! config('core.base.general.enable_system_updater')) {
-            abort(404);
-        }
+        abort_unless(config('core.base.general.enable_system_updater'), 404);
 
         header('Cache-Control: no-cache');
 
@@ -97,7 +96,7 @@ class SystemController extends BaseSystemController
 
         $this->pageTitle(trans('core/base::system.updater'));
 
-        $activated = $core->verifyLicense();
+        $activated = $core->verifyLicense(false, 15);
         $isOutdated = false;
 
         try {
@@ -161,7 +160,10 @@ class SystemController extends BaseSystemController
         Assets::addScriptsDirectly('vendor/core/core/base/js/cleanup.js');
 
         try {
-            $tables = DB::connection()->getDoctrineSchemaManager()->listTableNames();
+            $tables = array_map(function (array $table) {
+                return $table['name'];
+            }, Schema::getTables(Schema::getConnection()->getDatabaseName()));
+
         } catch (Throwable) {
             $tables = [];
         }
@@ -180,7 +182,7 @@ class SystemController extends BaseSystemController
                     ->setMessage(strip_tags(trans('core/base::system.cleanup.not_enabled_yet')));
             }
 
-            $request->validate(['tables' => 'array']);
+            $request->validate(['tables' => ['array']]);
 
             $cleanDatabaseService->execute($request->input('tables', []));
 

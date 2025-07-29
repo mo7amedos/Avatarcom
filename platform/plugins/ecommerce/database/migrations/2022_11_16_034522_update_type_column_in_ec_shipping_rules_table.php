@@ -8,12 +8,12 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('ec_shipping_rules', function (Blueprint $table) {
+        Schema::table('ec_shipping_rules', function (Blueprint $table): void {
             $table->string('type', 24)->default(ShippingRuleTypeEnum::BASED_ON_PRICE)->nullable()->change();
         });
 
         if (! Schema::hasColumn('ec_shipping_rule_items', 'zip_code')) {
-            Schema::table('ec_shipping_rule_items', function (Blueprint $table) {
+            Schema::table('ec_shipping_rule_items', function (Blueprint $table): void {
                 $table->string('zip_code', 20)->nullable()->after('city');
             });
         }
@@ -21,7 +21,7 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::table('ec_shipping_rules', function (Blueprint $table) {
+        Schema::table('ec_shipping_rules', function (Blueprint $table): void {
             $table->string('type', 24)
                 ->default(ShippingRuleTypeEnum::BASED_ON_PRICE)
                 ->nullable()
@@ -29,7 +29,7 @@ return new class () extends Migration {
                 ->change();
         });
 
-        Schema::table('ec_shipping_rule_items', function (Blueprint $table) {
+        Schema::table('ec_shipping_rule_items', function (Blueprint $table): void {
             $table->dropColumn('zip_code');
         });
     }

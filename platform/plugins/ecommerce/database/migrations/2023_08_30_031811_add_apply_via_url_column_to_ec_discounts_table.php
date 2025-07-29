@@ -11,14 +11,14 @@ return new class () extends Migration {
             return;
         }
 
-        Schema::table('ec_discounts', function (Blueprint $table) {
+        Schema::table('ec_discounts', function (Blueprint $table): void {
             $table->boolean('apply_via_url')->default(false)->after('min_order_price');
         });
     }
 
     public function down(): void
     {
-        Schema::table('ec_discounts', function (Blueprint $table) {
+        Schema::table('ec_discounts', function (Blueprint $table): void {
             $table->dropColumn('apply_via_url');
         });
     }

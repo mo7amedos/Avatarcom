@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('media_folders', function (Blueprint $table) {
+        Schema::table('media_folders', function (Blueprint $table): void {
             $table->string('color')->nullable()->change();
         });
     }

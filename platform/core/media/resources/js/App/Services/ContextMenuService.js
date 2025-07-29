@@ -52,7 +52,7 @@ export class ContextMenuService {
                             `${value.icon} ${Helpers.trans(`actions_list.${key}.${value.action}`) || item.name}`
                         )
 
-                        return 'context-menu-icon-updated'
+                        return `context-menu-icon-updated media-action-${value.action}`
                     },
                     callback: () => {
                         $(`.js-files-action[data-action="${value.action}"]`).trigger('click')

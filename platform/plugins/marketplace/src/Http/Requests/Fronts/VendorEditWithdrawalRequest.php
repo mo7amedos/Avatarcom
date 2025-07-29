@@ -9,7 +9,7 @@ class VendorEditWithdrawalRequest extends Request
     public function rules(): array
     {
         return [
-            'description' => 'nullable|max:400',
+            'description' => ['nullable', 'max:400'],
         ];
     }
 }

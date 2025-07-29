@@ -4,7 +4,7 @@
 
 @section('content')
     @if (Cart::instance('cart')->isNotEmpty())
-        @if (is_plugin_active('payment') && $orderAmount)
+        @if (is_plugin_active('payment'))
             @include('plugins/payment::partials.header')
         @endif
 
@@ -23,5 +23,5 @@
 @stop
 
 @push('footer')
-    <script type="text/javascript" src="{{ asset('vendor/core/core/js-validation/js/js-validation.js') }}?v=1.0.1"></script>
+    <script type="text/javascript" src="{{ asset('vendor/core/core/js-validation/js/js-validation.js') }}?v={{ EcommerceHelper::getAssetVersion() }}"></script>
 @endpush

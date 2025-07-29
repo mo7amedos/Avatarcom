@@ -2,6 +2,7 @@
 
 namespace Botble\Translation;
 
+use Botble\Translation\Exceptions\TranslationRequestException;
 use Botble\Translation\Services\GoogleTranslate;
 use Illuminate\Support\Str;
 use Throwable;
@@ -20,10 +21,14 @@ class AutoTranslateManager
             $value = str_replace($item, '%s', $value);
         }
 
-        $translated = (new GoogleTranslate())
-            ->setSource($source)
-            ->setTarget($target)
-            ->translate($value);
+        try {
+            $translated = (new GoogleTranslate())
+                ->setSource($source)
+                ->setTarget($target)
+                ->translate($value);
+        } catch (TranslationRequestException) {
+            $translated = $originalValue;
+        }
 
         $translated = str_replace('%S', '%s', $translated);
 

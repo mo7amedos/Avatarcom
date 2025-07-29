@@ -30,7 +30,7 @@ class SpecificationAttributeController extends BaseController
     public function store(SpecificationAttributeRequest $request)
     {
         $form = $this->getForm()::create()->setRequest($request)->onlyValidatedData();
-        $form->saving(function (SpecificationAttributeForm $form) {
+        $form->saving(function (SpecificationAttributeForm $form): void {
             $model = $form->getModel();
             if (! empty($additionalData = $this->getAdditionalDataForSaving())) {
                 $model->fill($additionalData);
@@ -47,7 +47,7 @@ class SpecificationAttributeController extends BaseController
 
     public function edit(string $attribute)
     {
-        $attribute = SpecificationAttribute::query()->findOrFail($attribute);
+        $attribute = $this->getSpecificationAttribute($attribute);
 
         $this->pageTitle(trans('plugins/ecommerce::product-specification.specification_attributes.edit.title', [
             'name' => $attribute->name,
@@ -58,10 +58,10 @@ class SpecificationAttributeController extends BaseController
 
     public function update(SpecificationAttributeRequest $request, string $attribute)
     {
-        $attribute = SpecificationAttribute::query()->findOrFail($attribute);
+        $attribute = $this->getSpecificationAttribute($attribute);
 
         $form = $this->getForm()::createFromModel($attribute)->setRequest($request)->onlyValidatedData();
-        $form->saving(function (SpecificationAttributeForm $form) {
+        $form->saving(function (SpecificationAttributeForm $form): void {
             $model = $form->getModel();
             if (! empty($additionalData = $this->getAdditionalDataForSaving())) {
                 $model->fill($additionalData);
@@ -78,7 +78,7 @@ class SpecificationAttributeController extends BaseController
 
     public function destroy(string $attribute)
     {
-        $attribute = SpecificationAttribute::query()->findOrFail($attribute);
+        $attribute = $this->getSpecificationAttribute($attribute);
 
         return DeleteResourceAction::make($attribute);
     }
@@ -118,5 +118,10 @@ class SpecificationAttributeController extends BaseController
     protected function getEditRouteName(): string
     {
         return 'ecommerce.specification-attributes.edit';
+    }
+
+    protected function getSpecificationAttribute(string $attribute)
+    {
+        return SpecificationAttribute::query()->findOrFail($attribute);
     }
 }

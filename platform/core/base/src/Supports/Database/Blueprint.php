@@ -4,6 +4,7 @@ namespace Botble\Base\Supports\Database;
 
 use Botble\Base\Models\BaseModel;
 use Closure;
+use Illuminate\Database\Connection;
 use Illuminate\Database\Schema\Blueprint as IlluminateBlueprint;
 use Illuminate\Database\Schema\ColumnDefinition;
 use Illuminate\Support\Facades\DB;
@@ -11,11 +12,11 @@ use Throwable;
 
 class Blueprint extends IlluminateBlueprint
 {
-    public function __construct($table, ?Closure $callback = null, $prefix = '')
+    public function __construct(Connection $connection, $table, ?Closure $callback = null)
     {
-        parent::__construct($table, $callback, $prefix);
+        parent::__construct($connection, $table, $callback);
 
-        rescue(function () {
+        rescue(function (): void {
             if (DB::getDefaultConnection() === 'mysql') {
                 DB::statement('SET SESSION sql_require_primary_key=0');
             }

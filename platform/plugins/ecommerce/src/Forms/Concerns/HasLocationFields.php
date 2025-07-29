@@ -74,7 +74,7 @@ trait HasLocationFields
         $zipCodeAttributes = Arr::except($zipCodeAttributes, ['name']);
 
         $this
-            ->when($isMultipleCountries, function (FormAbstract $form) use ($countryFieldName, $countryAttributes) {
+            ->when($isMultipleCountries, function (FormAbstract $form) use ($countryFieldName, $countryAttributes): void {
                 $form->add(
                     $countryFieldName,
                     SelectField::class,
@@ -90,7 +90,7 @@ trait HasLocationFields
                         ...$countryAttributes,
                     ]
                 );
-            }, function (FormAbstract $form) use ($countryFieldName, $countryAttributes) {
+            }, function (FormAbstract $form) use ($countryFieldName, $countryAttributes): void {
                 $form->add(
                     $countryFieldName,
                     'hidden',
@@ -107,8 +107,7 @@ trait HasLocationFields
                 $stateFieldName,
                 $stateAttributes,
                 $isMultipleCountries
-            ) {
-                $model = $this->getModel();
+            ): void {
 
                 $form->add(
                     $stateFieldName,
@@ -130,7 +129,7 @@ trait HasLocationFields
                         ...$stateAttributes,
                     ]
                 );
-            }, function (FormAbstract $form) use ($loadLocationsFromPluginLocation, $stateFieldName, $stateAttributes) {
+            }, function (FormAbstract $form) use ($loadLocationsFromPluginLocation, $stateFieldName, $stateAttributes): void {
                 $form->add(
                     $stateFieldName,
                     TextField::class,
@@ -147,7 +146,7 @@ trait HasLocationFields
                 $loadLocationsFromPluginLocation,
                 $cityFieldName,
                 $cityAttributes
-            ) {
+            ): void {
                 $form->add(
                     $cityFieldName,
                     TextField::class,
@@ -159,7 +158,7 @@ trait HasLocationFields
                         ...$cityAttributes,
                     ]
                 );
-            }, function (FormAbstract $form) use ($stateAttributes, $cityFieldName, $cityAttributes, $isMultipleCountries) {
+            }, function (FormAbstract $form) use ($stateAttributes, $cityFieldName, $cityAttributes, $isMultipleCountries): void {
                 $form->add(
                     $cityFieldName,
                     SelectField::class,
@@ -197,7 +196,7 @@ trait HasLocationFields
                 $isMultipleCountries,
                 $zipCodeAttributes,
                 $zipCodeFieldName
-            ) {
+            ): void {
                 $form->add(
                     $zipCodeFieldName,
                     TextField::class,

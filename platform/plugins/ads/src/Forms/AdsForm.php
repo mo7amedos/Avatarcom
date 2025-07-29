@@ -87,12 +87,13 @@ class AdsForm extends FormAbstract
             ])
             ->addCloseCollapsible('ads_type', 'custom_ad')
             ->add('status', SelectField::class, StatusFieldOption::make())
-            ->when(($adLocations = AdsManager::getLocations()) && count($adLocations) > 1, function () use ($adLocations) {
+            ->when(($adLocations = AdsManager::getLocations()) && count($adLocations) > 1, function () use ($adLocations): void {
                 $this->add(
                     'location',
                     SelectField::class,
                     SelectFieldOption::make()
                         ->label(trans('plugins/ads::ads.location'))
+                        ->helperText(trans('plugins/ads::ads.location_helper'))
                         ->choices($adLocations)
                         ->searchable()
                         ->required()
@@ -104,6 +105,7 @@ class AdsForm extends FormAbstract
                 DatePickerFieldOption::make()
                     ->label(trans('plugins/ads::ads.expired_at'))
                     ->defaultValue(BaseHelper::formatDate(Carbon::now()->addMonth()))
+                    ->helperText(trans('plugins/ads::ads.expired_at_helper'))
             )
             ->setBreakFieldPoint('status');
     }

@@ -49,6 +49,8 @@ if (! function_exists('get_products')) {
             ...$params,
         ];
 
+        $params = array_merge($params, EcommerceHelper::withReviewsParams());
+
         return app(ProductInterface::class)->getProducts($params, $filters);
     }
 }
@@ -141,7 +143,7 @@ if (! function_exists('get_top_rated_product_ids')) {
             ->wherePublished()
             ->selectRaw('product_id, avg(star) AS star')
             ->groupBy('product_id')
-            ->orderByDesc('star')
+            ->latest('star')
             ->limit($limit)
             ->pluck('product_id')
             ->all();
@@ -173,8 +175,7 @@ if (! function_exists('get_featured_product_categories')) {
         return ProductCategory::query()
             ->where('is_featured', true)
             ->wherePublished()
-            ->orderBy('order')
-            ->orderByDesc('created_at')
+            ->oldest('order')->latest()
             ->with('slugable')
             ->get();
     }
@@ -246,11 +247,13 @@ if (! function_exists('the_product_price')) {
 }
 
 if (! function_exists('get_related_products')) {
-    function get_related_products(Product $product, int $limit = 4): Collection|LengthAwarePaginator|Product|null
+    function get_related_products(Product $product, ?int $limit = null): Collection|LengthAwarePaginator|Product|null
     {
         if (! EcommerceHelper::isEnabledRelatedProducts()) {
             return new EloquentCollection();
         }
+
+        $limit = $limit ?: theme_option('number_of_related_product', 4);
 
         $params = [
             'condition' => [
@@ -260,7 +263,7 @@ if (! function_exists('get_related_products')) {
                 'ec_products.order' => 'ASC',
                 'ec_products.created_at' => 'DESC',
             ],
-            'take' => $limit,
+            'take' => (int) $limit,
             'select' => [
                 'ec_products.*',
             ],
@@ -277,7 +280,14 @@ if (! function_exists('get_related_products')) {
             $params['condition'][] = ['ec_products.id', 'IN', $relatedIds];
         } else {
             $params['condition'][] = ['ec_products.id', '!=', $product->getKey()];
-            $filters = ['categories' => $product->categories()->pluck('ec_product_categories.id')->all()];
+
+            $relatedProductsSource = get_ecommerce_setting('related_products_source', 'category');
+
+            if ($relatedProductsSource === 'brand' && $product->brand_id) {
+                $filters = ['brands' => [$product->brand_id]];
+            } else {
+                $filters = ['categories' => $product->categories()->pluck('ec_product_categories.id')->all()];
+            }
         }
 
         return app(ProductInterface::class)->filterProducts($filters, $params);
@@ -285,18 +295,20 @@ if (! function_exists('get_related_products')) {
 }
 
 if (! function_exists('get_cross_sale_products')) {
-    function get_cross_sale_products(Product $product, int $limit = 4, array $with = []): EloquentCollection
+    function get_cross_sale_products(Product $product, ?int $limit = null, array $with = []): EloquentCollection
     {
         $with = array_merge(EcommerceHelper::withProductEagerLoadingRelations(), $with);
 
         $reviewParams = EcommerceHelper::withReviewsParams();
+
+        $limit = $limit ?: theme_option('number_of_cross_sale_product', 4);
 
         /**
          * @phpstan-ignore-next-line
          */
         return $product
             ->crossSales()
-            ->limit($limit)
+            ->limit((int) $limit)
             ->with($with)
             ->wherePublished()
             ->notOutOfStock()
@@ -384,9 +396,10 @@ if (! function_exists('handle_next_attributes_in_product')) {
         array $unavailableAttributeIds = []
     ): array {
         foreach ($productAttributes as $attribute) {
-            if ($variationInfo != null && ! $variationInfo->where('id', $attribute->id)->count()) {
+            if ($variationInfo != null && $variationInfo->where('id', $attribute->id)->isEmpty()) {
                 $unavailableAttributeIds[] = $attribute->id;
             }
+
             if (in_array($attribute->id, $selectedAttributes)) {
                 $variationIds = $productVariationsInfo
                     ->where('attribute_set_id', $setId)

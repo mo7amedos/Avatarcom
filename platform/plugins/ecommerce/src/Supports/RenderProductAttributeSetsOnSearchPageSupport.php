@@ -30,8 +30,8 @@ class RenderProductAttributeSetsOnSearchPageSupport
         return ProductAttributeSet::query()
             ->where('is_searchable', true)
             ->wherePublished()
-            ->when($this->request->input('categories', []), function (BaseQueryBuilder $query, $categoryIds) {
-                $query->where(function (BaseQueryBuilder $query) use ($categoryIds) {
+            ->when((array) $this->request->input('categories', []), function (BaseQueryBuilder $query, $categoryIds): void {
+                $query->where(function (BaseQueryBuilder $query) use ($categoryIds): void {
                     $query
                         ->whereDoesntHave('categories')
                         ->orWhereHas(
@@ -40,7 +40,7 @@ class RenderProductAttributeSetsOnSearchPageSupport
                         );
                 });
             })
-            ->orderBy('order')
+            ->oldest('order')
             ->with($with)
             ->get();
     }

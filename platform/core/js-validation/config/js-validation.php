@@ -17,13 +17,13 @@ return [
      * If you change the focus on detect some error then active
      * this parameter to move the focus to the first error found.
      */
-    'focus_on_error' => false,
+    'focus_on_error' => env('CMS_JS_VALIDATION_FOCUS_ON_ERROR', false),
 
     /*
      * Duration time for the animation when We are moving the focus
      * to the first error, http://api.jquery.com/animate/ for more information.
      */
-    'duration_animate' => 1000,
+    'duration_animate' => env('CMS_JS_VALIDATION_DURATION_ANIMATE', 1000),
 
     /*
      * Enable or disable Ajax validations of Database and custom rules.

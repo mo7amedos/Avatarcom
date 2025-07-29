@@ -7,7 +7,11 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('mp_customer_revenues', function (Blueprint $table) {
+        if (Schema::hasColumn('mp_customer_revenues', 'user_id')) {
+            return;
+        }
+
+        Schema::table('mp_customer_revenues', function (Blueprint $table): void {
             $table->foreignId('user_id')->default(0);
             $table->string('type', 60)->nullable();
         });
@@ -15,7 +19,7 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::table('mp_customer_revenues', function (Blueprint $table) {
+        Schema::table('mp_customer_revenues', function (Blueprint $table): void {
             $table->dropColumn('user_id', 'type');
         });
     }

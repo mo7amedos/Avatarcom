@@ -76,7 +76,7 @@ class OrderReturnTable extends TableAbstract
             ])
             ->with(['customer', 'order', 'items'])
             ->withCount('items')
-            ->where('store_id', auth('customer')->user()->store->id)
+            ->where('store_id', auth('customer')->user()->store?->id)
             ->orderByDesc('id');
 
         return $this->applyScopes($query);
@@ -104,6 +104,6 @@ class OrderReturnTable extends TableAbstract
 
     public function getDefaultButtons(): array
     {
-        return array_merge(['export'], parent::getDefaultButtons());
+        return array_unique(array_merge(['export'], parent::getDefaultButtons()));
     }
 }

@@ -23,26 +23,29 @@ class GetProductService
         array $withCount = [],
         array $conditions = []
     ): Collection|LengthAwarePaginator {
-        $num = $request->integer('num') ?: $request->integer('per-page');
+        $num = $request->integer('num') ?: $request->integer('per-page') ?: $request->input('per_page');
         $shows = EcommerceHelper::getShowParams();
 
         if (! array_key_exists($num, $shows)) {
             $num = (int) theme_option('number_of_products_per_page', 12);
         }
 
+        $keyword = $request->input('q') ?: $request->input('keyword') ?: $request->input('search');
+
         $queryVar = [
-            'keyword' => BaseHelper::stringify($request->input('q')),
-            'brands' => (array) $request->input('brands', []),
-            'categories' => (array) $request->input('categories', []),
-            'tags' => (array) $request->input('tags', []),
-            'collections' => (array) $request->input('collections', []),
+            'keyword' => BaseHelper::stringify($keyword),
+            'brands' => EcommerceHelper::parseFilterParams($request, 'brands'),
+            'categories' => EcommerceHelper::parseFilterParams($request, 'categories'),
+            'tags' => EcommerceHelper::parseFilterParams($request, 'tags'),
+            'collections' => EcommerceHelper::parseFilterParams($request, 'collections'),
             'collection' => $request->input('collection'),
-            'attributes' => (array) $request->input('attributes', []),
+            'attributes' => $this->parseJsonParam($request->input('attributes')),
             'max_price' => $request->input('max_price'),
             'min_price' => $request->input('min_price'),
-            'price_ranges' => (array) $request->input('price_ranges', []),
-            'sort_by' => $request->input('sort-by'),
+            'price_ranges' => $this->parseJsonParam($request->input('price_ranges')),
+            'sort_by' => $request->input('sort-by') ?: $request->input('sort_by'),
             'num' => $num,
+            'discounted_only' => (bool) $request->input('discounted_only'),
         ];
 
         if ($category) {
@@ -64,7 +67,7 @@ class GetProductService
 
         $params = array_merge([
             'paginate' => [
-                'per_page' => $queryVar['num'],
+                'per_page' => $queryVar['num'] ?: 12,
                 'current_paged' => $request->integer('page', 1) ?: 1,
             ],
             'with' => array_merge(EcommerceHelper::withProductEagerLoadingRelations(), $with),
@@ -130,7 +133,7 @@ class GetProductService
             $params['condition'] = $conditions;
         }
 
-        $products = $this->productRepository->filterProducts([
+        return $this->productRepository->filterProducts([
             'keyword' => $queryVar['keyword'],
             'min_price' => $queryVar['min_price'],
             'max_price' => $queryVar['max_price'],
@@ -142,12 +145,12 @@ class GetProductService
             'brands' => $queryVar['brands'],
             'attributes' => $queryVar['attributes'],
             'order_by' => $orderBy,
+            'discounted_only' => $queryVar['discounted_only'],
         ], $params);
+    }
 
-        if ($keyword = $queryVar['keyword']) {
-            $products->setCollection(BaseHelper::sortSearchResults($products->getCollection(), $keyword, 'name'));
-        }
-
-        return $products;
+    protected function parseJsonParam($param): array
+    {
+        return EcommerceHelper::parseJsonParam($param);
     }
 }

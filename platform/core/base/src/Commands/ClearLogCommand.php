@@ -27,7 +27,7 @@ class ClearLogCommand extends Command
 
         $this->newLine();
 
-        $this->components->task('Clearing log files', function () use ($files, $filesystem) {
+        $this->components->task('Clearing log files', function () use ($files, $filesystem): void {
             foreach ($files as $file) {
                 $this->components->info(sprintf('Deleting [%s]', $file->getPathname()));
                 $filesystem->delete($file->getPathname());

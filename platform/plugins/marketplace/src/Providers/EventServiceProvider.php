@@ -3,8 +3,10 @@
 namespace Botble\Marketplace\Providers;
 
 use Botble\Base\Events\RenderingAdminWidgetEvent;
+use Botble\Ecommerce\Events\OrderCancelledEvent;
 use Botble\Ecommerce\Events\OrderCreated;
 use Botble\Marketplace\Events\WithdrawalRequested;
+use Botble\Marketplace\Listeners\OrderCancelledEmailNotification;
 use Botble\Marketplace\Listeners\OrderCreatedEmailNotification;
 use Botble\Marketplace\Listeners\RegisterMarketplaceWidget;
 use Botble\Marketplace\Listeners\RenderingSiteMapListener;
@@ -27,6 +29,9 @@ class EventServiceProvider extends ServiceProvider
         ],
         OrderCreated::class => [
             OrderCreatedEmailNotification::class,
+        ],
+        OrderCancelledEvent::class => [
+            OrderCancelledEmailNotification::class,
         ],
         WithdrawalRequested::class => [
             WithdrawalRequestedNotification::class,

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Facade;
 
 /**
  * @method static mixed store(\Botble\Ecommerce\Models\Order $order)
- * @method static \Barryvdh\DomPDF\PDF makeInvoicePDF(\Botble\Ecommerce\Models\Invoice $invoice)
+ * @method static \Botble\Base\Supports\Pdf makeInvoicePDF(\Botble\Ecommerce\Models\Invoice $invoice)
  * @method static string generateInvoice(\Botble\Ecommerce\Models\Invoice $invoice)
  * @method static \Illuminate\Http\Response downloadInvoice(\Botble\Ecommerce\Models\Invoice $invoice)
  * @method static \Illuminate\Http\Response streamInvoice(\Botble\Ecommerce\Models\Invoice $invoice)
@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\Facade;
  * @method static string getLanguageSupport()
  * @method static array supportedDateFormats()
  * @method static array getDefaultInvoiceTemplatesFilter()
+ * @method static string getInvoiceUrl(\Botble\Ecommerce\Models\Invoice $invoice)
+ * @method static string getInvoiceDownloadUrl(\Botble\Ecommerce\Models\Invoice $invoice)
  *
  * @see \Botble\Ecommerce\Supports\InvoiceHelper
  */

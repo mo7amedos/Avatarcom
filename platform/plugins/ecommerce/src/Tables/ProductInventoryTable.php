@@ -20,6 +20,7 @@ class ProductInventoryTable extends ProductBulkEditableTable
                             'type' => 'storehouse_management',
                         ]);
                     })
+                    ->width(70)
                     ->nowrap()
                     ->orderable(false),
                 FormattedColumn::make('quantity')

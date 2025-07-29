@@ -76,7 +76,7 @@ class LocationServiceProvider extends ServiceProvider
             ]);
         }
 
-        DashboardMenu::default()->beforeRetrieving(function () {
+        DashboardMenu::default()->beforeRetrieving(function (): void {
             DashboardMenu::make()
                 ->registerItem(
                     DashboardMenuItem::make()
@@ -133,7 +133,7 @@ class LocationServiceProvider extends ServiceProvider
                 );
         });
 
-        PanelSectionManager::setGroupId('data-synchronize')->beforeRendering(function () {
+        PanelSectionManager::setGroupId('data-synchronize')->beforeRendering(function (): void {
             PanelSectionManager::default()
                 ->registerItem(
                     ExportPanelSection::class,
@@ -153,7 +153,7 @@ class LocationServiceProvider extends ServiceProvider
                 );
         });
 
-        $this->app->booted(function () {
+        $this->app->booted(function (): void {
             Blueprint::macro('location', function ($item = null, $keys = []) {
                 if ($item) {
                     if (class_exists($item) && Location::isSupported($item)) {

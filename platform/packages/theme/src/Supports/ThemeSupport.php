@@ -3,6 +3,7 @@
 namespace Botble\Theme\Supports;
 
 use Botble\Base\Facades\AdminHelper;
+use Botble\Base\Facades\Assets;
 use Botble\Base\Facades\BaseHelper;
 use Botble\Base\Facades\Html;
 use Botble\Base\Forms\Fields\NumberField;
@@ -185,7 +186,7 @@ class ThemeSupport
             return $html . apply_filters('theme_preloader', $preloader);
         }, 16);
 
-        app('events')->listen(RenderingThemeOptionSettings::class, function () {
+        app('events')->listen(RenderingThemeOptionSettings::class, function (): void {
             theme_option()
                 ->setField([
                     'id' => 'preloader_enabled',
@@ -203,6 +204,7 @@ class ThemeSupport
                             'class' => 'form-control',
                         ],
                     ],
+                    'priority' => 35,
                 ])
                 ->when(count(static::getPreloaderVersions()) > 1, function () {
                     return theme_option()
@@ -219,6 +221,7 @@ class ThemeSupport
                                     'class' => 'form-control',
                                 ],
                             ],
+                            'priority' => 40,
                         ]);
                 });
         });
@@ -246,7 +249,7 @@ class ThemeSupport
 
     public static function registerThemeIconFields(array $icons, array $css = [], array $js = []): void
     {
-        app()->booted(function () use ($icons) {
+        app()->booted(function () use ($icons): void {
             app('form')->component(
                 'themeIcon',
                 $icons ? 'packages/theme::forms.fields.icons-field' : 'core/base::forms.partials.core-icon',
@@ -285,12 +288,30 @@ class ThemeSupport
             add_filter('theme_icon_list_icons', function (array $defaultIcons) use ($icons) {
                 return array_merge($defaultIcons, $icons);
             });
+
+            if ($css) {
+                Assets::addStylesDirectly($css);
+            }
+
+            add_filter('core_icons', function (array $coreIcons) use ($icons) {
+                $themeIcons = [];
+
+                foreach ($icons as $icon) {
+                    $themeIcons[$icon] = [
+                        'name' => $icon,
+                        'basename' => $icon,
+                        'path' => null,
+                    ];
+                }
+
+                return array_merge($coreIcons, $themeIcons);
+            }, 120);
         }
     }
 
     public static function registerFacebookIntegration(): void
     {
-        app('events')->listen(RenderingThemeOptionSettings::class, function () {
+        app('events')->listen(RenderingThemeOptionSettings::class, function (): void {
             theme_option()
                 ->setSection([
                     'title' => __('Facebook Integration'),
@@ -298,34 +319,6 @@ class ThemeSupport
                     'subsection' => true,
                     'icon' => 'ti ti-brand-facebook',
                     'fields' => [
-                        [
-                            'id' => 'facebook_chat_enabled',
-                            'type' => 'customSelect',
-                            'label' => __('Enable Facebook chat?'),
-                            'attributes' => [
-                                'name' => 'facebook_chat_enabled',
-                                'list' => [
-                                    'no' => __('No'),
-                                    'yes' => __('Yes'),
-                                ],
-                                'value' => 'no',
-                                'options' => [
-                                    'class' => 'form-control',
-                                ],
-                            ],
-                            'helper' => __(
-                                'To show chat box on that website, please go to :link and add :domain to whitelist domains!',
-                                [
-                                    'domain' => Html::link(url('')),
-                                    'link' => Html::link(
-                                        sprintf(
-                                            'https://www.facebook.com/%s/settings/?tab=messenger_platform',
-                                            theme_option('facebook_page_id', '[PAGE_ID]')
-                                        )
-                                    ),
-                                ]
-                            ),
-                        ],
                         [
                             'id' => 'facebook_page_id',
                             'type' => 'text',
@@ -420,44 +413,35 @@ class ThemeSupport
                 }
             }
 
-            if (theme_option('facebook_chat_enabled', 'no') == 'yes' && theme_option('facebook_page_id')) {
-                $html .= '<link href="//connect.facebook.net" rel="dns-prefetch" />';
-            }
-
             return $html;
         }, 1180);
 
-        add_filter(THEME_FRONT_FOOTER, function (?string $html): string {
-            if (AdminHelper::isInAdmin()) {
+        add_filter(BASE_FILTER_PUBLIC_COMMENT_AREA, function (?string $html, ?object $object = null): ?string {
+            if (! $object) {
                 return $html;
             }
 
-            if (
-                theme_option('facebook_comment_enabled_in_post', 'no') == 'yes'
-                || (theme_option('facebook_chat_enabled', 'no') == 'yes' && theme_option('facebook_page_id'))
-            ) {
-                return $html . view('packages/theme::partials.facebook-integration')->render();
+            $commentHtml = apply_filters('facebook_comment_html', '', $object);
+
+            if (! empty($commentHtml)) {
+                add_filter(THEME_FRONT_FOOTER, function (?string $html): string {
+                    if (AdminHelper::isInAdmin()) {
+                        return $html;
+                    }
+
+                    return $html . view('packages/theme::partials.facebook-integration')->render();
+                }, 1180);
+
+                return $html . $commentHtml;
             }
 
             return $html;
-        }, 1180);
-
-        add_filter(BASE_FILTER_PUBLIC_COMMENT_AREA, function ($html) {
-            if (
-                theme_option('facebook_comment_enabled_in_post', 'yes') == 'yes' ||
-                theme_option('facebook_comment_enabled_in_gallery', 'yes') == 'yes' ||
-                theme_option('facebook_comment_enabled_in_product', 'yes') == 'yes'
-            ) {
-                return $html . view('packages/theme::partials.facebook-comments')->render();
-            }
-
-            return $html;
-        }, 1180);
+        }, 1180, 2);
     }
 
     public static function registerSocialLinks(): void
     {
-        app('events')->listen(RenderingThemeOptionSettings::class, function () {
+        app('events')->listen(RenderingThemeOptionSettings::class, function (): void {
             ThemeOption::setSection(
                 ThemeOptionSection::make('opt-text-subsection-social-links')
                     ->title(__('Social Links'))
@@ -567,9 +551,9 @@ class ThemeSupport
         return static::convertSocialLinksToArray($data);
     }
 
-    public static function convertSocialLinksToArray(array $data): array
+    public static function convertSocialLinksToArray(array|string $data): array
     {
-        if (empty($data)) {
+        if (empty($data) || is_string($data)) {
             return [];
         }
 
@@ -624,7 +608,7 @@ class ThemeSupport
 
     public static function registerSiteCopyright(): void
     {
-        app('events')->listen(RenderingThemeOptionSettings::class, function () {
+        app('events')->listen(RenderingThemeOptionSettings::class, function (): void {
             ThemeOption::setField([
                 'id' => 'copyright',
                 'section_id' => 'opt-text-subsection-general',
@@ -653,6 +637,7 @@ class ThemeSupport
             $year = Carbon::now()->format('Y');
 
             $copyright = str_replace('%Y', $year, $copyright);
+            $copyright = str_replace('%y', $year, $copyright);
             $copyright = str_replace(':year', $year, $copyright);
         }
 
@@ -667,7 +652,7 @@ class ThemeSupport
 
     public static function registerLazyLoadImages(): void
     {
-        app('events')->listen(RenderingThemeOptionSettings::class, function () {
+        app('events')->listen(RenderingThemeOptionSettings::class, function (): void {
             ThemeOption::setField([
                 'id' => 'lazy_load_images',
                 'section_id' => 'opt-text-subsection-general',
@@ -682,12 +667,12 @@ class ThemeSupport
                 'id' => 'lazy_load_placeholder_image',
                 'section_id' => 'opt-text-subsection-general',
                 'type' => 'mediaImage',
-                'label' => __('Lazy load placeholder image'),
+                'label' => __('Lazy load placeholder image (250x250px)'),
                 'attributes' => [
                     'name' => 'lazy_load_placeholder_image',
                     'value' => null,
                 ],
-                'helper' => __('This image will be used as placeholder for lazy load images.'),
+                'helper' => __('This image will be used as placeholder for lazy load images. The best size for this image is 250x250px.'),
             ]);
         });
 
@@ -704,6 +689,7 @@ class ThemeSupport
         ) {
             if (
                 AdminHelper::isInAdmin()
+                || request()->expectsJson()
                 || Arr::get($attributes, 'data-bb-lazy') !== 'true'
             ) {
                 return $html;
@@ -722,7 +708,7 @@ class ThemeSupport
 
         Theme::asset()
             ->container('footer')
-            ->add('lazyload', asset('vendor/core/packages/theme/plugins/lazyload.min.js'));
+            ->add('lazyload', asset('vendor/core/packages/theme/plugins/lazyload.min.js'), ['jquery'], ['defer'], version: get_cms_version());
 
         add_filter(THEME_FRONT_FOOTER, function (?string $html) {
             if (AdminHelper::isInAdmin()) {
@@ -735,12 +721,12 @@ class ThemeSupport
                         window.Theme = window.Theme || {};
 
                         Theme.lazyLoadInstance = new LazyLoad({
-                            elements_selector: '[data-bb-lazy="true"]',
+                            elements_selector: '[data-bb-lazy="true"]:not(.loaded)',
                         });
                     });
 
                     document.addEventListener('shortcode.loaded', function () {
-                        Theme.lazyLoadInstance.update()
+                        Theme.lazyLoadInstance.update();
                     });
                 </script>
             HTML;
@@ -749,7 +735,7 @@ class ThemeSupport
 
     public static function registerSocialSharing(): void
     {
-        app('events')->listen(RenderingThemeOptionSettings::class, function () {
+        app('events')->listen(RenderingThemeOptionSettings::class, function (): void {
             ThemeOption::setSection(
                 ThemeOptionSection::make('opt-text-subsection-social-sharing')
                     ->title(__('Social Sharing'))
@@ -927,9 +913,10 @@ class ThemeSupport
             'M/d/Y',
             'd/m/Y',
             'd/M/Y',
+            'd.m.Y',
         ];
 
-        if ($extraDateFormat = config('packages.theme.extra_date_format')) {
+        if ($extraDateFormat = config('packages.theme.general.extra_date_format')) {
             $formats[] = $extraDateFormat;
         }
 
@@ -938,7 +925,7 @@ class ThemeSupport
 
     public static function registerDateFormatOption(): void
     {
-        app('events')->listen(RenderingThemeOptionSettings::class, function () {
+        app('events')->listen(RenderingThemeOptionSettings::class, function (): void {
             ThemeOption::setField(
                 SelectField::make()
                     ->sectionId('opt-text-subsection-general')
@@ -1011,7 +998,7 @@ class ThemeSupport
 
     public static function registerSiteLogoHeight(int $defaultValue = 50): void
     {
-        app('events')->listen(RenderingThemeOptionSettings::class, function () use ($defaultValue) {
+        app('events')->listen(RenderingThemeOptionSettings::class, function () use ($defaultValue): void {
             ThemeOption::setField(
                 NumberFieldOption::make()
                     ->sectionId('opt-text-subsection-logo')

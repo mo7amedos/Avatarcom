@@ -5,15 +5,15 @@ namespace Botble\Theme\Providers;
 use Botble\Base\Facades\AdminAppearance;
 use Botble\Base\Facades\BaseHelper;
 use Botble\Base\Facades\Html;
-use Botble\Base\Forms\FieldOptions\CodeEditorFieldOption;
 use Botble\Base\Forms\FieldOptions\MediaFileFieldOption;
 use Botble\Base\Forms\FieldOptions\SelectFieldOption;
-use Botble\Base\Forms\Fields\CodeEditorField;
+use Botble\Base\Forms\FieldOptions\TextareaFieldOption;
 use Botble\Base\Forms\Fields\MediaFileField;
 use Botble\Base\Forms\Fields\NumberField;
 use Botble\Base\Forms\Fields\OnOffCheckboxField;
 use Botble\Base\Forms\Fields\RadioField;
 use Botble\Base\Forms\Fields\SelectField;
+use Botble\Base\Forms\Fields\TextareaField;
 use Botble\Base\Forms\Fields\TextField;
 use Botble\Base\Forms\FormAbstract;
 use Botble\Base\Rules\OnOffRule;
@@ -38,6 +38,7 @@ use Botble\Theme\Facades\Theme;
 use Botble\Theme\Supports\ThemeSupport;
 use Botble\Theme\Supports\Vimeo;
 use Botble\Theme\Supports\Youtube;
+use Botble\Theme\ThemeOption\Fields\RadioField as ThemeOptionRadioField;
 use Botble\Theme\ThemeOption\ThemeOptionSection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\App;
@@ -52,7 +53,7 @@ class HookServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        PageTable::beforeRendering(function () {
+        PageTable::beforeRendering(function (): void {
             add_filter(PAGE_FILTER_PAGE_NAME_IN_ADMIN_LIST, function (string $name, Page $page) {
                 if (BaseHelper::isHomepage($page->getKey())) {
                     $name .= Html::tag('span', ' — ' . trans('packages/page::pages.front_page'), [
@@ -64,7 +65,7 @@ class HookServiceProvider extends ServiceProvider
             }, 10, 2);
         });
 
-        $this->app['events']->listen(RenderingDashboardWidgets::class, function () {
+        $this->app['events']->listen(RenderingDashboardWidgets::class, function (): void {
             if (! config('packages.theme.general.display_theme_manager_in_admin_panel', true)) {
                 return;
             }
@@ -81,14 +82,14 @@ class HookServiceProvider extends ServiceProvider
         }, 10, 2);
 
         add_filter('core_email_template_site_logo', function (?string $defaultLogo): string {
-            if (! $defaultLogo && ($logo = theme_option('logo'))) {
+            if (! $defaultLogo && ($logo = Theme::getLogo())) {
                 $defaultLogo = RvMedia::getImageUrl($logo);
             }
 
             return $defaultLogo;
         });
 
-        add_filter('email_template_logo', fn ($logo) => empty($logo) ? theme_option('logo') : $logo);
+        add_filter('email_template_logo', fn ($logo) => empty($logo) ? Theme::getLogo() : $logo);
         add_filter('email_template_logo_helper_text', function ($helperText) {
             return trans('packages/theme::theme.email_template_logo_helper_text')
                 . '<br />'
@@ -96,7 +97,7 @@ class HookServiceProvider extends ServiceProvider
         });
         add_filter(
             'email_template_copyright_text',
-            fn ($copyrightText) => empty($copyrightText) ? theme_option('copyright') : $copyrightText
+            fn ($copyrightText) => empty($copyrightText) ? Theme::getSiteCopyright() : $copyrightText
         );
         add_filter('email_template_copyright_helper_text', function ($helperText) {
             return $helperText;
@@ -104,7 +105,7 @@ class HookServiceProvider extends ServiceProvider
 
         Theme::typography()->renderThemeOptions();
 
-        $this->app['events']->listen(RenderingThemeOptionSettings::class, function () {
+        $this->app['events']->listen(RenderingThemeOptionSettings::class, function (): void {
             theme_option()
                 ->setSection(
                     ThemeOptionSection::make('opt-text-subsection-general')
@@ -141,6 +142,20 @@ class HookServiceProvider extends ServiceProvider
                                 ],
                             ],
                             [
+                                'id' => 'site_title_separator',
+                                'section_id' => 'opt-text-subsection-general',
+                                'type' => 'customSelect',
+                                'label' => trans('packages/theme::theme.site_title_separator'),
+                                'attributes' => [
+                                    'name' => 'site_title_separator',
+                                    'list' => [
+                                        '-' => __('- (dash)'),
+                                        '|' => __('| (pipe)'),
+                                    ],
+                                    'value' => '-',
+                                ],
+                            ],
+                            [
                                 'id' => 'seo_title',
                                 'type' => 'text',
                                 'label' => trans('core/setting::setting.general.seo_title'),
@@ -168,9 +183,33 @@ class HookServiceProvider extends ServiceProvider
                                 ],
                             ],
                             [
+                                'id' => 'seo_keywords',
+                                'type' => 'helper',
+                                'label' => false,
+                                'attributes' => [
+                                    'value' => null,
+                                    'content' => view('packages/theme::partials.no-meta-keywords')->render(),
+                                ],
+                            ],
+                            [
+                                'id' => 'seo_index',
+                                'type' => 'customRadio',
+                                'label' => trans('packages/theme::theme.theme_option_seo_index'),
+                                'attributes' => [
+                                    'name' => 'seo_index',
+                                    'values' => [
+                                        true => trans('packages/theme::theme.seo_index_options.index'),
+                                        false => trans('packages/theme::theme.seo_index_options.no_index'),
+                                    ],
+                                    'value' => true,
+                                ],
+                                'helper' => trans('packages/theme::theme.theme_option_seo_index_helper'),
+                            ],
+                            [
                                 'id' => 'seo_og_image',
                                 'type' => 'mediaImage',
                                 'label' => trans('packages/theme::theme.theme_option_seo_open_graph_image'),
+                                'helper' => trans('packages/theme::theme.theme_option_seo_open_graph_image_helper'),
                                 'attributes' => [
                                     'name' => 'seo_og_image',
                                     'value' => null,
@@ -197,20 +236,15 @@ class HookServiceProvider extends ServiceProvider
                         ->icon('ti ti-directions')
                         ->priority(0)
                         ->fields([
-                            [
-                                'id' => 'theme_breadcrumb_enabled',
-                                'type' => 'customSelect',
-                                'label' => trans('packages/theme::theme.breadcrumb_enabled'),
-                                'priority' => 0,
-                                'attributes' => [
-                                    'name' => 'theme_breadcrumb_enabled',
-                                    'list' => [
-                                        '1' => __('Yes'),
-                                        '0' => __('No'),
-                                    ],
-                                    'value' => '1',
-                                ],
-                            ],
+                            ThemeOptionRadioField::make()
+                                ->name('theme_breadcrumb_enabled')
+                                ->label(trans('packages/theme::theme.breadcrumb_enabled'))
+                                ->priority(0)
+                                ->defaultValue(true)
+                                ->options([
+                                    true => __('Yes'),
+                                    false => __('No'),
+                                ]),
                         ])
                 )
                 ->setSection(
@@ -227,6 +261,26 @@ class HookServiceProvider extends ServiceProvider
                                     'name' => 'favicon',
                                     'value' => null,
                                     'attributes' => ['allow_thumb' => false],
+                                ],
+                            ],
+                            [
+                                'id' => 'favicon_type',
+                                'type' => 'customSelect',
+                                'label' => trans('packages/theme::theme.theme_option_favicon_type'),
+                                'attributes' => [
+                                    'name' => 'favicon_type',
+                                    'list' => [
+                                        'image/x-icon' => 'ICO',
+                                        'image/png' => 'PNG',
+                                        'image/svg+xml' => 'SVG',
+                                        'image/gif' => 'GIF',
+                                        'image/jpeg' => 'JPEG',
+                                        'image/webp' => 'WebP',
+                                    ],
+                                    'value' => 'image/x-icon',
+                                    'options' => [
+                                        'class' => 'form-control',
+                                    ],
                                 ],
                             ],
                             [
@@ -266,6 +320,26 @@ class HookServiceProvider extends ServiceProvider
 
             if ($shortcode->height) {
                 $data['height'] = $shortcode->height;
+            }
+
+            if ($shortcode->centered && $shortcode->centered === 'yes') {
+                $data['centered'] = true;
+            }
+
+            if ($shortcode->margin_top || $shortcode->margin_top === '0') {
+                $data['margin_top'] = (int) $shortcode->margin_top;
+            }
+
+            if ($shortcode->margin_bottom || $shortcode->margin_bottom === '0') {
+                $data['margin_bottom'] = (int) $shortcode->margin_bottom;
+            }
+
+            if ($shortcode->margin_start || $shortcode->margin_start === '0') {
+                $data['margin_start'] = (int) $shortcode->margin_start;
+            }
+
+            if ($shortcode->margin_end || $shortcode->margin_end === '0') {
+                $data['margin_end'] = (int) $shortcode->margin_end;
             }
 
             $type = null;
@@ -334,6 +408,32 @@ class HookServiceProvider extends ServiceProvider
                 ->add('height', NumberField::class, [
                     'label' => __('Height'),
                     'default_value' => 315,
+                ])
+                ->add('centered', RadioField::class, [
+                    'label' => __('Center Video'),
+                    'values' => [
+                        'no' => __('No'),
+                        'yes' => __('Yes'),
+                    ],
+                    'default_value' => 'no',
+                ])
+                ->add('margin_top', NumberField::class, [
+                    'label' => __('Margin Top (px)'),
+                    'default_value' => 0,
+                ])
+                ->add('margin_bottom', NumberField::class, [
+                    'label' => __('Margin Bottom (px)'),
+                    'default_value' => 20,
+                ])
+                ->add('margin_start', NumberField::class, [
+                    'label' => __('Margin Start (px)'),
+                    'default_value' => 0,
+                    'helper' => __('Left margin in LTR, right margin in RTL'),
+                ])
+                ->add('margin_end', NumberField::class, [
+                    'label' => __('Margin End (px)'),
+                    'default_value' => 0,
+                    'helper' => __('Right margin in LTR, left margin in RTL'),
                 ]);
         });
 
@@ -400,14 +500,14 @@ class HookServiceProvider extends ServiceProvider
                     return ShortcodeForm::createFromArray($attributes)
                         ->add(
                             'content',
-                            CodeEditorField::class,
-                            CodeEditorFieldOption::make()
+                            TextareaField::class,
+                            TextareaFieldOption::make()
                                 ->label(__('Content'))
                                 ->placeholder(__('HTML code'))
                                 ->rows(3)
                                 ->addAttribute('data-shortcode-attribute', 'content')
                                 ->value($content)
-                                ->mode('html')
+                                ->maxLength(100000)
                         );
                 });
             }
@@ -490,18 +590,18 @@ class HookServiceProvider extends ServiceProvider
             4
         );
 
-        add_action(BASE_ACTION_PUBLIC_RENDER_SINGLE, function () {
+        add_action(BASE_ACTION_PUBLIC_RENDER_SINGLE, function (): void {
             if (BaseHelper::getRichEditor() === 'ckeditor') {
                 Theme::asset()
                     ->add('ckeditor-content-styles', 'vendor/core/core/base/libraries/ckeditor/content-styles.css');
             }
         }, 15);
 
-        GeneralSettingForm::extend(function (GeneralSettingForm $form) {
+        GeneralSettingForm::extend(function (GeneralSettingForm $form): void {
             $availableLocales = Language::getAvailableLocales();
 
             $form
-                ->when(! empty($availableLocales), function (FormAbstract $form) use ($availableLocales) {
+                ->when(! empty($availableLocales), function (FormAbstract $form) use ($availableLocales): void {
                     $defaultLocale = setting('locale', App::getLocale());
 
                     if (
@@ -554,7 +654,7 @@ class HookServiceProvider extends ServiceProvider
             return $rules;
         }, 110, 2);
 
-        AdminAppearanceSettingForm::extend(function (AdminAppearanceSettingForm $form) {
+        AdminAppearanceSettingForm::extend(function (AdminAppearanceSettingForm $form): void {
             $form
                 ->addAfter(AdminAppearance::getSettingKey('show_menu_item_icon'), 'show_admin_bar', OnOffCheckboxField::class, [
                     'label' => trans('core/setting::setting.admin_appearance.form.show_admin_bar'),
@@ -581,7 +681,7 @@ class HookServiceProvider extends ServiceProvider
 
     public function addStatsWidgets(array $widgets, Collection $widgetSettings): array
     {
-        $themes = count(BaseHelper::scanFolder(theme_path()));
+        $themes = fn () => count(BaseHelper::scanFolder(theme_path()));
 
         return (new DashboardWidgetInstance())
             ->setType('stats')

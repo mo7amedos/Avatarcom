@@ -42,7 +42,7 @@ class DashboardServiceProvider extends ServiceProvider
             ->publishAssets()
             ->loadMigrations();
 
-        DashboardMenu::default()->beforeRetrieving(function () {
+        DashboardMenu::default()->beforeRetrieving(function (): void {
             DashboardMenu::make()
                 ->registerItem(
                     DashboardMenuItem::make()

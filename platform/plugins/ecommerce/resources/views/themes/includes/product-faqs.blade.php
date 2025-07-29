@@ -1,5 +1,5 @@
 @php
-    Theme::asset()->add('faqs-css', 'vendor/core/plugins/ecommerce/css/front-faq.css', version: get_cms_version());
+    Theme::asset()->add('faqs-css', 'vendor/core/plugins/ecommerce/css/front-faq.css', version: EcommerceHelper::getAssetVersion());
 @endphp
 
 <div class="product-faqs-accordion accordion" id="faqs-accordion">
@@ -9,6 +9,8 @@
                 <button
                     @class(['accordion-button', 'collapsed' => ! $loop->first])
                     type="button"
+                    data-toggle="collapse"
+                    data-target="#collapse-{{ $loop->index }}" aria-expanded="true"
                     data-bs-toggle="collapse"
                     data-bs-target="#collapse-{{ $loop->index }}" aria-expanded="true"
                     aria-controls="collapse-{{ $loop->index }}"

@@ -20,6 +20,10 @@ abstract class Enum implements CastsAttributes, JsonSerializable
 
     protected mixed $value = null;
 
+    final public function __construct()
+    {
+    }
+
     public function make($value): static
     {
         if ($value instanceof static) {
@@ -29,7 +33,7 @@ abstract class Enum implements CastsAttributes, JsonSerializable
         }
 
         if ($value !== null && ! $this->isValid($value)) {
-            Log::error(sprintf('Value %s is not part of the enum %s', json_encode($value), get_called_class()));
+            Log::error(sprintf('Value %s is not part of the enum %s', json_encode($value), static::class));
         } else {
             $this->value = $value;
         }
@@ -52,7 +56,7 @@ abstract class Enum implements CastsAttributes, JsonSerializable
 
     public static function toArray(bool $includeDefault = false): array
     {
-        $class = get_called_class();
+        $class = static::class;
         if (! isset(static::$cache[$class])) {
             try {
                 $reflection = new ReflectionClass($class);
@@ -68,7 +72,7 @@ abstract class Enum implements CastsAttributes, JsonSerializable
             unset($result['__default']);
         }
 
-        return apply_filters(BASE_FILTER_ENUM_ARRAY, $result, get_called_class());
+        return apply_filters(BASE_FILTER_ENUM_ARRAY, $result, static::class);
     }
 
     /**
@@ -111,7 +115,7 @@ abstract class Enum implements CastsAttributes, JsonSerializable
             return (new static())->make($array[$name]);
         }
 
-        throw new BadMethodCallException('No static method or enum constant ' . $name . ' in class ' . get_called_class());
+        throw new BadMethodCallException('No static method or enum constant ' . $name . ' in class ' . static::class);
     }
 
     public static function labels(): array
@@ -135,7 +139,7 @@ abstract class Enum implements CastsAttributes, JsonSerializable
 
         $label = Lang::has($key) ? trans($key) : $value;
 
-        return apply_filters(BASE_FILTER_ENUM_LABEL, $label, get_called_class());
+        return apply_filters(BASE_FILTER_ENUM_LABEL, $label, static::class);
     }
 
     /**
@@ -171,7 +175,7 @@ abstract class Enum implements CastsAttributes, JsonSerializable
      */
     final public function equals(?Enum $enum = null): bool
     {
-        return $enum !== null && $this->getValue() === $enum->getValue() && get_called_class() === get_class($enum);
+        return $enum !== null && $this->getValue() === $enum->getValue() && static::class === $enum::class;
     }
 
     /**

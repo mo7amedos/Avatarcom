@@ -12,18 +12,19 @@
 
 @if ($currentCategories)
     <ul
-        class="bb-product-filter-items"
         @if(
-            in_array($categoryId, $categoriesRequest)
-            || isset($category) && $categoryId == $category->id
+            $isCategoriesListActive = (in_array($categoryId, $categoriesRequest)
+            || isset($category) && $categoryId == $category->id)
         )
             style="display: block !important;"
         @endif
+
+        class="bb-product-filter-items @if ($isCategoriesListActive) active @endif"
     >
         @foreach ($currentCategories as $category)
             @if (! empty($categoriesRequest) && $loop->first && ! $category->parent_id)
                 <li class="bb-product-filter-item">
-                    <a href="{{ route('public.products') }}" @class(['bb-product-filter-link', 'active' => empty($categoriesRequest)])>
+                    <a href="{{ $currentMainFilterUrl ?? route('public.products') }}" @class(['bb-product-filter-link', 'active' => empty($categoriesRequest)])>
                         <x-core::icon name="ti ti-chevron-left" />
 
                         {{ __('All categories') }}
@@ -55,14 +56,15 @@
                 @endphp
 
                 @if ($hasChildren)
-                    <button data-bb-toggle="toggle-product-categories-tree">
-                        <x-core::icon name="ti ti-chevron-down" />
-                    </button>
-
                     @include(EcommerceHelper::viewPath('includes.filters.categories-list'), [
                         'categories' => $groupedCategories,
                         'parentId' => $category->id,
                     ])
+
+                    <button data-bb-toggle="toggle-product-categories-tree">
+                        <x-core::icon name="ti ti-plus" />
+                        <x-core::icon name="ti ti-minus" style="display: none;" />
+                    </button>
                 @endif
             </li>
         @endforeach

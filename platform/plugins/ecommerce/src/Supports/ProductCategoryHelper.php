@@ -38,7 +38,7 @@ class ProductCategoryHelper
             }
 
             if ($onlyParent) {
-                $query = $query->where(function ($query) {
+                $query = $query->where(function ($query): void {
                     $query
                         ->whereNull('parent_id')
                         ->orWhere('parent_id', 0);
@@ -46,8 +46,7 @@ class ProductCategoryHelper
             }
 
             $query = $query
-                ->orderBy('order')
-                ->orderByDesc('created_at');
+                ->oldest('order')->latest();
 
             if ($select = Arr::get($params, 'select', [
                 'id',
@@ -94,13 +93,15 @@ class ProductCategoryHelper
         return $this->getTreeCategories(true);
     }
 
-    public function getTreeCategories(bool $activeOnly = false): Collection
+    public function getTreeCategories(bool $activeOnly = false, array $select = ['*']): Collection
     {
         if (! isset($this->treeCategories)) {
             $this->treeCategories = $this->getAllProductCategories(
                 [
                     'condition' => $activeOnly ? ['status' => BaseStatusEnum::PUBLISHED] : [],
-                    'with' => [$activeOnly ? 'activeChildren' : 'children'],
+                    'with' => [$activeOnly ? 'activeChildren' : 'children' => function ($query) use ($select): void {
+                        $query->select($select ?: '*');
+                    }],
                 ],
                 true
             );
@@ -155,8 +156,8 @@ class ProductCategoryHelper
                     'ec_product_categories.name',
                     'parent_id',
                 ])
-                ->orderBy('order')
-                ->orderByDesc('created_at');
+                ->oldest('order')
+                ->latest();
 
             $categories = $this->applyQuery($query)->get();
 
@@ -189,30 +190,38 @@ class ProductCategoryHelper
                 'ec_product_categories.name',
                 'ec_product_categories.order',
                 'parent_id',
-                DB::raw("CONCAT({$tablePrefix}slugs.prefix, '/', {$tablePrefix}slugs.key) as url"),
+                DB::raw("
+                    CONCAT({$tablePrefix}slugs.prefix,
+                    IF({$tablePrefix}slugs.prefix IS NOT NULL AND {$tablePrefix}slugs.prefix != '', '/', ''),
+                    {$tablePrefix}slugs.key) as url
+                "),
                 'icon',
                 'image',
                 'icon_image',
             ])
-            ->leftJoin('slugs', function (JoinClause $join) {
+            ->leftJoin('slugs', function (JoinClause $join): void {
                 $join
                     ->on('slugs.reference_id', 'ec_product_categories.id')
                     ->where('slugs.reference_type', ProductCategory::class);
             })
-            ->when($this->isEnabledMultiLanguages(), function (Builder $query) {
+            ->when($this->isEnabledMultiLanguages(), function (Builder $query): void {
                 $query
-                    ->leftJoin('slugs_translations as st', function (JoinClause $join) {
+                    ->leftJoin('slugs_translations as st', function (JoinClause $join): void {
                         $join
                             ->on('st.slugs_id', 'slugs.id')
                             ->where('st.lang_code', Language::getCurrentLocaleCode());
                     })
                     ->addSelect(
-                        DB::raw(
-                            "IF(st.key IS NOT NULL, CONCAT(st.prefix, '/', st.key), CONCAT(slugs.prefix, '/', slugs.key)) as url"
-                        )
+                        DB::raw("
+                            IF(
+                                st.key IS NOT NULL,
+                                CONCAT(st.prefix, IF(st.prefix IS NOT NULL AND st.prefix != '', '/', ''), st.key),
+                                CONCAT(slugs.prefix, IF(slugs.prefix IS NOT NULL AND slugs.prefix != '', '/', ''), slugs.key)
+                            ) as url
+                        ")
                     );
             })
-            ->orderBy('ec_product_categories.order')
+            ->oldest('ec_product_categories.order')
             ->when(
                 ! empty($categoryIds),
                 fn (Builder $query) => $query->whereIn('ec_product_categories.id', $categoryIds)
@@ -233,7 +242,7 @@ class ProductCategoryHelper
     {
         if ($this->isEnabledMultiLanguages()) {
             return $query
-                ->leftJoin('ec_product_categories_translations as ct', function (JoinClause $join) {
+                ->leftJoin('ec_product_categories_translations as ct', function (JoinClause $join): void {
                     $join
                         ->on('ec_product_categories_id', 'ec_product_categories.id')
                         ->where('ct.lang_code', Language::getCurrentLocaleCode());

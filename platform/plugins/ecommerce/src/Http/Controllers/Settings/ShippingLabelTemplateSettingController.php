@@ -13,6 +13,7 @@ use Botble\Ecommerce\Enums\ShippingMethodEnum;
 use Botble\Ecommerce\Facades\EcommerceHelper;
 use Botble\Ecommerce\Facades\InvoiceHelper;
 use Botble\Ecommerce\Http\Requests\Settings\ShippingLabelTemplateSettingRequest;
+use Botble\Ecommerce\Supports\TwigExtension;
 use Botble\Media\Facades\RvMedia;
 use Botble\Theme\Facades\Theme;
 use Carbon\Carbon;
@@ -28,14 +29,17 @@ class ShippingLabelTemplateSettingController extends SettingController
 
         Assets::addScriptsDirectly('vendor/core/core/setting/js/email-template.js');
 
-        $content = (new Pdf())->getContent(
-            plugin_path('ecommerce/resources/templates/shipping-label.tpl'),
-            storage_path('app/templates/ecommerce/shipping-label.tpl')
-        );
+        $content = (new Pdf())
+            ->twigExtensions([
+                new TwigExtension(),
+            ])
+            ->supportLanguage(InvoiceHelper::getLanguageSupport())
+            ->getContent(
+                plugin_path('ecommerce/resources/templates/shipping-label.tpl'),
+                storage_path('app/templates/ecommerce/shipping-label.tpl')
+            );
 
-        $variables = [
-
-        ];
+        $variables = [];
 
         return view('plugins/ecommerce::shipping-label-template.settings', compact('content', 'variables'));
     }
@@ -80,6 +84,9 @@ class ShippingLabelTemplateSettingController extends SettingController
             ->destinationPath(storage_path('app/templates/ecommerce/shipping-label.tpl'))
             ->paperSizeHalfLetter()
             ->supportLanguage(InvoiceHelper::getLanguageSupport())
+            ->twigExtensions([
+                new TwigExtension(),
+            ])
             ->data(
                 [
                     'shipment' => [
@@ -129,7 +136,7 @@ class ShippingLabelTemplateSettingController extends SettingController
                     ],
                 ]
             )
-            ->compile()
+            ->setProcessingLibrary(get_ecommerce_setting('invoice_processing_library', 'dompdf'))
             ->stream();
     }
 }

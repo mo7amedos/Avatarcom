@@ -11,11 +11,13 @@ use Botble\Base\Forms\Fields\OnOffCheckboxField;
 use Botble\Base\Forms\Fields\PasswordField;
 use Botble\Base\Forms\Fields\PhoneNumberField;
 use Botble\Base\Forms\Fields\TextField;
+use Botble\Base\Forms\FormAbstract;
 use Botble\Ecommerce\Facades\EcommerceHelper;
 use Botble\Ecommerce\Forms\Fronts\Auth\FieldOptions\EmailFieldOption;
 use Botble\Ecommerce\Forms\Fronts\Auth\FieldOptions\TextFieldOption;
 use Botble\Ecommerce\Http\Requests\RegisterRequest;
 use Botble\Ecommerce\Models\Customer;
+use Botble\Theme\Facades\Theme;
 
 class RegisterForm extends AuthForm
 {
@@ -44,34 +46,43 @@ class RegisterForm extends AuthForm
                 TextFieldOption::make()
                     ->label(__('Full name'))
                     ->placeholder(__('Your full name'))
+                    ->required()
                     ->icon('ti ti-user')
             )
-            ->add(
-                'email',
-                EmailField::class,
-                EmailFieldOption::make()
-                    ->label(__('Email'))
-                    ->when(EcommerceHelper::isLoginUsingPhone(), function (EmailFieldOption $fieldOption) {
-                        $fieldOption->label(__('Email (optional)'));
-                    })
-                    ->placeholder(__('Your email'))
-                    ->icon('ti ti-mail')
-                    ->addAttribute('autocomplete', 'email')
-            )
-            ->add(
-                'phone',
-                PhoneNumberField::class,
-                TextFieldOption::make()
-                    ->label(__('Phone (optional)'))
-                    ->when(EcommerceHelper::isLoginUsingPhone() || get_ecommerce_setting('make_customer_phone_number_required', false), function (TextFieldOption $fieldOption) {
-                        $fieldOption
-                            ->required()
-                            ->label(__('Phone'));
-                    })
-                    ->placeholder(__('Phone number'))
-                    ->icon('ti ti-phone')
-                    ->addAttribute('autocomplete', 'tel')
-            )
+            ->when(! EcommerceHelper::isLoginUsingPhone() || get_ecommerce_setting('keep_email_field_in_registration_form', true), function (FormAbstract $form): void {
+                $form
+                    ->add(
+                        'email',
+                        EmailField::class,
+                        EmailFieldOption::make()
+                            ->label(__('Email'))
+                            ->when(EcommerceHelper::isLoginUsingPhone(), function (EmailFieldOption $fieldOption): void {
+                                $fieldOption->label(__('Email (optional)'));
+                            }, function (EmailFieldOption $fieldOption): void {
+                                $fieldOption->required();
+                            })
+                            ->placeholder(__('Your email'))
+                            ->icon('ti ti-mail')
+                            ->addAttribute('autocomplete', 'email')
+                    );
+            })
+            ->when(get_ecommerce_setting('enabled_phone_field_in_registration_form', true), static function (FormAbstract $form): void {
+                $form
+                    ->add(
+                        'phone',
+                        PhoneNumberField::class,
+                        TextFieldOption::make()
+                            ->label(__('Phone (optional)'))
+                            ->when(EcommerceHelper::isLoginUsingPhone() || get_ecommerce_setting('make_customer_phone_number_required', false), static function (TextFieldOption $fieldOption): void {
+                                $fieldOption
+                                    ->required()
+                                    ->label(__('Phone'));
+                            })
+                            ->placeholder(__('Phone number'))
+                            ->icon('ti ti-phone')
+                            ->addAttribute('autocomplete', 'tel')
+                    );
+            })
             ->add(
                 'password',
                 PasswordField::class,
@@ -79,6 +90,7 @@ class RegisterForm extends AuthForm
                     ->label(__('Password'))
                     ->placeholder(__('Password'))
                     ->icon('ti ti-lock')
+                    ->required()
             )
             ->add(
                 'password_confirmation',
@@ -87,18 +99,19 @@ class RegisterForm extends AuthForm
                     ->label(__('Password confirmation'))
                     ->placeholder(__('Password confirmation'))
                     ->icon('ti ti-lock')
+                    ->required()
             )
             ->add(
                 'agree_terms_and_policy',
                 OnOffCheckboxField::class,
                 CheckboxFieldOption::make()
                     ->when(
-                        $privacyPolicyUrl = theme_option('ecommerce_term_and_privacy_policy_url') ?: theme_option('term_and_privacy_policy_url'),
-                        function (CheckboxFieldOption $fieldOption, string $url) {
+                        $privacyPolicyUrl = Theme::termAndPrivacyPolicyUrl(),
+                        function (CheckboxFieldOption $fieldOption, string $url): void {
                             $fieldOption->label(__('I agree to the :link', ['link' => Html::link($url, __('Terms and Privacy Policy'), attributes: ['class' => 'text-decoration-underline', 'target' => '_blank'])]));
                         }
                     )
-                    ->when(! $privacyPolicyUrl, function (CheckboxFieldOption $fieldOption) {
+                    ->when(! $privacyPolicyUrl, function (CheckboxFieldOption $fieldOption): void {
                         $fieldOption->label(__('I agree to the Terms and Privacy Policy'));
                     })
             )

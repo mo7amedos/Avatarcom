@@ -40,11 +40,11 @@ class SimpleSliderServiceProvider extends ServiceProvider
             ->loadAndPublishConfigurations(['permissions'])
             ->loadAndPublishViews()
             ->loadAndPublishTranslations()
-            ->loadRoutes()
+            ->loadRoutes(['web', 'api'])
             ->loadMigrations()
             ->publishAssets();
 
-        DashboardMenu::default()->beforeRetrieving(function () {
+        DashboardMenu::default()->beforeRetrieving(function (): void {
             DashboardMenu::make()
                 ->registerItem(
                     DashboardMenuItem::make()
@@ -56,7 +56,7 @@ class SimpleSliderServiceProvider extends ServiceProvider
                 );
         });
 
-        PanelSectionManager::default()->beforeRendering(function () {
+        PanelSectionManager::default()->beforeRendering(function (): void {
             PanelSectionManager::registerItem(
                 SettingOthersPanelSection::class,
                 fn () => PanelSectionItem::make('simple_sliders')
@@ -68,11 +68,11 @@ class SimpleSliderServiceProvider extends ServiceProvider
             );
         });
 
-        if (defined('LANGUAGE_MODULE_SCREEN_NAME')) {
+        if (defined('LANGUAGE_MODULE_SCREEN_NAME') && defined('LANGUAGE_ADVANCED_MODULE_SCREEN_NAME')) {
             Language::registerModule(SimpleSlider::class);
         }
 
-        $this->app->booted(function () {
+        $this->app->booted(function (): void {
             $this->app->register(HookServiceProvider::class);
         });
     }

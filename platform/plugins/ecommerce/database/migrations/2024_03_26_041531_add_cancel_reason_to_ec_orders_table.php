@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('ec_orders', function (Blueprint $table) {
+        Schema::table('ec_orders', function (Blueprint $table): void {
             $table->string('cancellation_reason')->nullable()->after('is_finished');
             $table->string('cancellation_reason_description')->nullable()->after('cancellation_reason');
         });
@@ -15,7 +15,7 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::table('ec_orders', function (Blueprint $table) {
+        Schema::table('ec_orders', function (Blueprint $table): void {
             $table->dropColumn(['cancellation_reason', 'cancellation_reason_description']);
         });
     }

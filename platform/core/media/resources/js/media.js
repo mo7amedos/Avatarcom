@@ -145,6 +145,11 @@ class MediaManagement {
                 ActionsService.handleDropdown()
 
                 _self.MediaService.getFileDetails($current.data())
+
+                // Add to recent items when a file is clicked
+                if (!$current.data('is_folder')) {
+                    Helpers.addToRecent($current.data('id'))
+                }
             })
             .on('dblclick doubletap', '.js-media-list-title', (event) => {
                 event.preventDefault()
@@ -152,7 +157,7 @@ class MediaManagement {
                 let data = $(event.currentTarget).data()
                 if (data.is_folder === true) {
                     Helpers.resetPagination()
-                    _self.FolderService.changeFolder(data.id)
+                    _self.FolderService.changeFolderAndAddToRecent(data.id)
                 } else {
                     if (!Helpers.isUseInModal()) {
                         ActionsService.handlePreview()
@@ -166,7 +171,7 @@ class MediaManagement {
 
                 return false
             })
-            .on('dblclick doubletap', '.js-up-one-level', (event) => {
+            .on('click', '.js-up-one-level', (event) => {
                 event.preventDefault()
                 let count = $('.rv-media-breadcrumb .breadcrumb li').length
                 $(`.rv-media-breadcrumb .breadcrumb li:nth-child(${count - 1}) a`).trigger('click')
@@ -328,7 +333,7 @@ class MediaManagement {
                 event.preventDefault()
                 let folderId = $(event.currentTarget).data('folder')
                 Helpers.resetPagination()
-                _self.FolderService.changeFolder(folderId)
+                _self.FolderService.changeFolderAndAddToRecent(folderId)
             })
             .off('click', '.js-files-action')
             .on('click', '.js-files-action', (event) => {
@@ -600,12 +605,15 @@ class MediaManagement {
                 {
                     action: $form.data('action'),
                     selected: items,
+                    skip_trash: $form.find('input[name="skip_trash"]').is(':checked'),
                 },
                 (res) => {
                     $form.closest('.modal').modal('hide')
                     if (!res.error) {
                         _self.MediaService.getMedia(true)
                     }
+
+                    $form.find('input[name="skip_trash"]').prop('checked', false)
 
                     Botble.hideButtonLoading($form.find('button[type="submit"]'))
                 }
@@ -634,7 +642,7 @@ class MediaManagement {
                 )
             })
 
-        if (MediaConfig.request_params.view_in === 'trash') {
+        if (Helpers.getRequestParams().view_in === 'trash') {
             $(document).find('.js-insert-to-editor').prop('disabled', true)
         } else {
             $(document).find('.js-insert-to-editor').prop('disabled', false)
@@ -703,24 +711,20 @@ class MediaManagement {
     // Scroll get more media
     scrollGetMore() {
         let _self = this
-        $('.rv-media-main .rv-media-items').bind('DOMMouseScroll mousewheel', (e) => {
-            if (e.originalEvent.detail > 0 || e.originalEvent.wheelDelta < 0) {
-                let loadMore
-                if ($(e.currentTarget).closest('.media-modal').length > 0) {
-                    loadMore =
-                        $(e.currentTarget).scrollTop() + $(e.currentTarget).innerHeight() / 2 >=
-                        $(e.currentTarget)[0].scrollHeight - 450
-                } else {
-                    loadMore =
-                        $(e.currentTarget).scrollTop() + $(e.currentTarget).innerHeight() >=
-                        $(e.currentTarget)[0].scrollHeight - 150
-                }
+        let $mediaList = $('.rv-media-main .rv-media-items')
 
-                if (loadMore) {
-                    if (typeof RV_MEDIA_CONFIG.pagination != 'undefined' && RV_MEDIA_CONFIG.pagination.has_more) {
-                        _self.MediaService.getMedia(false, false, true)
-                    }
-                }
+        // Handle both mouse wheel and touch scroll events
+        $mediaList.on('wheel scroll', function (e) {
+            let $target = $(e.currentTarget)
+            let scrollHeight = $target[0].scrollHeight
+            let scrollTop = $target.scrollTop()
+            let innerHeight = $target.innerHeight()
+
+            let threshold = $target.closest('.media-modal').length > 0 ? 450 : 150
+            let loadMore = scrollTop + innerHeight >= scrollHeight - threshold
+
+            if (loadMore && RV_MEDIA_CONFIG.pagination?.has_more) {
+                _self.MediaService.getMedia(false, false, true)
             }
         })
     }

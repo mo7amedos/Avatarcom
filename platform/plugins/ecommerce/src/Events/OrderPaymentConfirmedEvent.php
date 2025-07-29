@@ -11,7 +11,7 @@ class OrderPaymentConfirmedEvent extends Event
 {
     use SerializesModels;
 
-    public function __construct(public Order $order, public User $confirmedBy)
+    public function __construct(public Order $order, public ?User $confirmedBy = null)
     {
     }
 }

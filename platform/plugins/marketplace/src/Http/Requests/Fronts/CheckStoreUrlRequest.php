@@ -9,7 +9,7 @@ class CheckStoreUrlRequest extends Request
     public function rules(): array
     {
         return [
-            'url' => 'required|max:200',
+            'url' => ['required', 'max:200'],
         ];
     }
 }

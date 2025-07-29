@@ -7,7 +7,9 @@ MartApp.$iconChevronLeft =
 MartApp.$iconChevronRight =
     '<span class="slick-next-arrow svg-icon"><svg><use href="#svg-icon-chevron-right" xlink:href="#svg-icon-chevron-right"></use></svg></span>'
 
-window._scrollBar = new ScrollBarHelper()
+if (typeof ScrollBarHelper !== 'undefined') {
+    window._scrollBar = new ScrollBarHelper()
+}
 
 MartApp.isRTL = $('body').prop('dir') === 'rtl'
 ;(function ($) {
@@ -96,16 +98,158 @@ MartApp.isRTL = $('body').prop('dir') === 'rtl'
         })
     })
 
+    MartApp.showModal = function ($modal) {
+        if (typeof $.fn.modal === 'function') {
+            $modal.modal('show')
+        } else {
+            // Fallback: show modal manually
+            $modal.addClass('show')
+            $modal.css('display', 'block')
+            $modal.attr('aria-hidden', 'false')
+            $('body').addClass('modal-open')
+
+            // Create backdrop if it doesn't exist
+            if (!$('.modal-backdrop').length) {
+                $('<div class="modal-backdrop fade show"></div>').appendTo('body')
+            }
+        }
+    }
+
+    MartApp.hideModal = function ($modal) {
+        if (typeof $.fn.modal === 'function') {
+            $modal.modal('hide')
+        } else {
+            // Fallback: hide modal manually
+            $modal.removeClass('show')
+            $modal.css('display', 'none')
+            $modal.attr('aria-hidden', 'true')
+            $('body').removeClass('modal-open')
+            $('.modal-backdrop').remove()
+        }
+    }
+    
+    MartApp.initQuickShopVariationListeners = function ($modal) {
+        // Save original callbacks
+        const originalSuccessCallback = window.onChangeSwatchesSuccess
+        
+        // Save original history methods
+        const originalPushState = window.history.pushState
+        const originalReplaceState = window.history.replaceState
+        
+        // Override history methods to prevent URL updates in quick shop modal
+        window.history.pushState = function() {
+            // Check if we're dealing with product attribute changes in quick shop modal
+            if (arguments[0] && arguments[0].product_attributes_id && 
+                $('#' + arguments[0].product_attributes_id).closest('#product-quick-shop-modal').length) {
+                // Skip the pushState for quick shop modal
+                return
+            }
+            // Otherwise, call the original method
+            return originalPushState.apply(window.history, arguments)
+        }
+        
+        window.history.replaceState = function() {
+            // Check if we're dealing with product attribute changes in quick shop modal
+            if (arguments[0] && arguments[0].product_attributes_id && 
+                $('#' + arguments[0].product_attributes_id).closest('#product-quick-shop-modal').length) {
+                // Skip the replaceState for quick shop modal
+                return
+            }
+            // Otherwise, call the original method
+            return originalReplaceState.apply(window.history, arguments)
+        }
+        
+        // Override the success callback to update stock status
+        window.onChangeSwatchesSuccess = function(res, $productAttributes) {
+            // Call original callback if exists
+            if (originalSuccessCallback && typeof originalSuccessCallback === 'function') {
+                originalSuccessCallback(res, $productAttributes)
+            }
+            
+            // Update stock status only if in quick shop modal
+            if ($productAttributes.closest('#product-quick-shop-modal').length) {
+                const data = res.data
+                if (data) {
+                    const $availabilityStatus = $modal.find('.availability-status .status-value')
+                    const $addToCartBtn = $modal.find('.add-to-cart-button')
+                    const $quantityInput = $modal.find('input[name="qty"]')
+                    
+                    const inStockText = $availabilityStatus.data('in-stock-text') || 'In stock'
+                    const outOfStockText = $availabilityStatus.data('out-of-stock-text') || 'Out of stock'
+                    
+                    if (data.product && data.product.is_out_of_stock) {
+                        $availabilityStatus.html('<span class="text-danger">' + outOfStockText + '</span>')
+                        $addToCartBtn.addClass('disabled').prop('disabled', true)
+                        if ($quantityInput.length) {
+                            $quantityInput.prop('readonly', true)
+                        }
+                    } else if (data.product && data.product.with_storehouse_management && data.product.quantity < 1) {
+                        $availabilityStatus.html('<span class="text-danger">' + outOfStockText + '</span>')
+                        $addToCartBtn.addClass('disabled').prop('disabled', true)
+                        if ($quantityInput.length) {
+                            $quantityInput.prop('readonly', true)
+                        }
+                    } else {
+                        $availabilityStatus.html('<span class="text-success">' + inStockText + '</span>')
+                        $addToCartBtn.removeClass('disabled').prop('disabled', false)
+                        if ($quantityInput.length) {
+                            $quantityInput.prop('readonly', false)
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Restore original methods when modal is closed
+        $modal.on('hidden.bs.modal', function() {
+            window.onChangeSwatchesSuccess = originalSuccessCallback
+            window.history.pushState = originalPushState
+            window.history.replaceState = originalReplaceState
+        })
+    }
+
+    MartApp.updateQuickShopAvailability = function ($modal) {
+        const $form = $modal.find('form.cart-form')
+        const $availabilityStatus = $modal.find('.availability-status .status-value')
+        const $addToCartBtn = $form.find('.add-to-cart-button')
+        const $quantityInput = $form.find('input[name="qty"]')
+        
+        if (!$availabilityStatus.length) {
+            return
+        }
+
+        // Check if product is available based on the form state
+        const isOutOfStock = $addToCartBtn.hasClass('disabled') || $addToCartBtn.prop('disabled')
+        
+        const inStockText = $availabilityStatus.data('in-stock-text') || 'In stock'
+        const outOfStockText = $availabilityStatus.data('out-of-stock-text') || 'Out of stock'
+        
+        if (isOutOfStock) {
+            $availabilityStatus.html('<span class="text-danger">' + outOfStockText + '</span>')
+            // Disable quantity input when out of stock
+            if ($quantityInput.length) {
+                $quantityInput.prop('readonly', true)
+            }
+        } else {
+            $availabilityStatus.html('<span class="text-success">' + inStockText + '</span>')
+            // Enable quantity input when in stock
+            if ($quantityInput.length) {
+                $quantityInput.prop('readonly', false)
+            }
+        }
+    }
+
     MartApp.init = function () {
         MartApp.$body = $(document.body)
 
-        MartApp.formSearch = '#products-filter-form'
+        MartApp.formSearch = '.bb-product-form-filter'
         MartApp.$formSearch = $(document).find(MartApp.formSearch)
         MartApp.productListing = '.products-listing'
         MartApp.$productListing = $(MartApp.productListing)
 
         this.lazyLoad(null, true)
         this.productQuickView()
+        this.productQuickShop()
         this.slickSlides()
         this.productQuantity()
         this.addProductToWishlist()
@@ -140,14 +284,6 @@ MartApp.isRTL = $('body').prop('dir') === 'rtl'
         MartApp.$body.on('click', '.sidebar-filter-mobile', function (e) {
             e.preventDefault()
             MartApp.toggleSidebarFilterProducts('open', $(e.currentTarget).data('toggle'))
-        })
-
-        MartApp.$body.on('submit', '.products-filter-form-vendor', function (e) {
-            if (MartApp.$formSearch.length) {
-                MartApp.$formSearch.trigger('submit')
-                return false
-            }
-            return true
         })
     }
 
@@ -197,6 +333,128 @@ MartApp.isRTL = $('body').prop('dir') === 'rtl'
                 complete: () => {
                     $modal.addClass('loaded').removeClass('loading')
                     _self.removeClass('loading')
+                },
+            })
+        })
+    }
+
+    MartApp.productQuickShop = function () {
+        MartApp.$body.on('click', '.js-quick-shop-button', function (e) {
+            e.preventDefault()
+            e.stopPropagation()
+
+            const $btn = $(this)
+            const $modal = $('#product-quick-shop-modal')
+
+            if ($btn.hasClass('loading')) {
+                return
+            }
+
+            $btn.addClass('loading')
+            $modal.removeClass('loaded').addClass('loading')
+
+            MartApp.showModal($modal)
+
+            $.ajax({
+                url: $btn.data('url'),
+                type: 'GET',
+                success: (res) => {
+                    if (!res.error) {
+                        $modal.find('.product-quick-shop-content').html(res.data)
+
+                        // Mark the quick shop form to prevent duplicate handling
+                        $modal.find('form.cart-form').addClass('quick-shop-form')
+
+                        // Wrap the content with product-attributes class if needed
+                        if (!$modal.find('.product-attributes').length && $modal.find('.attribute-swatches-wrapper').length) {
+                            $modal.find('.ps-product--quickshop').addClass('product-attributes')
+                        }
+
+                        // Initialize product swatches
+                        if (typeof window.ChangeProductSwatches !== 'undefined') {
+                            // Trigger the swatch initialization
+                            $modal.find('.attribute-swatches-wrapper input:checked').trigger('change')
+                        }
+
+                        if (typeof MartApp.initProductQuantity === 'function') {
+                            MartApp.initProductQuantity($modal)
+                        }
+                        
+                        // Initialize variation change listeners for stock availability updates
+                        MartApp.initQuickShopVariationListeners($modal)
+                        // Initial availability update
+                        MartApp.updateQuickShopAvailability($modal)
+                    } else {
+                        MartApp.showError(res.message)
+                        MartApp.hideModal($modal)
+                    }
+                },
+                error: (res) => {
+                    MartApp.handleError(res)
+                    $modal.modal('hide')
+                },
+                complete: () => {
+                    $modal.addClass('loaded').removeClass('loading')
+                    $btn.removeClass('loading')
+                },
+            })
+        })
+
+        // Handle modal close button
+        MartApp.$body.on('click', '#product-quick-shop-modal .btn-close', function (e) {
+            e.preventDefault()
+            MartApp.hideModal($('#product-quick-shop-modal'))
+        })
+
+        // Handle backdrop click
+        MartApp.$body.on('click', '.modal-backdrop', function (e) {
+            e.preventDefault()
+            MartApp.hideModal($('#product-quick-shop-modal'))
+        })
+
+        // Handle quick shop form submission
+        MartApp.$body.on('click', '.quick-shop-form button[type=submit]', function (e) {
+            e.preventDefault()
+            e.stopPropagation()
+
+            const $btn = $(this)
+            const $form = $btn.closest('form.cart-form')
+            const $modal = $('#product-quick-shop-modal')
+
+            $btn.addClass('loading')
+
+            let data = $form.serializeArray()
+            data.push({ name: 'checkout', value: $btn.prop('name') === 'checkout' ? 1 : 0 })
+
+            $.ajax({
+                type: 'POST',
+                url: $form.prop('action'),
+                data: $.param(data),
+                success: (res) => {
+                    if (res.error) {
+                        MartApp.showError(res.message)
+                        if (res.data && res.data.next_url !== undefined) {
+                            setTimeout(() => {
+                                window.location.href = res.data.next_url
+                            }, 500)
+                        }
+                        return false
+                    }
+
+                    if (res.data && res.data.next_url !== undefined) {
+                        window.location.href = res.data.next_url
+                        return false
+                    }
+
+                    MartApp.hideModal($modal)
+                    MartApp.showSuccess(res.message)
+                    MartApp.loadAjaxCart()
+                },
+                error: (res) => {
+                    MartApp.handleError(res, $form)
+                },
+                complete: () => {
+                    $btn.removeClass('loading')
                 },
             })
         })
@@ -467,6 +725,12 @@ MartApp.isRTL = $('body').prop('dir') === 'rtl'
         MartApp.$body.on('click', 'form.cart-form button[type=submit]', function (e) {
             e.preventDefault()
             const $form = $(this).closest('form.cart-form')
+
+            // Skip if this is a quick shop form (handled separately)
+            if ($form.hasClass('quick-shop-form')) {
+                return
+            }
+
             const $btn = $(this)
             $btn.addClass('loading')
 
@@ -607,7 +871,7 @@ MartApp.isRTL = $('body').prop('dir') === 'rtl'
 
     MartApp.changeInputInSearchForm = function (parseParams) {
         isReadySubmitTrigger = false
-        MartApp.$formSearch.find('input, select, textarea').each(function (e, i) {
+        $(document).find(MartApp.formSearch).find('input, select, textarea').each(function (e, i) {
             const $el = $(i)
             const name = $el.attr('name')
             let value = parseParams[name] || null
@@ -641,7 +905,7 @@ MartApp.isRTL = $('body').prop('dir') === 'rtl'
             if (obj.value) {
                 // break with price
                 if (['min_price', 'max_price'].includes(obj.name)) {
-                    const dataValue = MartApp.$formSearch
+                    const dataValue = $(document).find(MartApp.formSearch)
                         .find('input[name=' + obj.name + ']')
                         .data(obj.name.substring(0, 3))
                     if (dataValue == parseInt(obj.value)) {
@@ -657,237 +921,14 @@ MartApp.isRTL = $('body').prop('dir') === 'rtl'
     let isReadySubmitTrigger = true
 
     MartApp.productsFilter = function () {
-        MartApp.widgetProductCategories = '.widget-product-categories'
-        MartApp.$widgetProductCategories = $(MartApp.widgetProductCategories)
-
-        $(document).on('change', '#products-filter-form .product-filter-item', function () {
-            if (isReadySubmitTrigger) {
-                $(this).closest('form').trigger('submit')
-            }
-        })
-
-        function openCategoryFilter($li) {
-            if (!$li) {
-                const $categories = $('.widget-product-categories').find('li a.active')
-                if ($categories.length) {
-                    MartApp.$widgetProductCategories
-                        .find('.widget-layered-nav-list > ul > li.category-filter')
-                        .addClass('d-none')
-                } else {
-                    MartApp.$widgetProductCategories
-                        .find('.widget-layered-nav-list > ul > li.category-filter')
-                        .removeClass('d-none')
-                    MartApp.$widgetProductCategories.find('.show-all-product-categories').addClass('d-none')
-                }
-                MartApp.$widgetProductCategories
-                    .find('.widget-layered-nav-list li.category-filter:not(.opened)')
-                    .removeClass('opened')
-
-                $categories.map(function (e, i) {
-                    const $parent = $(i).closest('li.category-filter').closest('ul').closest('li.category-filter')
-                    $parent.removeClass('d-none')
-
-                    if ($parent.length) {
-                        openCategoryFilter($parent)
-                        MartApp.$widgetProductCategories.find('.show-all-product-categories').removeClass('d-none')
-                    } else {
-                        MartApp.$widgetProductCategories.find('li.category-filter').removeClass('d-none')
-                        MartApp.$widgetProductCategories.find('.show-all-product-categories').addClass('d-none')
-                    }
-                })
-            } else if ($li.length) {
-                $li.addClass('opened')
-                $li.removeClass('d-none')
-                $li.find('> .widget-layered-nav-list__item .nav-list__item-link').removeClass('active')
-
-                if ($li.closest('ul').closest('li.category-filter').length) {
-                    openCategoryFilter($li.closest('ul').closest('li.category-filter'))
-                }
-            }
-
-            MartApp.$widgetProductCategories.find('.loading-skeleton').removeClass('loading-skeleton')
-        }
-
-        openCategoryFilter()
-
         $('.catalog-toolbar__ordering input[name=sort-by]').on('change', function (e) {
-            MartApp.$formSearch.find('input[name=sort-by]').val($(e.currentTarget).val())
-            MartApp.$formSearch.trigger('submit')
+            $(document).find(MartApp.formSearch).find('input[name=sort-by]').val($(e.currentTarget).val())
+            $(document).find(MartApp.formSearch).trigger('submit')
         })
 
         MartApp.$body.on('click', '.cat-menu-close', function (e) {
             e.preventDefault()
             $(this).closest('li').toggleClass('opened')
-        })
-
-        $(document).on('click', MartApp.widgetProductCategories + ' li a', function (e) {
-            e.preventDefault()
-            const $this = $(e.currentTarget)
-            const activated = $this.hasClass('active')
-            const $parent = $this.closest(MartApp.widgetProductCategories)
-            $parent.find('li a').removeClass('active')
-            $this.addClass('active')
-            let categoryId = $this.data('id')
-
-            if (categoryId) {
-                let $item = $parent.find('.widget-layered-nav-list .nav-list__item-link[data-id=' + categoryId + ']')
-                $item.addClass('active')
-
-                openCategoryFilter()
-            } else {
-                $parent.find('.widget-layered-nav-list .category-filter').removeClass('opened d-none')
-                $parent.find('.show-all-product-categories').addClass('d-none')
-            }
-            const $form = $this.closest(MartApp.formSearch)
-
-            $form
-                .find(
-                    '.widget-product-brands ul li, .dropdown-swatches-wrapper, .text-swatches-wrapper, .visual-swatches-wrapper'
-                )
-                .each(function (i, el) {
-                    let $el = $(el)
-                    let categories = $el.data('categories')
-                    if (categories && Array.isArray(categories) && categories.length) {
-                        if (!categories.includes(categoryId)) {
-                            $el.addClass('d-none')
-                            $el.find('input').prop('checked', false)
-                            $el.find('select').val('')
-                        } else {
-                            $el.removeClass('d-none')
-                        }
-                    }
-                })
-
-            const $input = $parent.find("input[name='categories[]']")
-            if ($input.length) {
-                if (activated) {
-                    $this.removeClass('active')
-                    $input.val('')
-                } else {
-                    $input.val(categoryId)
-                }
-                $input.trigger('change')
-            } else {
-                let href = $this.attr('href')
-
-                MartApp.$formSearch.attr('action', href).trigger('submit')
-            }
-        })
-
-        $(document).on('submit', '#products-filter-form', function (e) {
-            e.preventDefault()
-            const $form = $(e.currentTarget)
-            const formData = $form.serializeArray()
-            let data = MartApp.convertFromDataToArray(formData)
-            let uriData = []
-
-            // Paginate
-            const $elPage = MartApp.$productListing.find('input[name=page]')
-            if ($elPage.val()) {
-                data.push({ name: 'page', value: $elPage.val() })
-            }
-
-            // Without "s" param
-            data.map(function (obj) {
-                uriData.push(encodeURIComponent(obj.name) + '=' + obj.value)
-            })
-
-            const nextHref = $form.attr('action') + (uriData && uriData.length ? '?' + uriData.join('&') : '')
-
-            // add to params get to popstate not show json
-            data.push({ name: '_', value: +new Date() })
-
-            $.ajax({
-                url: $form.attr('action'),
-                type: 'GET',
-                data: data,
-                beforeSend: function () {
-                    // Show loading before sending
-                    MartApp.$productListing.find('.loading').show()
-                    // Animation scroll to filter button
-                    $('html, body').animate({ scrollTop: MartApp.$productListing.offset().top - 200 }, 500)
-                    // Change price step;
-                    const priceStep = MartApp.$formSearch.find('.nonlinear')
-                    if (priceStep.length) {
-                        priceStep[0].noUiSlider.set([
-                            MartApp.$formSearch.find('input[name=min_price]').val(),
-                            MartApp.$formSearch.find('input[name=max_price]').val(),
-                        ])
-                    }
-                    MartApp.toggleSidebarFilterProducts()
-                },
-                success: function (res) {
-                    if (!res.error) {
-                        MartApp.$productListing.html(res.data)
-
-                        const total = res.message
-                        if (total && $('.products-found').length) {
-                            $('.products-found').html(
-                                '<span class="text-primary me-1">' +
-                                    total.substr(0, total.indexOf(' ')) +
-                                    '</span>' +
-                                    total.substr(total.indexOf(' ') + 1)
-                            )
-                        }
-
-                        MartApp.lazyLoad(MartApp.$productListing[0])
-                        let title = res.additional?.category?.name || MartApp.$formSearch.data('title')
-                        $('h1.catalog-header__title').text(title)
-                        document.title = title
-
-                        if (res.additional?.breadcrumb) {
-                            $('.page-breadcrumbs div').html(res.additional.breadcrumb)
-                        }
-
-                        if (res.additional?.filters_html) {
-                            MartApp.$formSearch.html(res.additional.filters_html)
-                            MartApp.$formSearch.find('.loading-skeleton').removeClass('loading-skeleton')
-                            MartApp.filterSlider()
-
-                            if (jQuery().mCustomScrollbar) {
-                                $(document).find('.ps-custom-scrollbar').mCustomScrollbar({
-                                    theme: 'dark',
-                                    scrollInertia: 0,
-                                })
-                            }
-                        }
-
-                        if (nextHref != window.location.href) {
-                            window.history.pushState(data, res.message, nextHref)
-                        }
-                    } else {
-                        MartApp.showError(res.message || 'Opp!')
-                    }
-                },
-                error: function (res) {
-                    MartApp.handleError(res)
-                },
-                complete: function () {
-                    MartApp.$productListing.find('.loading').hide()
-                },
-            })
-        })
-
-        if (MartApp.$formSearch.length) {
-            window.addEventListener(
-                'popstate',
-                function () {
-                    let url = window.location.origin + window.location.pathname
-                    MartApp.$formSearch.attr('action', url)
-                    const parseParams = MartApp.parseParamsSearch()
-                    MartApp.changeInputInSearchForm(parseParams)
-                    MartApp.$formSearch.trigger('submit')
-                },
-                false
-            )
-        }
-
-        $(document).on('click', MartApp.productListing + ' .pagination a', function (e) {
-            e.preventDefault()
-            let url = new URL($(e.currentTarget).attr('href'))
-            let page = url.searchParams.get('page')
-            MartApp.$productListing.find('input[name=page]').val(page)
-            MartApp.$formSearch.trigger('submit')
         })
     }
 
@@ -1340,7 +1381,7 @@ MartApp.isRTL = $('body').prop('dir') === 'rtl'
             $this.addClass('active')
             $($this.data('target')).removeClass($this.data('class-remove')).addClass($this.data('class-add'))
 
-            MartApp.$formSearch.find('input[name=layout]').val($this.data('layout'))
+            $(document).find(MartApp.formSearch).find('input[name=layout]').val($this.data('layout'))
 
             const params = new URLSearchParams(window.location.search)
             params.set('layout', $this.data('layout'))
@@ -1403,6 +1444,23 @@ MartApp.isRTL = $('body').prop('dir') === 'rtl'
         })
     }
 
+    MartApp.initMegaMenu = function () {
+        setTimeout(function () {
+            const $megaMenu = $(document).find('.mega-menu-wrapper')
+
+            if (! $megaMenu.length) {
+                return
+            }
+
+            if ($(window).width() > 1200 && typeof $.fn.masonry !== 'undefined') {
+                $megaMenu.masonry({
+                    itemSelector: '.mega-menu__column',
+                    columnWidth: 200
+                })
+            }
+        }, 500)
+    }
+
     MartApp.stickyHeader = function () {
         let header = $('.header-js-handler')
         let checkpoint = header.height()
@@ -1413,6 +1471,8 @@ MartApp.isRTL = $('body').prop('dir') === 'rtl'
                     let currentPosition = $(this).scrollTop()
                     if (currentPosition > checkpoint) {
                         el.addClass('header--sticky')
+
+                        MartApp.initMegaMenu()
                     } else {
                         el.removeClass('header--sticky')
                     }
@@ -1495,7 +1555,9 @@ MartApp.isRTL = $('body').prop('dir') === 'rtl'
         MartApp.init()
 
         window.onBeforeChangeSwatches = function (data, $attrs) {
-            const $product = $attrs.closest('.product-details')
+            const $product = $attrs.closest('.product-details').length ?
+                $attrs.closest('.product-details') :
+                $attrs.closest('.ps-product--quickshop')
             const $form = $product.find('.cart-form')
 
             $product.find('.error-message').hide()
@@ -1510,7 +1572,9 @@ MartApp.isRTL = $('body').prop('dir') === 'rtl'
         }
 
         window.onChangeSwatchesSuccess = function (res, $attrs) {
-            const $product = $attrs.closest('.product-details')
+            const $product = $attrs.closest('.product-details').length ?
+                $attrs.closest('.product-details') :
+                $attrs.closest('.ps-product--quickshop')
             const $form = $product.find('.cart-form')
             const $footerCartForm = $('.footer-cart-form')
             $product.find('.error-message').hide()
@@ -1529,9 +1593,12 @@ MartApp.isRTL = $('body').prop('dir') === 'rtl'
                     $footerCartForm.find('.hidden-product-id').val('')
                 } else {
                     const data = res.data
-                    const $price = $(document).find('.js-product-content')
-                    const $salePrice = $price.find('.product-price-sale')
-                    const $originalPrice = $price.find('.product-price-original')
+                    // Find the price container in either product details or quick shop modal
+                    let $priceContainer = $product.find('.ps-product__header').length ?
+                        $product.find('.ps-product__header') :
+                        $(document).find('.js-product-content')
+                    const $salePrice = $priceContainer.find('.product-price-sale')
+                    const $originalPrice = $priceContainer.find('.product-price-original')
 
                     if (data.sale_price !== data.price) {
                         $salePrice.removeClass('d-none')
@@ -1565,23 +1632,28 @@ MartApp.isRTL = $('body').prop('dir') === 'rtl'
                     } else if (data.success_message) {
                         $product.find('.number-items-available').html(res.data.stock_status_html).show()
                         $product.find('.product-quantity-available').text(res.data.success_message)
+                        $product.find('.out-of-stock').removeClass('out-of-stock')
                     } else {
                         $product.find('.number-items-available').html('').hide()
                     }
 
+                    $product.find('.bb-product-attribute-swatch-item').removeClass('disabled')
+                    $product.find('.bb-product-attribute-swatch-list select option').prop('disabled', false)
+
                     const unavailableAttributeIds = data.unavailable_attribute_ids || []
-                    $product.find('.attribute-swatch-item').removeClass('disabled')
-                    $product.find('.product-filter-item option').prop('disabled', false)
-                    if (unavailableAttributeIds && unavailableAttributeIds.length) {
-                        unavailableAttributeIds.map(function (id) {
-                            let $item = $product.find('.attribute-swatch-item[data-id="' + id + '"]')
-                            if ($item.length) {
-                                $item.addClass('disabled')
-                                $item.find('input').prop('checked', false)
+
+                    if (unavailableAttributeIds.length) {
+                        unavailableAttributeIds.map((id) => {
+                            let $swatchItem = $product.find(`.bb-product-attribute-swatch-item[data-id="${id}"]`)
+
+                            if ($swatchItem.length) {
+                                $swatchItem.addClass('disabled')
+                                $swatchItem.find('input').prop('checked', false)
                             } else {
-                                $item = $product.find('.product-filter-item option[data-id="' + id + '"]')
-                                if ($item.length) {
-                                    $item.prop('disabled', 'disabled').prop('selected', false)
+                                $swatchItem = $product.find(`.bb-product-attribute-swatch-list select option[data-id="${id}"]`)
+
+                                if ($swatchItem.length) {
+                                    $swatchItem.prop('disabled', true)
                                 }
                             }
                         })
@@ -1719,6 +1791,30 @@ MartApp.isRTL = $('body').prop('dir') === 'rtl'
 
                 $this.removeClass('button-loading')
             }, 200)
+        })
+
+        $(document).ready(function() {
+            MartApp.initMegaMenu()
+        })
+
+        document.addEventListener('ecommerce.product-filter.before', () => {
+            MartApp.$productListing.find('.loading').show()
+        })
+
+        document.addEventListener('ecommerce.product-filter.completed', () => {
+            MartApp.lazyLoad(MartApp.$productListing[0])
+        })
+
+        document.addEventListener('ecommerce.categories-dropdown.success', () => {
+            MartApp.initMegaMenu()
+        })
+        
+        // Listen for quick shop completed event to initialize variation listeners
+        document.addEventListener('ecommerce.quick-shop.completed', (e) => {
+            const { modal } = e.detail
+            if (modal && modal.length) {
+                MartApp.initQuickShopVariationListeners(modal)
+            }
         })
     })
 })(jQuery)

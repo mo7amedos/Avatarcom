@@ -10,7 +10,7 @@ class MenuNodeRequest extends Request
     {
         return [
             'data' => ['required', 'array'],
-            'data.menu_id' => 'required',
+            'data.menu_id' => ['required'],
         ];
     }
 

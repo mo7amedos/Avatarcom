@@ -21,10 +21,13 @@ use Botble\Ecommerce\Services\HandleFrontPages;
 use Botble\Ecommerce\Services\Products\GetProductService;
 use Botble\Ecommerce\Services\Products\GetProductWithCrossSalesBySlugService;
 use Botble\Ecommerce\Services\Products\ProductCrossSalePriceService;
+use Botble\Ecommerce\Services\Products\ProductImageService;
+use Botble\Media\Facades\RvMedia;
 use Botble\SeoHelper\Facades\SeoHelper;
 use Botble\Theme\Facades\Theme;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class PublicProductController extends BaseController
 {
@@ -36,6 +39,9 @@ class PublicProductController extends BaseController
                 ->setNextUrl(route('public.products'));
         }
 
+        SeoHelper::setTitle(theme_option('ecommerce_products_seo_title') ?: __('Products'))
+            ->setDescription(theme_option('ecommerce_products_seo_description'));
+
         $with = EcommerceHelper::withProductEagerLoadingRelations();
 
         if (($query = BaseHelper::stringify($request->input('q'))) && ! $request->ajax()) {
@@ -46,7 +52,8 @@ class PublicProductController extends BaseController
             Theme::breadcrumb()
                 ->add(__('Search'), route('public.products'));
 
-            SeoHelper::meta()->setUrl(route('public.products'));
+            SeoHelper::meta()
+                ->setUrl(route('public.products'));
 
             return Theme::scope(
                 'ecommerce.search',
@@ -62,8 +69,6 @@ class PublicProductController extends BaseController
         if ($request->ajax()) {
             return $this->ajaxFilterProductsResponse($products);
         }
-
-        SeoHelper::setTitle(__('Products'))->setDescription(__('Products'));
 
         do_action(PRODUCT_MODULE_SCREEN_NAME);
 
@@ -151,30 +156,8 @@ class PublicProductController extends BaseController
         }
 
         if ($product) {
-            if ($product->images) {
-                $originalImages = $product->images;
-
-                if (get_ecommerce_setting(
-                    'how_to_display_product_variation_images'
-                ) == 'variation_images_and_main_product_images') {
-                    $parentImages = is_array($product->original_images) ? $product->original_images : (array) json_decode($product->original_images, true);
-
-                    if ($parentImages && is_array($parentImages)) {
-                        $originalImages = array_merge($originalImages, $parentImages);
-                    }
-                }
-            } else {
-                $originalImages = $product->original_images ?: $product->original_product->images;
-
-                if (! is_array($originalImages)) {
-                    $originalImages = json_decode($originalImages, true);
-                }
-            }
-
-            $product->image_with_sizes = rv_get_image_list($originalImages, [
-                'origin',
-                'thumb',
-            ]);
+            $imageData = app(ProductImageService::class)->getProductImagesWithSizes($product);
+            $product->image_with_sizes = $imageData['image_with_sizes'];
 
             if ($product->stock_status == 'on_backorder') {
                 $product->warningMessage = __('Warning: This product is on backorder and may take longer to ship.');
@@ -221,10 +204,11 @@ class PublicProductController extends BaseController
 
             if ($originalProduct) {
                 if ($originalProduct->images) {
-                    $originalProduct->image_with_sizes = rv_get_image_list($originalProduct->images, [
+                    $originalProduct->image_with_sizes = rv_get_image_list($originalProduct->images, array_unique([
                         'origin',
                         'thumb',
-                    ]);
+                        ...array_keys(RvMedia::getSizes()),
+                    ]));
                 }
 
                 $originalProduct->errorMessage = __('Please select attributes');
@@ -238,15 +222,49 @@ class PublicProductController extends BaseController
                 ->setMessage(__('Not available'));
         }
 
-        $productAttributes = $productRepository->getRelatedProductAttributes($originalProduct)->sortBy('order');
+        // Cache variation data for better performance
+        $cacheKey = 'product_variation_ajax_' . $originalProduct->id . '_' . md5(json_encode($attributes)) . '_' . app()->getLocale();
 
-        $attributeSets = $originalProduct->productAttributeSets()->orderBy('order')->get();
+        $variationData = Cache::remember($cacheKey, 60, function () use ($originalProduct, $productRepository) {
+            $productAttributes = $productRepository->getRelatedProductAttributes($originalProduct)->sortBy('order');
+            $attributeSets = $originalProduct->productAttributeSets()->orderBy('order')->get();
 
-        $productVariations = ProductVariation::query()
-            ->where('configurable_product_id', $originalProduct->id)
-            ->get();
+            // Only load necessary fields for variations
+            $productVariations = ProductVariation::query()
+                ->where('configurable_product_id', $originalProduct->id)
+                ->with(['product:id,stock_status,quantity,with_storehouse_management,allow_checkout_when_out_of_stock'])
+                ->select('id', 'product_id', 'configurable_product_id')
+                ->get();
 
-        $productVariationsInfo = ProductVariationItem::getVariationsInfo($productVariations->pluck('id')->toArray());
+            // Load variation info in chunks
+            $variationIds = $productVariations->pluck('id')->all();
+            $productVariationsInfo = collect();
+
+            foreach (array_chunk($variationIds, 100) as $chunk) {
+                $productVariationsInfo = $productVariationsInfo->merge(
+                    ProductVariationItem::getVariationsInfo($chunk)
+                );
+            }
+
+            // More efficient filtering
+            if ($productVariationsInfo->isNotEmpty()) {
+                $outOfStockProductIds = $productVariations
+                    ->filter(function ($variation) {
+                        return $variation->product && $variation->product->isOutOfStock();
+                    })
+                    ->pluck('id')
+                    ->toArray();
+
+                $productVariationsInfo = $productVariationsInfo
+                    ->reject(function ($item) use ($outOfStockProductIds) {
+                        return in_array($item->variation_id, $outOfStockProductIds);
+                    });
+            }
+
+            return compact('productAttributes', 'attributeSets', 'productVariations', 'productVariationsInfo');
+        });
+
+        extract($variationData);
 
         $variationInfo = $productVariationsInfo;
 
@@ -308,9 +326,7 @@ class PublicProductController extends BaseController
 
     public function getOrderTracking(OrderTrackingRequest $request)
     {
-        if (! EcommerceHelper::isOrderTrackingEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isOrderTrackingEnabled(), 404);
 
         $order = null;
 
@@ -320,21 +336,21 @@ class PublicProductController extends BaseController
             $code = $request->input('order_id');
 
             $query = Order::query()
-                ->where(function (Builder $query) use ($code) {
+                ->where(function (Builder $query) use ($code): void {
                     $query
                         ->where('ec_orders.code', $code)
                         ->orWhere('ec_orders.code', '#' . $code);
                 })
                 ->with(['address', 'products'])
                 ->select('ec_orders.*')
-                ->when(EcommerceHelper::isLoginUsingPhone(), function (BaseQueryBuilder $query) use ($request) {
-                    $query->where(function (BaseQueryBuilder $query) use ($request) {
+                ->when(EcommerceHelper::isOrderTrackingUsingPhone(), function (BaseQueryBuilder $query) use ($request): void {
+                    $query->where(function (BaseQueryBuilder $query) use ($request): void {
                         $query
                             ->whereHas('address', fn ($subQuery) => $subQuery->where('phone', $request->input('phone')))
                             ->orWhereHas('user', fn ($subQuery) => $subQuery->where('phone', $request->input('phone')));
                     });
-                }, function (BaseQueryBuilder $query) use ($request) {
-                    $query->where(function (Builder $query) use ($request) {
+                }, function (BaseQueryBuilder $query) use ($request): void {
+                    $query->where(function (Builder $query) use ($request): void {
                         $query
                             ->whereHas('address', fn ($subQuery) => $subQuery->where('email', $request->input('email')))
                             ->orWhereHas('user', fn ($subQuery) => $subQuery->where('email', $request->input('email')));
@@ -350,7 +366,8 @@ class PublicProductController extends BaseController
             $title = __('Order tracking :code', ['code' => $code]);
         }
 
-        SeoHelper::setTitle($title);
+        SeoHelper::setTitle(theme_option('ecommerce_order_tracking_seo_title') ?: $title)
+            ->setDescription(theme_option('ecommerce_order_tracking_seo_description'));
 
         Theme::breadcrumb()
             ->add($title, route('public.orders.tracking'));

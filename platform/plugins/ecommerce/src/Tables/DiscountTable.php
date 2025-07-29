@@ -36,12 +36,12 @@ class DiscountTable extends TableAbstract
         $data = $this->table
             ->eloquent($this->query())
             ->editColumn('detail', function (Discount $item) {
-                $isCoupon = $item->type === DiscountTypeEnum::COUPON;
+                $isCoupon = $item->type == DiscountTypeEnum::COUPON;
 
                 return view('plugins/ecommerce::discounts.detail', compact('item', 'isCoupon'))->render();
             })
             ->editColumn('total_used', function (Discount $item) {
-                if ($item->type === DiscountTypeEnum::PROMOTION) {
+                if ($item->type == DiscountTypeEnum::PROMOTION) {
                     return '&mdash;';
                 }
 

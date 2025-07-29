@@ -18,7 +18,7 @@
     <form
         id="environment-form"
         method="post"
-        action="{{ route('installers.environments.createenvironments.store') }}"
+        action="{{ route('installers.environments.store') }}"
     >
         @csrf
         <div class="row">

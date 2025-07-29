@@ -19,7 +19,7 @@
     value="{{ BaseHelper::stringify(request()->query('q')) }}"
 >
 <div
-    class="row @if (request()->input('layout') == 'list') row-cols-1 shop-products-listing__list @else row-cols-xl-5 row-cols-lg-4 row-cols-md-3 row-cols-2 @endif shop-products-listing g-0">
+    class="row @if (request()->input('layout') == 'list') row-cols-1 shop-products-listing__list @else row-cols-xl-5 row-cols-lg-4 row-cols-md-3 row-cols-2 @endif shop-products-listing g-0 @if ($products->isEmpty()) border-0 @endif">
     @forelse ($products as $product)
         <div class="col">
             <div class="product-inner">

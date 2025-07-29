@@ -49,6 +49,18 @@ class AdminAppearanceSettingForm extends SettingForm
                 'label' => trans('core/setting::setting.admin_appearance.form.admin_favicon'),
                 'value' => setting('admin_favicon'),
             ])
+            ->add('admin_favicon_type', SelectField::class, [
+                'label' => trans('core/setting::setting.admin_appearance.form.admin_favicon_type'),
+                'value' => setting('admin_favicon_type', 'image/x-icon'),
+                'choices' => [
+                    'image/x-icon' => 'ICO',
+                    'image/png' => 'PNG',
+                    'image/svg+xml' => 'SVG',
+                    'image/gif' => 'GIF',
+                    'image/jpeg' => 'JPEG',
+                    'image/webp' => 'WebP',
+                ],
+            ])
             ->add('login_screen_backgrounds[]', MediaImagesField::class, [
                 'label' => trans('core/setting::setting.admin_appearance.form.admin_login_screen_backgrounds'),
                 'value' => is_array(setting('login_screen_backgrounds', ''))
@@ -91,7 +103,7 @@ class AdminAppearanceSettingForm extends SettingForm
                 'label' => trans('core/setting::setting.admin_appearance.form.link_hover_color'),
                 'value' => setting('admin_link_hover_color', '#1a569d'),
             ])
-            ->when(! empty($locales = Language::getAvailableLocales()), function (FormAbstract $form) use ($locales) {
+            ->when(! empty($locales = Language::getAvailableLocales()), function (FormAbstract $form) use ($locales): void {
                 $form->add(
                     AdminAppearance::getSettingKey('locale'),
                     SelectField::class,

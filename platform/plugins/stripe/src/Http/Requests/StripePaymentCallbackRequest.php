@@ -9,7 +9,7 @@ class StripePaymentCallbackRequest extends Request
     public function rules(): array
     {
         return [
-            'session_id' => 'required|size:66',
+            'session_id' => ['required', 'size:66'],
         ];
     }
 }

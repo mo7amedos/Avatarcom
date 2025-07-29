@@ -29,8 +29,10 @@ use Botble\Marketplace\Models\Revenue;
 use Botble\Marketplace\Models\Store;
 use Botble\Marketplace\Models\VendorInfo;
 use Botble\Payment\Enums\PaymentStatusEnum;
+use Botble\Payment\Supports\PaymentFeeHelper;
 use Botble\Payment\Supports\PaymentHelper;
 use Botble\PayPal\Services\Gateways\PayPalPaymentService;
+use Botble\Theme\Facades\Theme;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -48,7 +50,7 @@ class OrderSupportServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        $this->app->booted(function () {
+        $this->app->booted(function (): void {
             add_filter(HANDLE_PROCESS_ORDER_DATA_ECOMMERCE, [$this, 'handleProcessOrder'], 100, 4);
             add_filter(HANDLE_PROCESS_POST_CHECKOUT_ORDER_DATA_ECOMMERCE, [$this, 'processPostCheckoutOrder'], 100, 5);
             add_filter(PROCESS_GET_CHECKOUT_SUCCESS_IN_ORDER, [$this, 'processGetCheckoutSuccess'], 100);
@@ -371,7 +373,14 @@ class OrderSupportServiceProvider extends ServiceProvider
         $couponCode = Arr::get($sessionStoreData, 'applied_coupon_code');
 
         $isAvailableShipping = EcommerceHelper::isAvailableShipping($products['products']);
-        $shippingMethodInput = $request->input("shipping_method.$storeId", ShippingMethodEnum::DEFAULT);
+
+        // Handle both array (per-vendor) and string (unified) shipping method inputs
+        if (MarketplaceHelper::isChargeShippingPerVendor()) {
+            $shippingMethodInput = $request->input("shipping_method.$storeId", ShippingMethodEnum::DEFAULT);
+        } else {
+            // For unified shipping, use the standard shipping_method input
+            $shippingMethodInput = $request->input('shipping_method', ShippingMethodEnum::DEFAULT);
+        }
 
         $promotionDiscountAmount = $promotionService
             ->execute($token, compact('cartItems', 'rawTotal', 'countCart'), "marketplace.$storeId.");
@@ -388,29 +397,83 @@ class OrderSupportServiceProvider extends ServiceProvider
         $shippingMethod = [];
         $shippingAmount = 0;
         if ($isAvailableShipping) {
-            $shippingData = $this->getShippingData($sessionStoreData, $orderAmount, $products, $paymentMethod);
+            if (MarketplaceHelper::isChargeShippingPerVendor()) {
+                // Per-vendor shipping: calculate shipping for each vendor separately
+                $shippingData = $this->getShippingData($sessionStoreData, $orderAmount, $products, $paymentMethod);
 
-            $shippingMethodData = $shippingFeeService
-                ->execute(
-                    $shippingData,
-                    $shippingMethodInput,
-                    $request->input("shipping_option.$storeId")
-                );
+                $shippingOptionInput = $request->input("shipping_option.$storeId");
 
-            $shippingMethod = Arr::first($shippingMethodData);
-            if (! $shippingMethod && ! (bool) get_ecommerce_setting('disable_shipping_options', false)) {
-                throw ValidationException::withMessages([
-                    'shipping_method.' . $storeId => trans(
-                        'validation.exists',
-                        ['attribute' => trans('plugins/ecommerce::shipping.shipping_method')]
-                    ),
-                ]);
-            }
+                $shippingMethodData = $shippingFeeService
+                    ->execute(
+                        $shippingData,
+                        $shippingMethodInput,
+                        $shippingOptionInput
+                    );
 
-            $shippingAmount = Arr::get($shippingMethod, 'price', 0);
+                $shippingMethod = Arr::first($shippingMethodData);
+                if (! $shippingMethod && ! (bool) get_ecommerce_setting('disable_shipping_options', false)) {
+                    throw ValidationException::withMessages([
+                        'shipping_method.' . $storeId => trans(
+                            'validation.exists',
+                            ['attribute' => trans('plugins/ecommerce::shipping.shipping_method')]
+                        ),
+                    ]);
+                }
 
-            if (get_shipping_setting('free_ship', $shippingMethodInput)) {
-                $shippingAmount = 0;
+                $shippingAmount = Arr::get($shippingMethod, 'price', 0);
+
+                if (get_shipping_setting('free_ship', $shippingMethodInput)) {
+                    $shippingAmount = 0;
+                }
+            } else {
+                // Unified shipping: calculate total shipping once and assign to first vendor only
+                [$stores, $groupedProducts] = $this->getStoresInCart(true);
+                $storeIds = array_keys($stores);
+                $firstStoreId = reset($storeIds);
+
+                if ($storeId == $firstStoreId) {
+                    // Only the first vendor gets the shipping fee in unified mode
+                    // Use all cart products to calculate unified shipping
+                    $allCartProducts = Cart::instance('cart')->products();
+                    $totalOrderAmount = Cart::instance('cart')->rawTotal();
+
+                    $shippingData = EcommerceHelper::getShippingData(
+                        $allCartProducts,
+                        $sessionStoreData,
+                        EcommerceHelper::getOriginAddress(),
+                        $totalOrderAmount,
+                        $paymentMethod
+                    );
+
+                    $shippingOptionInput = $request->input('shipping_option');
+
+                    $shippingMethodData = $shippingFeeService
+                        ->execute(
+                            $shippingData,
+                            $shippingMethodInput,
+                            $shippingOptionInput
+                        );
+
+                    $shippingMethod = Arr::first($shippingMethodData);
+                    if (! $shippingMethod && ! (bool) get_ecommerce_setting('disable_shipping_options', false)) {
+                        throw ValidationException::withMessages([
+                            'shipping_method' => trans(
+                                'validation.exists',
+                                ['attribute' => trans('plugins/ecommerce::shipping.shipping_method')]
+                            ),
+                        ]);
+                    }
+
+                    $shippingAmount = Arr::get($shippingMethod, 'price', 0);
+
+                    if (get_shipping_setting('free_ship', $shippingMethodInput)) {
+                        $shippingAmount = 0;
+                    }
+                } else {
+                    // Other vendors get 0 shipping in unified mode
+                    $shippingAmount = 0;
+                    $shippingMethod = [];
+                }
             }
         }
 
@@ -426,13 +489,21 @@ class OrderSupportServiceProvider extends ServiceProvider
 
         $orderAmount += (float) $shippingAmount;
 
+        // Add payment fee if applicable
+        $paymentFee = 0;
+        if ($paymentMethod && is_plugin_active('payment')) {
+            $paymentFee = PaymentFeeHelper::calculateFee($paymentMethod, $orderAmount);
+            $orderAmount += $paymentFee;
+        }
+
         $data = array_merge($request->input(), [
             'amount' => $orderAmount,
             'currency' => $request->input('currency', strtoupper(get_application_currency()->title)),
             'user_id' => $currentUserId,
             'shipping_method' => $isAvailableShipping ? $shippingMethodInput : '',
-            'shipping_option' => $isAvailableShipping ? $request->input("shipping_option.$storeId") : null,
+            'shipping_option' => $isAvailableShipping ? (MarketplaceHelper::isChargeShippingPerVendor() ? $request->input("shipping_option.$storeId") : $request->input('shipping_option')) : null,
             'shipping_amount' => (float) $shippingAmount,
+            'payment_fee' => (float) $paymentFee,
             'tax_amount' => Cart::instance('cart')->rawTaxByItems($cartItems),
             'sub_total' => Cart::instance('cart')->rawSubTotalByItems($cartItems),
             'coupon_code' => $couponCode,
@@ -451,6 +522,8 @@ class OrderSupportServiceProvider extends ServiceProvider
         /**
          * @var Order $order
          */
+        OrderHelper::captureFootprints($order);
+
         if ($isAvailableShipping) {
             Shipment::query()->create([
                 'order_id' => $order->id,
@@ -530,12 +603,19 @@ class OrderSupportServiceProvider extends ServiceProvider
 
     public function processPaymentMethodPostCheckout(Request $request, int|float $totalAmount): array
     {
+        // Add payment fee if applicable
+        $paymentMethod = $request->input('payment_method');
+        if ($paymentMethod && is_plugin_active('payment')) {
+            $paymentFee = PaymentFeeHelper::calculateFee($paymentMethod, $totalAmount);
+            $totalAmount += $paymentFee;
+        }
+
         $paymentData = [
             'error' => false,
             'message' => false,
             'amount' => round((float) $totalAmount, 2),
             'currency' => $request->input('currency', strtoupper(cms_currency()->getDefaultCurrency()->title)),
-            'type' => $request->input('payment_method'),
+            'type' => $paymentMethod,
             'charge_id' => null,
         ];
 
@@ -549,9 +629,19 @@ class OrderSupportServiceProvider extends ServiceProvider
             ->with(['address', 'products'])
             ->get();
 
-        if ($orders->isEmpty()) {
-            abort(404);
+        // Update order amounts to include payment fee if needed
+        foreach ($orders as $order) {
+            if ($order->payment_fee > 0 && $order->amount > 0) {
+                // Make sure payment fee is included in the order amount
+                $orderAmount = $order->sub_total + $order->tax_amount + $order->shipping_amount + $order->payment_fee - $order->discount_amount;
+                if ($order->amount != $orderAmount) {
+                    $order->amount = $orderAmount;
+                    $order->save();
+                }
+            }
         }
+
+        abort_if($orders->isEmpty(), 404);
 
         if ($orders->where('is_finished', false)->isNotEmpty()) {
             foreach ($orders->where('is_finished', false) as $order) {
@@ -595,7 +685,7 @@ class OrderSupportServiceProvider extends ServiceProvider
             $mailer = EmailHandler::setModule(ECOMMERCE_MODULE_SCREEN_NAME);
 
             if ($mailer->templateEnabled('admin_new_order')) {
-                $this->setEmailVariables($orders);
+                $this->setEmailVariables($orders->first());
 
                 $mailer->sendUsingTemplate('admin_new_order');
             }
@@ -610,54 +700,50 @@ class OrderSupportServiceProvider extends ServiceProvider
         return $orders;
     }
 
-    public function setEmailVariables(Collection $orders): \Botble\Base\Supports\EmailHandler
+    public function setEmailVariables(Order $order): \Botble\Base\Supports\EmailHandler
     {
-        $theFirst = $orders->first();
-
-        $customerAddress = $theFirst->full_address;
+        $customerAddress = $order->full_address;
 
         return EmailHandler::setModule(ECOMMERCE_MODULE_SCREEN_NAME)
             ->setVariableValues([
-                'store_address' => $theFirst->store->full_address ?: get_ecommerce_setting('store_address'),
-                'store_name' => $theFirst->store->name ?: get_ecommerce_setting('store_name'),
-                'store_phone' => $theFirst->store->phone ?: get_ecommerce_setting('store_phone'),
-                'store_link' => $theFirst->store->url,
-                'store' => $theFirst->store->toArray(),
-                'order_id' => $theFirst->code,
-                'order_token' => $theFirst->token,
-                'customer_name' => $theFirst->user->name ?: $theFirst->address->name,
-                'customer_email' => $theFirst->user->email ?: $theFirst->address->email,
-                'customer_phone' => $theFirst->user->phone ?: $theFirst->address->phone,
+                'store_address' => $order->store->full_address ?: get_ecommerce_setting('store_address'),
+                'store_name' => $order->store->name ?: get_ecommerce_setting('store_name'),
+                'store_phone' => $order->store->phone ?: get_ecommerce_setting('store_phone'),
+                'store_link' => $order->store->url,
+                'store' => $order->store->toArray(),
+                'order_id' => $order->code,
+                'order_token' => $order->token,
+                'customer_name' => $order->user->name ?: $order->address->name,
+                'customer_email' => $order->user->email ?: $order->address->email,
+                'customer_phone' => $order->user->phone ?: $order->address->phone,
                 'customer_address' => $customerAddress,
-                'product_list' => view('plugins/marketplace::emails.partials.order-detail', compact('orders'))
+                'product_list' => view('plugins/marketplace::emails.partials.order-detail', compact('order'))
                     ->render(),
-                'shipping_method' => $theFirst->shipping_method_name,
-                'payment_method' => $theFirst->payment->payment_channel->label(),
+                'shipping_method' => $order->shipping_method_name,
+                'payment_method' => $order->payment->payment_channel->label(),
             ]);
     }
 
     public function sendOrderConfirmationEmail(Collection $orders, bool $saveHistory = false): bool
     {
         try {
-            $theFirst = $orders->first();
             $mailer = EmailHandler::setModule(ECOMMERCE_MODULE_SCREEN_NAME);
-            if ($mailer->templateEnabled('customer_new_order')) {
-                $this->setEmailVariables($orders);
 
-                EmailHandler::send(
-                    $mailer->getTemplateContent('customer_new_order'),
-                    $mailer->getTemplateSubject('customer_new_order'),
-                    $theFirst->user->email ?: $theFirst->address->email
-                );
+            if ($mailer->templateEnabled('customer_new_order')) {
+                return false;
+            }
+
+            foreach ($orders as $order) {
+                $this->setEmailVariables($order);
+
+                $mailer->sendUsingTemplate('customer_new_order', $order->user->email ?: $order->address->email);
 
                 if ($saveHistory) {
-                    foreach ($orders as $order) {
-                        OrderHistory::query()->create([
-                            'action' => OrderHistoryActionEnum::SEND_ORDER_CONFIRMATION_EMAIL,
-                            'description' => trans('plugins/ecommerce::order.confirmation_email_was_sent_to_customer'),
-                            'order_id' => $order->id,
-                        ]);
-                    }
+                    OrderHistory::query()->create([
+                        'action' => OrderHistoryActionEnum::SEND_ORDER_CONFIRMATION_EMAIL,
+                        'description' => trans('plugins/ecommerce::order.confirmation_email_was_sent_to_customer'),
+                        'order_id' => $order->id,
+                    ]);
                 }
             }
 
@@ -737,7 +823,12 @@ class OrderSupportServiceProvider extends ServiceProvider
             $orderTotal = max($orderTotal, 0);
             $isAvailableShipping = EcommerceHelper::isAvailableShipping($productsByStore['products']);
 
-            $defaultShippingMethod = $request->input("shipping_method.$storeId") ?: Arr::get($sessionCheckoutData, 'shipping_method', ShippingMethodEnum::DEFAULT);
+            // Handle both array (per-vendor) and string (unified) shipping method inputs
+            if (MarketplaceHelper::isChargeShippingPerVendor()) {
+                $defaultShippingMethod = $request->input("shipping_method.$storeId") ?: Arr::get($sessionCheckoutData, 'shipping_method', ShippingMethodEnum::DEFAULT);
+            } else {
+                $defaultShippingMethod = $request->input('shipping_method') ?: Arr::get($sessionCheckoutData, 'shipping_method', ShippingMethodEnum::DEFAULT);
+            }
             $defaultShippingOption = null;
             if ($isAvailableShipping) {
                 $shippingData = $this->getShippingData(
@@ -771,13 +862,20 @@ class OrderSupportServiceProvider extends ServiceProvider
 
                     $defaultShippingOption = Arr::first(array_keys(Arr::first($shipping)));
 
-                    if ($optionRequest = $request->input(
-                        "shipping_option.$storeId",
-                        old("shipping_option.$storeId")
-                    )) {
+                    $defaultShippingMethod = (string) $defaultShippingMethod;
+
+                    // Handle both array (per-vendor) and string (unified) shipping option inputs
+                    $optionRequest = null;
+                    if (MarketplaceHelper::isChargeShippingPerVendor()) {
+                        $optionRequest = $request->input("shipping_option.$storeId", old("shipping_option.$storeId"));
+                    } else {
+                        $optionRequest = $request->input('shipping_option', old('shipping_option'));
+                    }
+
+                    if ($optionRequest) {
                         if (
                             (is_string($optionRequest) || is_int($optionRequest))
-                            && array_key_exists($optionRequest, Arr::get($shipping, $defaultShippingMethod))
+                            && array_key_exists($optionRequest, (array) Arr::get($shipping, $defaultShippingMethod, []))
                         ) {
                             $defaultShippingOption = $optionRequest;
                         }
@@ -788,7 +886,9 @@ class OrderSupportServiceProvider extends ServiceProvider
                             $defaultShippingOption
                         );
 
-                        if (Arr::has($shipping, "$defaultShippingMethod.$defaultShippingOptionFromSession")) {
+                        $defaultShippingMethodValue = (array) Arr::get($shipping, $defaultShippingMethod, []);
+
+                        if (isset($defaultShippingMethodValue[$defaultShippingOptionFromSession])) {
                             $defaultShippingOption = $defaultShippingOptionFromSession;
                         }
                     }
@@ -838,19 +938,26 @@ class OrderSupportServiceProvider extends ServiceProvider
             ];
         }
 
-        $shippingAmount = $marketplaceData->pluck('shipping_amount')->sum();
+        // Handle shipping amount calculation based on mode
+        if (MarketplaceHelper::isChargeShippingPerVendor()) {
+            // Per-vendor shipping: sum all vendor shipping amounts
+            $shippingAmount = $marketplaceData->pluck('shipping_amount')->sum();
+        } else {
+            // Unified shipping: use the shipping amount from the first vendor only
+            $shippingAmount = $marketplaceData->first()['shipping_amount'] ?? 0;
+        }
         $promotionDiscountAmount = $marketplaceData->pluck('promotion_discount_amount')->sum();
         $couponDiscountAmount = $marketplaceData->pluck('coupon_discount_amount')->sum();
 
         $sessionCheckoutData = OrderHelper::getOrderSessionData($token);
 
-        $mpSessionCheckoutData = Arr::get($sessionCheckoutData, 'marketplace');
+        $mpSessionCheckoutData = Arr::get($sessionCheckoutData, 'marketplace', []);
 
         foreach ($mpSessionCheckoutData as $storeId => $mpSessionData) {
             Arr::set(
                 $mpSessionCheckoutData,
                 $storeId,
-                array_merge($mpSessionData, Arr::get($marketplaceData, $storeId, []))
+                array_merge((array) $mpSessionData, Arr::get($marketplaceData, $storeId, []))
             );
         }
 
@@ -967,9 +1074,7 @@ class OrderSupportServiceProvider extends ServiceProvider
             ->with(['address', 'products'])
             ->get();
 
-        if (! $orders->count()) {
-            abort(404);
-        }
+        abort_unless($orders->count(), 404);
 
         if (session()->has('tracked_start_checkout') && session('tracked_start_checkout') == $token) {
             $sessionCheckoutData = OrderHelper::getOrderSessionData($token);
@@ -1123,13 +1228,24 @@ class OrderSupportServiceProvider extends ServiceProvider
         int|string|null $currentUserId,
         ?Order $order
     ): array {
-        $store = $products['store'];
         $cartItems = $products['products']->pluck('cartItem');
+
+        $store = $products['store'];
+
+        // Handle both array (per-vendor) and string (unified) shipping inputs
+        if (MarketplaceHelper::isChargeShippingPerVendor() && $store && $store->id) {
+            $shippingMethod = $request->input('shipping_method.' . $store->id, ShippingMethodEnum::DEFAULT);
+            $shippingOption = $request->input('shipping_option.' . $store->id);
+        } else {
+            // For unified shipping, use standard inputs
+            $shippingMethod = $request->input('shipping_method', ShippingMethodEnum::DEFAULT);
+            $shippingOption = $request->input('shipping_option');
+        }
 
         $generalData = [
             'user_id' => $currentUserId,
-            'shipping_method' => $request->input('shipping_method.' . $store->id, ShippingMethodEnum::DEFAULT),
-            'shipping_option' => $request->input('shipping_option.' . $store->id),
+            'shipping_method' => $shippingMethod,
+            'shipping_option' => $shippingOption,
             'coupon_code' => Arr::get($sessionData, 'applied_coupon_code'),
             'token' => $token,
         ];
@@ -1151,7 +1267,7 @@ class OrderSupportServiceProvider extends ServiceProvider
         Arr::set($sessionData, 'created_order_id', $order->id);
         $sessionData = OrderHelper::processAddressOrder($currentUserId, $sessionData, $request);
 
-        $order->store_id = $store->id;
+        $order->store_id = $store?->id;
         $order->save();
 
         return OrderHelper::processOrderProductData($products, $sessionData);
@@ -1159,15 +1275,19 @@ class OrderSupportServiceProvider extends ServiceProvider
 
     public function processCheckoutRulesRequest(array $rules): array
     {
-        unset($rules['shipping_method']);
-        [$stores, $groupedProducts] = $this->getStoresInCart(true);
-        foreach ($stores as $storeId => $storeName) {
-            $products = collect($groupedProducts[$storeId]);
-            if (EcommerceHelper::isAvailableShipping($products) && ! (bool) get_ecommerce_setting('disable_shipping_options', false)) {
-                $rules["shipping_method.$storeId"] = 'required|' . Rule::in(ShippingMethodEnum::values());
-                $rules["shipping_option.$storeId"] = 'required';
+        if (MarketplaceHelper::isChargeShippingPerVendor()) {
+            // Per-vendor shipping: use vendor-specific rules
+            unset($rules['shipping_method']);
+            [$stores, $groupedProducts] = $this->getStoresInCart(true);
+            foreach ($stores as $storeId => $storeName) {
+                $products = collect($groupedProducts[$storeId]);
+                if (EcommerceHelper::isAvailableShipping($products) && ! (bool) get_ecommerce_setting('disable_shipping_options', false)) {
+                    $rules["shipping_method.$storeId"] = 'required|' . Rule::in(ShippingMethodEnum::values());
+                    $rules["shipping_option.$storeId"] = 'required';
+                }
             }
         }
+        // For unified shipping, keep the standard ecommerce rules (shipping_method and shipping_option)
 
         return $rules;
     }
@@ -1189,7 +1309,7 @@ class OrderSupportServiceProvider extends ServiceProvider
                 }
             }
             $groupedProducts[0][] = $original;
-            $storesInCart[0] = theme_option('site_title');
+            $storesInCart[0] = Theme::getSiteTitle();
         }
         if ($includeProducts) {
             return [$storesInCart, $groupedProducts];
@@ -1223,7 +1343,7 @@ class OrderSupportServiceProvider extends ServiceProvider
     {
         $order->loadMissing(['store', 'store.customer']);
 
-        if ($order->store->id && $order->store->customer->id) {
+        if ($order->store?->id && $order->store->customer->id) {
             $customer = $order->store->customer;
             $vendorInfo = $customer->vendorInfo;
             if (! $vendorInfo->id) {
@@ -1234,7 +1354,7 @@ class OrderSupportServiceProvider extends ServiceProvider
             }
 
             if ($vendorInfo->id) {
-                $orderAmountWithoutShippingFee = $order->amount - $order->shipping_amount - $order->tax_amount;
+                $orderAmountWithoutShippingFee = $order->amount - $order->shipping_amount - $order->tax_amount - $order->payment_fee;
                 if (! MarketplaceHelper::isCommissionCategoryFeeBasedEnabled()) {
                     $feePercentage = MarketplaceHelper::getSetting('fee_per_order', 0);
                     $fee = $orderAmountWithoutShippingFee * ($feePercentage / 100);
@@ -1312,7 +1432,7 @@ class OrderSupportServiceProvider extends ServiceProvider
             $commissionFeePercentage = MarketplaceHelper::getSetting('fee_per_order', 0);
             $commissionSetting = CategoryCommission::query()
                 ->whereIn('product_category_id', $listCategories)
-                ->orderByDesc('commission_percentage')
+                ->latest('commission_percentage')
                 ->value('commission_percentage');
 
             if ($commissionSetting) {
@@ -1328,7 +1448,7 @@ class OrderSupportServiceProvider extends ServiceProvider
     public function afterReturnOrderCompleted(OrderReturn $orderReturn)
     {
         $order = $orderReturn->order;
-        if ($order && $order->store->id && $order->store->customer->id) {
+        if ($order && $order->store?->id && $order->store->customer->id) {
             $customer = $order->store->customer;
             $vendorInfo = $customer->vendorInfo;
             if (! $vendorInfo->id) {
@@ -1340,6 +1460,10 @@ class OrderSupportServiceProvider extends ServiceProvider
 
             if ($vendorInfo->id) {
                 $refundAmount = $orderReturn->items->sum('refund_amount');
+                // Exclude payment fee from refund amount if it exists
+                if ($order->payment_fee > 0) {
+                    $refundAmount = $refundAmount - $order->payment_fee;
+                }
                 if (! MarketplaceHelper::isCommissionCategoryFeeBasedEnabled()) {
                     $feePercentage = MarketplaceHelper::getSetting('fee_per_order', 0);
                     $fee = $refundAmount * ($feePercentage / 100);

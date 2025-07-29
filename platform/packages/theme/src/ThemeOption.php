@@ -490,7 +490,7 @@ class ThemeOption
         return setting()->has($this->getOptionKey($key, $this->getCurrentLocaleCode()));
     }
 
-    public function getOption(string $key = '', string|null|array $default = ''): ?string
+    public function getOption(string $key = '', bool|string|null|array $default = ''): ?string
     {
         if (is_array($default)) {
             $default = json_encode($default);

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('ec_shipments', function (Blueprint $table) {
+        Schema::table('ec_shipments', function (Blueprint $table): void {
             $table->string('tracking_id')->nullable();
             $table->string('shipping_company_name')->nullable();
             $table->string('tracking_link')->nullable();
@@ -18,7 +18,7 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::table('ec_shipments', function (Blueprint $table) {
+        Schema::table('ec_shipments', function (Blueprint $table): void {
             $table->dropColumn([
                 'tracking_id',
                 'shipping_company_name',

@@ -6,12 +6,20 @@ use Botble\Base\Facades\BaseHelper;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
+use Illuminate\Support\Traits\Conditionable;
+use Illuminate\Support\Traits\Tappable;
 use Symfony\Component\HttpFoundation\Response;
 
 class BaseHttpResponse extends Response implements Responsable
 {
+    use Conditionable;
+    use Tappable;
+
     protected bool $error = false;
 
     protected mixed $data = null;
@@ -73,6 +81,22 @@ class BaseHttpResponse extends Response implements Responsable
     public function setNextRoute(string $name, mixed $parameters = [], bool $absolute = true): static
     {
         return $this->setNextUrl(route($name, $parameters, $absolute));
+    }
+
+    public function usePreviousRouteName(): static
+    {
+        $this
+            ->when(URL::previous(), function (self $httpReponse, string $previousUrl): void {
+                $previousRouteName = optional(Route::getRoutes()->match(Request::create($previousUrl)))->getName();
+                if ($previousRouteName && Str::endsWith($previousRouteName, '.edit')) {
+                    $indexRouteName = Str::replaceLast('.edit', '.index', $previousRouteName);
+                    if (Route::has($indexRouteName)) {
+                        $httpReponse->setPreviousRoute($indexRouteName);
+                    }
+                }
+            });
+
+        return $this;
     }
 
     public function withInput(bool $withInput = true): static

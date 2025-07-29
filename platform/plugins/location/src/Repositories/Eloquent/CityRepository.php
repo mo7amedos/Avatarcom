@@ -16,20 +16,20 @@ class CityRepository extends RepositoriesAbstract implements CityInterface
     {
         $data = $this->model
             ->wherePublished('cities.status')
-            ->leftJoin('states', function (JoinClause $query) {
+            ->leftJoin('states', function (JoinClause $query): void {
                 $query
                     ->on('states.id', '=', 'cities.state_id')
                     ->where('states.status', BaseStatusEnum::PUBLISHED);
             })
-            ->join('countries', function (JoinClause $query) {
+            ->join('countries', function (JoinClause $query): void {
                 $query
                     ->on('countries.id', '=', 'cities.country_id')
                     ->where('countries.status', BaseStatusEnum::PUBLISHED);
             })
-            ->when($keyword, function (Builder $query) use ($keyword) {
+            ->when($keyword, function (Builder $query) use ($keyword): void {
                 $keyword = '%' . $keyword . '%';
 
-                $query->where(function (Builder $query) use ($keyword) {
+                $query->where(function (Builder $query) use ($keyword): void {
                     $query
                         ->where(function (Builder $query) use ($keyword) {
                             return $query
@@ -42,14 +42,14 @@ class CityRepository extends RepositoriesAbstract implements CityInterface
                             && Language::getCurrentLocale() != Language::getDefaultLocale(),
                             function (Builder $query) use (
                                 $keyword
-                            ) {
+                            ): void {
                                 $query
                                     ->orWhere(function (Builder $query) use ($keyword) {
                                         return $query
-                                            ->whereHas('translations', function ($query) use ($keyword) {
+                                            ->whereHas('translations', function ($query) use ($keyword): void {
                                                 $query->where('name', 'LIKE', $keyword);
                                             })
-                                            ->orWhereHas('state.translations', function ($query) use ($keyword) {
+                                            ->orWhereHas('state.translations', function ($query) use ($keyword): void {
                                                 $query->where('name', 'LIKE', $keyword);
                                             });
                                     });

@@ -10,9 +10,7 @@ class CheckCompareEnabledMiddleware
 {
     public function handle(Request $request, Closure $closure)
     {
-        if (! EcommerceHelper::isCompareEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isCompareEnabled(), 404);
 
         return $closure($request);
     }

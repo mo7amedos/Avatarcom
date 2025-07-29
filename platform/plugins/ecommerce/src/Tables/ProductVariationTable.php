@@ -138,10 +138,10 @@ class ProductVariationTable extends TableAbstract
 
         foreach ($this->getProductAttributeSets()->whereNotNull('is_selected') as $attributeSet) {
             $data
-                ->filterColumn('set_' . $attributeSet->id, function ($query, $keyword) {
+                ->filterColumn('set_' . $attributeSet->id, function ($query, $keyword): void {
                     if ($keyword) {
-                        $query->whereHas('variationItems', function ($query) use ($keyword) {
-                            $query->whereHas('attribute', function ($query) use ($keyword) {
+                        $query->whereHas('variationItems', function ($query) use ($keyword): void {
+                            $query->whereHas('attribute', function ($query) use ($keyword): void {
                                 $query->where('id', $keyword);
                             });
                         });
@@ -156,7 +156,7 @@ class ProductVariationTable extends TableAbstract
     {
         $query = $this->baseQuery()
             ->with([
-                'product' => function (BelongsTo $query) {
+                'product' => function (BelongsTo $query): void {
                     $query
                         ->select([
                             'id',
@@ -172,11 +172,11 @@ class ProductVariationTable extends TableAbstract
                             'image',
                             'images',
                         ])
-                        ->when($this->hasDigitalProduct, function ($query) {
+                        ->when($this->hasDigitalProduct, function ($query): void {
                             $query->with('productFiles:id,product_id,extras');
                         });
                 },
-                'configurableProduct' => function (BelongsTo $query) {
+                'configurableProduct' => function (BelongsTo $query): void {
                     $query
                         ->select([
                             'id',
@@ -202,7 +202,7 @@ class ProductVariationTable extends TableAbstract
         return $this
             ->getModel()
             ->query()
-            ->whereHas('configurableProduct', function (Builder $query) {
+            ->whereHas('configurableProduct', function (Builder $query): void {
                 $query->where('configurable_product_id', $this->productId);
             })
             ->whereNot('product_id');
@@ -210,7 +210,7 @@ class ProductVariationTable extends TableAbstract
 
     public function getProductAttributeSets(): Collection
     {
-        if (! $this->productAttributeSets->count()) {
+        if ($this->productAttributeSets->isEmpty()) {
             $this->productAttributeSets = ProductAttributeSet::getAllWithSelected($this->productId, []);
         }
 
@@ -257,6 +257,7 @@ class ProductVariationTable extends TableAbstract
                 'title' => $attributeSet->title,
                 'class' => 'text-start',
                 'orderable' => false,
+                'searchable' => false,
                 'width' => '90',
                 'search_data' => [
                     'attribute_set_id' => $attributeSet->id,

@@ -50,6 +50,7 @@
                                 :outlined="true"
                                 data-bb-toggle="review-delete"
                                 data-target="{{ route('reviews.destroy', $review) }}"
+                                data-next-url="{{ route('reviews.index') }}"
                             >
                                 {{ trans('plugins/ecommerce::review.delete') }}
                             </x-core::button>

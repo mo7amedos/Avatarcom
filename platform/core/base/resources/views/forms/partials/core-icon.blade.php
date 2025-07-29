@@ -2,7 +2,7 @@
     if (BaseHelper::hasIcon($value)) {
         $icon = BaseHelper::renderIcon($value);
     } else {
-        $icon = $value;
+        $icon = '<i class="' . $value . '"></i>';
     }
 @endphp
 

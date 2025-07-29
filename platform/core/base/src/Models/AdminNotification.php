@@ -71,17 +71,17 @@ class AdminNotification extends BaseModel
 
     protected static function booted(): void
     {
-        static::creating(function (self $notification) {
+        static::creating(function (self $notification): void {
             if ($notification->action_url) {
                 $notification->action_url = str_replace(url(''), '', $notification->action_url);
             }
         });
 
-        static::saved(function () {
+        static::saved(function (): void {
             Cache::make(static::class)->flush();
         });
 
-        static::deleted(function () {
+        static::deleted(function (): void {
             Cache::make(static::class)->flush();
         });
     }

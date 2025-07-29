@@ -31,7 +31,7 @@ class SpecificationGroupController extends BaseController
     {
         $form = $this->getForm()::create()->setRequest($request)->onlyValidatedData();
 
-        $form->saving(function (SpecificationGroupForm $form) {
+        $form->saving(function (SpecificationGroupForm $form): void {
             $model = $form->getModel();
             if (! empty($this->getAdditionalDataForSaving())) {
                 $model->fill($this->getAdditionalDataForSaving());
@@ -48,7 +48,7 @@ class SpecificationGroupController extends BaseController
 
     public function edit(string $group)
     {
-        $group = SpecificationGroup::query()->findOrFail($group);
+        $group = $this->getSpecificationGroup($group);
 
         $this->pageTitle(trans('plugins/ecommerce::product-specification.specification_groups.edit.title', [
             'name' => $group->name,
@@ -59,10 +59,10 @@ class SpecificationGroupController extends BaseController
 
     public function update(SpecificationGroupRequest $request, string $group)
     {
-        $group = SpecificationGroup::query()->findOrFail($group);
+        $group = $this->getSpecificationGroup($group);
 
         $form = $this->getForm()::createFromModel($group)->setRequest($request)->onlyValidatedData();
-        $form->saving(function (SpecificationGroupForm $form) {
+        $form->saving(function (SpecificationGroupForm $form): void {
             $model = $form->getModel();
             if (! empty($this->getAdditionalDataForSaving())) {
                 $model->fill($this->getAdditionalDataForSaving());
@@ -79,7 +79,7 @@ class SpecificationGroupController extends BaseController
 
     public function destroy(string $group)
     {
-        $group = SpecificationGroup::query()->findOrFail($group);
+        $group = $this->getSpecificationGroup($group);
 
         return DeleteResourceAction::make($group);
     }
@@ -119,5 +119,10 @@ class SpecificationGroupController extends BaseController
     protected function getEditRouteName(): string
     {
         return 'ecommerce.specification-groups.edit';
+    }
+
+    protected function getSpecificationGroup(string $group)
+    {
+        return SpecificationGroup::query()->findOrFail($group);
     }
 }

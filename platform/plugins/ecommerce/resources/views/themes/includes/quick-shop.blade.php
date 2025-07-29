@@ -9,7 +9,10 @@
         <input type="hidden" name="id" value="{{ ($product->is_variation || !$product->defaultVariation->product_id) ? $product->id : $product->defaultVariation->product_id }}" />
 
         @if ($product->variations->isNotEmpty())
-            {!! render_product_swatches($product, ['selected' => $selectedAttrs]) !!}
+            {!! render_product_swatches($product, [
+                'selected' => $selectedAttrs,
+                'referenceProduct' => $referenceProduct ?? null,
+            ]) !!}
 
             @include(EcommerceHelper::viewPath('includes.product-availability'))
         @endif

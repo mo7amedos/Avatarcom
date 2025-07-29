@@ -6,17 +6,17 @@ use Botble\Theme\Facades\Theme;
 use Illuminate\Support\Facades\Route;
 use Theme\Farmart\Http\Controllers\FarmartController;
 
-Theme::registerRoutes(function () {
+Theme::registerRoutes(function (): void {
     Route::middleware(RequiresJsonRequestMiddleware::class)
         ->prefix('ajax')
         ->name('public.ajax.')
-        ->group(function () {
+        ->group(function (): void {
             if (is_plugin_active('ecommerce')) {
                 Route::get('search-products', [PublicAjaxController::class, 'ajaxSearchProducts'])->name('search-products');
                 Route::get('categories-dropdown', [PublicAjaxController::class, 'ajaxGetCategoriesDropdown'])->name('categories-dropdown');
             }
 
-            Route::group(['controller' => FarmartController::class], function () {
+            Route::group(['controller' => FarmartController::class], function (): void {
                 Route::get('cart', [
                     'uses' => 'ajaxCart',
                     'as' => 'cart',

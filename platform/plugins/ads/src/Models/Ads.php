@@ -2,15 +2,18 @@
 
 namespace Botble\Ads\Models;
 
+use Botble\Ads\Database\Factories\AdsFactory;
 use Botble\Base\Enums\BaseStatusEnum;
 use Botble\Base\Models\BaseModel;
 use Botble\Media\Facades\RvMedia;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Ads extends BaseModel
 {
+    use HasFactory;
     protected $table = 'ads';
 
     protected $fillable = [
@@ -49,7 +52,7 @@ class Ads extends BaseModel
     protected function imageUrl(): Attribute
     {
         return Attribute::get(
-            function (): string {
+            function (): ?string {
                 if (config('plugins.ads.general.use_real_image_url')) {
                     return RvMedia::getImageUrl($this->image);
                 }
@@ -62,7 +65,7 @@ class Ads extends BaseModel
     protected function tabletImageUrl(): Attribute
     {
         return Attribute::get(
-            function (): string {
+            function (): ?string {
                 if (config('plugins.ads.general.use_real_image_url')) {
                     return RvMedia::getImageUrl($this->tablet_image ?: $this->image);
                 }
@@ -75,7 +78,7 @@ class Ads extends BaseModel
     protected function mobileImageUrl(): Attribute
     {
         return Attribute::get(
-            function (): string {
+            function (): ?string {
                 if (config('plugins.ads.general.use_real_image_url')) {
                     return RvMedia::getImageUrl(($this->mobile_image ?: $this->tablet_image) ?: $this->image);
                 }
@@ -104,5 +107,10 @@ class Ads extends BaseModel
             'size' => $size,
             'hashName' => md5($this->key),
         ]);
+    }
+
+    protected static function newFactory()
+    {
+        return AdsFactory::new();
     }
 }

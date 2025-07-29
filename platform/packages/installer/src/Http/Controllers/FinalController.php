@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\URL;
+use Throwable;
 
 class FinalController
 {
@@ -23,6 +24,32 @@ class FinalController
         }
 
         File::delete(storage_path('installing'));
+
+        try {
+            $files = collect(File::files(base_path()))
+                ->filter(function ($file) {
+                    $fileName = $file->getFilename();
+
+                    if (in_array($fileName, ['database.sql', 'readme.txt', 'document.zip', 'docker-compose.yml'])) {
+                        return true;
+                    }
+
+                    return str_starts_with($fileName, 'database') && $file->getExtension() === 'sql';
+                })
+                ->map(function ($file) {
+                    return $file->getFilename();
+                })
+                ->all();
+
+            if (! empty($files)) {
+                foreach ($files as $file) {
+                    File::delete(base_path($file));
+                }
+            }
+
+        } catch (Throwable) {
+            // do nothing
+        }
 
         BaseHelper::saveFileData(storage_path('installed'), Carbon::now()->toDateTimeString());
 

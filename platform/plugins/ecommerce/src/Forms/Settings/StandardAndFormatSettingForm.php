@@ -37,7 +37,7 @@ class StandardAndFormatSettingForm extends SettingForm
             ])
             ->add('store_order_prefix', 'text', [
                 'label' => trans('plugins/ecommerce::setting.standard_and_format.form.start_with'),
-                'value' => get_ecommerce_setting('store_order_prefix'),
+                'value' => $prefix = get_ecommerce_setting('store_order_prefix'),
                 'group-flat' => true,
                 'help_block' => [
                     'text' => trans('plugins/ecommerce::setting.standard_and_format.form.order_will_be_shown')
@@ -45,16 +45,16 @@ class StandardAndFormatSettingForm extends SettingForm
                             '<span class="sample-order-code ms-1">#</span>' .
                             '<span class="sample-order-code-prefix">%s</span>%s' .
                             '<span class="sample-order-code-suffix">%s</span>',
-                            get_ecommerce_setting('store_order_prefix') ? get_ecommerce_setting('store_order_prefix') . '-' : '',
+                            $prefix ? $prefix . '-' : '',
                             config('plugins.ecommerce.order.default_order_start_number'),
-                            get_ecommerce_setting('store_order_suffix') ? '-' . get_ecommerce_setting('store_order_suffix') : '',
+                            ($suffix = get_ecommerce_setting('store_order_suffix')) ? '-' . $suffix : '',
                         )
                     ,
                 ],
             ])
             ->add('store_order_suffix', 'text', [
                 'label' => trans('plugins/ecommerce::setting.standard_and_format.form.end_with'),
-                'value' => get_ecommerce_setting('store_order_suffix'),
+                'value' => $suffix,
             ])
             ->add('store_weight_unit', 'customSelect', [
                 'label' => trans('plugins/ecommerce::setting.standard_and_format.form.weight_unit'),

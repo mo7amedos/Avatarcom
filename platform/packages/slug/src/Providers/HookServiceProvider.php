@@ -22,11 +22,8 @@ class HookServiceProvider extends ServiceProvider
 
     public function addSlugBox(FormAbstract $form): FormAbstract
     {
-        if ($form instanceof FormFront) {
-            Theme::asset()->container('footer')->usePath(false)->add('slug-js', 'vendor/core/packages/slug/js/front-slug.js', ['jquery']);
-            Theme::asset()->usePath(false)->add('slug-css', 'vendor/core/packages/slug/css/slug.css');
-        } else {
-            Assets::addScriptsDirectly('vendor/core/packages/slug/js/slug.js')->addStylesDirectly('vendor/core/packages/slug/css/slug.css');
+        if ($form->isDisabledPermalinkField()) {
+            return $form;
         }
 
         $model = $form->getModel();
@@ -37,6 +34,15 @@ class HookServiceProvider extends ServiceProvider
 
         if (array_key_exists('slug', $form->getFields())) {
             return $form;
+        }
+
+        if ($form instanceof FormFront) {
+            $version = get_cms_version();
+
+            Theme::asset()->container('footer')->usePath(false)->add('slug-js', 'vendor/core/packages/slug/js/front-slug.js', ['jquery'], version: $version);
+            Theme::asset()->usePath(false)->add('slug-css', 'vendor/core/packages/slug/css/slug.css', version: $version);
+        } else {
+            Assets::addScriptsDirectly('vendor/core/packages/slug/js/slug.js')->addStylesDirectly('vendor/core/packages/slug/css/slug.css');
         }
 
         return $form

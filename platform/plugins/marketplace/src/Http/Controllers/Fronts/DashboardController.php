@@ -27,14 +27,16 @@ class DashboardController extends BaseController
 {
     public function __construct()
     {
+        $version = get_cms_version();
+
         Theme::asset()
-            ->add('customer-style', 'vendor/core/plugins/ecommerce/css/customer.css');
+            ->add('customer-style', 'vendor/core/plugins/ecommerce/css/customer.css', ['bootstrap-css'], version: $version);
 
         Theme::asset()
             ->container('footer')
-            ->add('ecommerce-utilities-js', 'vendor/core/plugins/ecommerce/js/utilities.js', ['jquery'])
-            ->add('cropper-js', 'vendor/core/plugins/ecommerce/libraries/cropper.js', ['jquery'])
-            ->add('avatar-js', 'vendor/core/plugins/ecommerce/js/avatar.js', ['jquery']);
+            ->add('ecommerce-utilities-js', 'vendor/core/plugins/ecommerce/js/utilities.js', ['jquery'], version: $version)
+            ->add('cropper-js', 'vendor/core/plugins/ecommerce/libraries/cropper.js', ['jquery'], version: $version)
+            ->add('avatar-js', 'vendor/core/plugins/ecommerce/js/avatar.js', ['jquery'], version: $version);
     }
 
     public function index(Request $request)
@@ -69,7 +71,7 @@ class DashboardController extends BaseController
                 [RevenueTypeEnum::ADD_AMOUNT, RevenueTypeEnum::SUBTRACT_AMOUNT, RevenueTypeEnum::ADD_AMOUNT, RevenueTypeEnum::SUBTRACT_AMOUNT]
             )
             ->where('customer_id', $user->getKey())
-            ->where(function ($query) use ($startDate, $endDate) {
+            ->where(function ($query) use ($startDate, $endDate): void {
                 $query->whereDate('created_at', '>=', $startDate)
                     ->whereDate('created_at', '<=', $endDate);
             })
@@ -87,7 +89,7 @@ class DashboardController extends BaseController
                 WithdrawalStatusEnum::PENDING,
                 WithdrawalStatusEnum::PROCESSING,
             ])
-            ->where(function ($query) use ($startDate, $endDate) {
+            ->where(function ($query) use ($startDate, $endDate): void {
                 $query->whereDate('mp_customer_withdrawals.created_at', '>=', $startDate)
                     ->whereDate('mp_customer_withdrawals.created_at', '<=', $endDate);
             })
@@ -114,14 +116,13 @@ class DashboardController extends BaseController
                 'shipping_amount',
                 'payment_id',
             ])
-            ->with(['user', 'payment'])
+            ->with(['user'])
             ->where([
                 'is_finished' => 1,
                 'store_id' => $store->id,
             ])
             ->whereDate('created_at', '>=', $startDate)
-            ->whereDate('created_at', '<=', $endDate)
-            ->orderByDesc('created_at')
+            ->whereDate('created_at', '<=', $endDate)->latest()
             ->limit(10)
             ->get();
 
@@ -153,7 +154,7 @@ class DashboardController extends BaseController
             ->get();
 
         $totalProducts = $store->products()->count();
-        $totalOrders = $store->orders()->count();
+        $totalOrders = $store->count();
         $compact = compact('user', 'store', 'data', 'totalProducts', 'totalOrders');
 
         if ($request->ajax()) {
@@ -175,7 +176,7 @@ class DashboardController extends BaseController
 
         if (! RvMedia::isChunkUploadEnabled()) {
             $validator = Validator::make($request->all(), [
-                'file.0' => 'required|image|mimes:jpg,jpeg,png',
+                'file.0' => ['required', 'image', 'mimes:jpg,jpeg,png,webp'],
             ]);
 
             if ($validator->fails()) {

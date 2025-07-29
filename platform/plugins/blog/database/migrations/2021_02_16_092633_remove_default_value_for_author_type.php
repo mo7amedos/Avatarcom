@@ -9,47 +9,47 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasColumn('categories', 'author_type')) {
-            Schema::table('categories', function (Blueprint $table) {
+            Schema::table('categories', function (Blueprint $table): void {
                 $table->string('author_type');
             });
         }
 
-        Schema::table('categories', function (Blueprint $table) {
+        Schema::table('categories', function (Blueprint $table): void {
             $table->string('author_type')->change();
         });
 
         if (! Schema::hasColumn('tags', 'author_type')) {
-            Schema::table('tags', function (Blueprint $table) {
+            Schema::table('tags', function (Blueprint $table): void {
                 $table->string('author_type');
             });
         }
 
-        Schema::table('tags', function (Blueprint $table) {
+        Schema::table('tags', function (Blueprint $table): void {
             $table->string('author_type')->change();
         });
 
         if (! Schema::hasColumn('posts', 'author_type')) {
-            Schema::table('posts', function (Blueprint $table) {
+            Schema::table('posts', function (Blueprint $table): void {
                 $table->string('author_type');
             });
         }
 
-        Schema::table('posts', function (Blueprint $table) {
+        Schema::table('posts', function (Blueprint $table): void {
             $table->string('author_type')->change();
         });
     }
 
     public function down(): void
     {
-        Schema::table('categories', function (Blueprint $table) {
+        Schema::table('categories', function (Blueprint $table): void {
             $table->string('author_type')->default(addslashes(User::class))->change();
         });
 
-        Schema::table('tags', function (Blueprint $table) {
+        Schema::table('tags', function (Blueprint $table): void {
             $table->string('author_type')->default(addslashes(User::class))->change();
         });
 
-        Schema::table('posts', function (Blueprint $table) {
+        Schema::table('posts', function (Blueprint $table): void {
             $table->string('author_type')->default(addslashes(User::class))->change();
         });
     }

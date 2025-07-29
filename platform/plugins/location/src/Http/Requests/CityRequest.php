@@ -3,6 +3,7 @@
 namespace Botble\Location\Http\Requests;
 
 use Botble\Base\Enums\BaseStatusEnum;
+use Botble\Base\Facades\BaseHelper;
 use Botble\Base\Rules\MediaImageRule;
 use Botble\Base\Rules\OnOffRule;
 use Botble\Support\Http\Requests\Request;
@@ -25,6 +26,7 @@ class CityRequest extends Request
             'order' => ['required', 'integer', 'min:0', 'max:127'],
             'status' => [Rule::in(BaseStatusEnum::values())],
             'is_default' => [new OnOffRule()],
+            'zip_code' => ['nullable', ...BaseHelper::getZipcodeValidationRule(true)],
         ];
     }
 }

@@ -59,10 +59,7 @@ class BecomeVendorForm extends FormAbstract
                     ->prepend(
                         sprintf(
                             '<span class="position-absolute top-0 end-0 shop-url-status"></span><div class="input-group"><span class="input-group-text">%s</span>',
-                            route(
-                                'public.store',
-                                ''
-                            )
+                            route('public.store', ['slug' => '/'])
                         )
                     )
                     ->append('</div>')
@@ -76,7 +73,7 @@ class BecomeVendorForm extends FormAbstract
                     ->placeholder(__('Ex: 0943243332'))
                     ->required(),
             )
-            ->when(MarketplaceHelper::getSetting('requires_vendor_documentations_verification', true), function () {
+            ->when(MarketplaceHelper::getSetting('requires_vendor_documentations_verification', true), function (): void {
                 $this
                     ->add(
                         'certificate_of_incorporation',
@@ -103,12 +100,12 @@ class BecomeVendorForm extends FormAbstract
                 OnOffCheckboxField::class,
                 CheckboxFieldOption::make()
                     ->when(
-                        $privacyPolicyUrl = MarketplaceHelper::getSetting('term_and_privacy_policy_url') ?: theme_option('term_and_privacy_policy_url'),
-                        function (CheckboxFieldOption $fieldOption, string $url) {
+                        $privacyPolicyUrl = MarketplaceHelper::getSetting('term_and_privacy_policy_url') ?: Theme::termAndPrivacyPolicyUrl(),
+                        function (CheckboxFieldOption $fieldOption, string $url): void {
                             $fieldOption->label(__('I agree to the :link', ['link' => Html::link($url, __('Terms and Privacy Policy'), attributes: ['class' => 'text-decoration-underline', 'target' => '_blank'])]));
                         }
                     )
-                    ->when(! $privacyPolicyUrl, function (CheckboxFieldOption $fieldOption) {
+                    ->when(! $privacyPolicyUrl, function (CheckboxFieldOption $fieldOption): void {
                         $fieldOption->label(__('I agree to the Terms and Privacy Policy'));
                     })
             )

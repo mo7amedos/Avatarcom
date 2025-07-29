@@ -17,8 +17,7 @@ class AuditLogController extends BaseSystemController
         $limit = $limit > 0 ? $limit : 10;
 
         $histories = AuditHistory::query()
-            ->with('user')
-            ->orderByDesc('created_at')
+            ->with('user')->latest()
             ->paginate($limit);
 
         return $this
@@ -37,7 +36,7 @@ class AuditLogController extends BaseSystemController
 
     public function destroy(AuditHistory $auditLog)
     {
-        return DeleteResourceAction::make($auditLog);
+        return DeleteResourceAction::make($auditLog)->silent();
     }
 
     public function deleteAll()

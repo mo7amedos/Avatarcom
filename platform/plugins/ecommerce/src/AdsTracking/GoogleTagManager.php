@@ -71,7 +71,7 @@ class GoogleTagManager
             $product = $products->find($item->id)->original_product;
 
             return new GoogleTagItem(
-                $item->id,
+                $item->sku ?: $item->id,
                 $item->name,
                 $item->price,
                 $item->qty,
@@ -213,7 +213,7 @@ class GoogleTagManager
             }
 
             return new GoogleTagItem(
-                id: $item->id,
+                id: $item->sku ?: $item->id,
                 name: $item->name,
                 price: $item->price ?: 0,
                 quantity: $item->quantity ?? null,

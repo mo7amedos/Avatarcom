@@ -32,7 +32,7 @@ class PreferenceForm extends FormAbstract
             ->template('core/base::forms.form-no-wrap')
             ->setValidatorClass(PreferenceRequest::class)
             ->setMethod('PUT')
-            ->when(count($languages) > 1, function (FormAbstract $form) use ($adminAppearance, $languages) {
+            ->when(count($languages) > 1, function (FormAbstract $form) use ($adminAppearance, $languages): void {
                 $form->add(
                     'locale',
                     SelectField::class,

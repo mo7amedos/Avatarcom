@@ -4,13 +4,14 @@
     <x-core::modal
         id="add-address-modal"
         :title="trans('plugins/ecommerce::addresses.add_address')"
-        :form-action="route('customers.addresses.create.store')"
+        :form-action="route('customers.addresses.store')"
         form-method="POST"
         size="md"
     >
         {!!
             \Botble\Ecommerce\Forms\Fronts\Customer\AddressForm::create()
                 ->add('customer_id', 'hidden', ['value' => $form->getModel()->id])
+                ->remove('submit')
                 ->renderForm()
         !!}
 

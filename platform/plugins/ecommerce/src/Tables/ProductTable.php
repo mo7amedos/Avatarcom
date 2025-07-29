@@ -54,6 +54,32 @@ class ProductTable extends TableAbstract
                     ->route('tools.data-synchronize.import.products.index')
                     ->permission('ecommerce.import.products.index'),
             ])
+            ->addBulkActions([
+                DeleteBulkAction::make()->permission('products.destroy'),
+            ])
+            ->addColumns([
+                IdColumn::make(),
+                ImageColumn::make(),
+                Column::make('name')
+                    ->title(trans('plugins/ecommerce::products.name'))
+                    ->alignStart(),
+                Column::make('price')
+                    ->title(trans('plugins/ecommerce::products.price'))
+                    ->alignStart(),
+                Column::make('stock_status')
+                    ->title(trans('plugins/ecommerce::products.stock_status')),
+                Column::make('quantity')
+                    ->title(trans('plugins/ecommerce::products.quantity'))
+                    ->alignStart(),
+                Column::make('sku')
+                    ->title(trans('plugins/ecommerce::products.sku'))
+                    ->alignStart(),
+                Column::make('order')
+                    ->title(trans('plugins/ecommerce::ecommerce.sort_order'))
+                    ->width(50),
+                CreatedAtColumn::make(),
+                StatusColumn::make(),
+            ])
             ->queryUsing(function (Builder $query) {
                 return $query
                     ->select([
@@ -142,25 +168,25 @@ class ProductTable extends TableAbstract
                     $keyword = '%' . $keyword . '%';
 
                     $query
-                        ->where(function ($query) use ($keyword) {
+                        ->where(function ($query) use ($keyword): void {
                             $query
                                 ->where('ec_products.name', 'LIKE', $keyword)
                                 ->where('is_variation', 0);
                         })
-                        ->orWhere(function ($query) use ($keyword) {
+                        ->orWhere(function ($query) use ($keyword): void {
                             $query
                                 ->where('is_variation', 0)
-                                ->where(function ($query) use ($keyword) {
+                                ->where(function ($query) use ($keyword): void {
                                     $query
                                         ->orWhere('ec_products.sku', 'LIKE', $keyword)
                                         ->orWhere('ec_products.created_at', 'LIKE', $keyword)
                                         ->when(
                                             in_array('sku', EcommerceHelper::getProductsSearchBy()),
-                                            function ($query) use ($keyword) {
+                                            function ($query) use ($keyword): void {
                                                 $query
                                                     ->orWhereHas(
                                                         'variations.product',
-                                                        function ($query) use ($keyword) {
+                                                        function ($query) use ($keyword): void {
                                                             $query->where('sku', 'LIKE', $keyword);
                                                         }
                                                     );
@@ -181,33 +207,6 @@ class ProductTable extends TableAbstract
     public function htmlDrawCallbackFunction(): ?string
     {
         return parent::htmlDrawCallbackFunction() . 'Botble.initEditable()';
-    }
-
-    public function columns(): array
-    {
-        return [
-            IdColumn::make(),
-            ImageColumn::make(),
-            Column::make('name')
-                ->title(trans('plugins/ecommerce::products.name'))
-                ->alignStart(),
-            Column::make('price')
-                ->title(trans('plugins/ecommerce::products.price'))
-                ->alignStart(),
-            Column::make('stock_status')
-                ->title(trans('plugins/ecommerce::products.stock_status')),
-            Column::make('quantity')
-                ->title(trans('plugins/ecommerce::products.quantity'))
-                ->alignStart(),
-            Column::make('sku')
-                ->title(trans('plugins/ecommerce::products.sku'))
-                ->alignStart(),
-            Column::make('order')
-                ->title(trans('plugins/ecommerce::ecommerce.sort_order'))
-                ->width(50),
-            CreatedAtColumn::make(),
-            StatusColumn::make(),
-        ];
     }
 
     public function buttons(): array
@@ -251,13 +250,6 @@ class ProductTable extends TableAbstract
         }
 
         return $buttons;
-    }
-
-    public function bulkActions(): array
-    {
-        return [
-            DeleteBulkAction::make()->permission('products.destroy'),
-        ];
     }
 
     public function renderTable($data = [], $mergeData = []): View|Factory|Response
@@ -387,7 +379,15 @@ class ProductTable extends TableAbstract
                         ->select($query->getModel()->getTable() . '.*');
                 }
 
-                return $query->where('ec_product_category_product.category_id', $value);
+                $category = ProductCategory::query()->find($value);
+
+                if (! $category) {
+                    break;
+                }
+
+                $categoryIds = ProductCategory::getChildrenIds($category->activeChildren, [$category->getKey()]);
+
+                return $query->whereIn('ec_product_category_product.category_id', $categoryIds);
 
             case 'brand':
                 if (! $value) {
@@ -407,14 +407,14 @@ class ProductTable extends TableAbstract
 
                 if ($value == StockStatusEnum::OUT_OF_STOCK) {
                     return $query
-                        ->where(function ($query) {
+                        ->where(function ($query): void {
                             $query
-                                ->where(function ($subQuery) {
+                                ->where(function ($subQuery): void {
                                     $subQuery
                                         ->where('with_storehouse_management', 0)
                                         ->where('stock_status', StockStatusEnum::OUT_OF_STOCK);
                                 })
-                                ->orWhere(function ($subQuery) {
+                                ->orWhere(function ($subQuery): void {
                                     $subQuery
                                         ->where('with_storehouse_management', 1)
                                         ->where('allow_checkout_when_out_of_stock', 0)
@@ -427,15 +427,15 @@ class ProductTable extends TableAbstract
                     return $query
                         ->where(function ($query) {
                             return $query
-                                ->where(function ($subQuery) {
+                                ->where(function ($subQuery): void {
                                     $subQuery
                                         ->where('with_storehouse_management', 0)
                                         ->where('stock_status', StockStatusEnum::IN_STOCK);
                                 })
-                                ->orWhere(function ($subQuery) {
+                                ->orWhere(function ($subQuery): void {
                                     $subQuery
                                         ->where('with_storehouse_management', 1)
-                                        ->where(function ($sub) {
+                                        ->where(function ($sub): void {
                                             $sub
                                                 ->where('allow_checkout_when_out_of_stock', 1)
                                                 ->orWhere('quantity', '>', 0);

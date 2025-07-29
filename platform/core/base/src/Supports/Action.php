@@ -11,18 +11,13 @@ class Action extends ActionHookEvent
         }
 
         foreach ($this->getListeners() as $hook => $listeners) {
+            if ($hook !== $action) {
+                continue;
+            }
+
             krsort($listeners);
             foreach ($listeners as $arguments) {
-                if ($hook !== $action) {
-                    continue;
-                }
-
-                $parameters = [];
-                for ($index = 0; $index < $arguments['arguments']; $index++) {
-                    if (isset($args[$index])) {
-                        $parameters[] = $args[$index];
-                    }
-                }
+                $parameters = array_slice($args, 0, $arguments['arguments']);
                 call_user_func_array($this->getFunction($arguments['callback']), $parameters);
             }
         }

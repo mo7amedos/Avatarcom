@@ -19,7 +19,7 @@ use Botble\Contact\Repositories\Interfaces\ContactInterface;
 use Botble\Contact\Repositories\Interfaces\ContactReplyInterface;
 use Botble\LanguageAdvanced\Supports\LanguageAdvancedManager;
 use Botble\Setting\PanelSections\SettingOthersPanelSection;
-use Illuminate\Routing\Events\RouteMatched;
+use Illuminate\Http\Request;
 
 class ContactServiceProvider extends ServiceProvider
 {
@@ -48,7 +48,7 @@ class ContactServiceProvider extends ServiceProvider
             ->loadMigrations()
             ->publishAssets();
 
-        DashboardMenu::default()->beforeRetrieving(function () {
+        DashboardMenu::default()->beforeRetrieving(function (): void {
             DashboardMenu::make()
                 ->registerItem(
                     DashboardMenuItem::make()
@@ -74,11 +74,11 @@ class ContactServiceProvider extends ServiceProvider
                         ->name('plugins/contact::contact.custom_field.name')
                         ->icon('ti ti-cube-plus')
                         ->route('contacts.custom-fields.index')
-                        ->permissions('contacts.edit')
+                        ->permissions('contact.custom-fields')
                 );
         });
 
-        PanelSectionManager::default()->beforeRendering(function () {
+        PanelSectionManager::default()->beforeRendering(function (): void {
             PanelSectionManager::registerItem(
                 SettingOthersPanelSection::class,
                 fn () => PanelSectionItem::make('contact')
@@ -90,11 +90,9 @@ class ContactServiceProvider extends ServiceProvider
             );
         });
 
-        $this->app['events']->listen(RouteMatched::class, function () {
+        $this->app->booted(function (): void {
             EmailHandler::addTemplateSettings(CONTACT_MODULE_SCREEN_NAME, config('plugins.contact.email', []));
-        });
 
-        $this->app->booted(function () {
             $this->app->register(HookServiceProvider::class);
         });
 
@@ -106,10 +104,43 @@ class ContactServiceProvider extends ServiceProvider
 
             LanguageAdvancedManager::registerModule(CustomFieldOption::class, [
                 'label',
-                'value',
             ]);
 
             LanguageAdvancedManager::addTranslatableMetaBox('contact-custom-field-options');
+
+            add_action(LANGUAGE_ADVANCED_ACTION_SAVED, function ($data, $request): void {
+                if ($data::class == CustomField::class) {
+                    $customFieldOptions = $request->input('options', []) ?: [];
+
+                    if (! $customFieldOptions) {
+                        return;
+                    }
+
+                    $newRequest = new Request();
+
+                    $newRequest->replace([
+                        'language' => $request->input('language'),
+                        'ref_lang' => $request->input('ref_lang'),
+                    ]);
+
+                    foreach ($customFieldOptions as $option) {
+                        if (empty($option['id'])) {
+                            continue;
+                        }
+
+                        $customFieldOption = CustomFieldOption::query()->find($option['id']);
+
+                        if ($customFieldOption) {
+                            $newRequest->merge([
+                                'label' => $option['label'],
+                                'value' => null,
+                            ]);
+
+                            LanguageAdvancedManager::save($customFieldOption, $newRequest);
+                        }
+                    }
+                }
+            }, 1234, 2);
         }
     }
 }

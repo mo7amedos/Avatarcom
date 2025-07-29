@@ -38,7 +38,7 @@ class Language extends BaseModel
 
     protected static function booted(): void
     {
-        self::deleted(function (Language $language) {
+        self::deleted(function (Language $language): void {
             if (! self::query()->where('lang_is_default', 1)->exists() && self::query()->exists()) {
                 self::query()->limit(1)->update(['lang_is_default' => 1]);
             }

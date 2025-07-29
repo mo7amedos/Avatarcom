@@ -11,7 +11,7 @@
         min-width: 370px;
         right: -0;
         top: 100%;
-        z-index: 30;
+        z-index: 9999;
         padding-top: 10px;
         @include transform(translate(0, 20px));
         transition: all .4s ease;

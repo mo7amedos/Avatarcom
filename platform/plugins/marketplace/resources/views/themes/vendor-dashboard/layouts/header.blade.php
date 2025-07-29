@@ -11,7 +11,7 @@
     rel="stylesheet"
 >
 
-@if (BaseHelper::isRtlEnabled())
+@if (session('locale_direction', 'ltr') == 'rtl')
     <link href="{{ asset('vendor/core/core/base/css/core.rtl.css') }}" rel="stylesheet">
 
     <link

@@ -22,9 +22,7 @@ class ReviewController extends BaseController
 
     public function store(ReviewRequest $request)
     {
-        if (! EcommerceHelper::isReviewEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isReviewEnabled(), 404);
 
         $productId = $request->input('product_id');
         $check = $this->checkReviewCondition($productId);
@@ -66,9 +64,7 @@ class ReviewController extends BaseController
 
     public function destroy(int|string $id)
     {
-        if (! EcommerceHelper::isReviewEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isReviewEnabled(), 404);
 
         $review = Review::query()->findOrFail($id);
 
@@ -85,15 +81,11 @@ class ReviewController extends BaseController
 
     public function getProductReview(string $key)
     {
-        if (! EcommerceHelper::isReviewEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isReviewEnabled(), 404);
 
         $slug = SlugHelper::getSlug($key, SlugHelper::getPrefix(Product::class));
 
-        if (! $slug) {
-            abort(404);
-        }
+        abort_unless($slug, 404);
 
         $condition = [
             'ec_products.id' => $slug->reference_id,
@@ -104,9 +96,7 @@ class ReviewController extends BaseController
                 'take' => 1,
             ], EcommerceHelper::withReviewsParams()));
 
-        if (! $product) {
-            abort(404);
-        }
+        abort_unless($product, 404);
 
         $check = $this->checkReviewCondition($product->id);
         if (Arr::get($check, 'error')) {
@@ -151,8 +141,10 @@ class ReviewController extends BaseController
 
         $star = $request->integer('star');
         $perPage = $request->integer('per_page', 10);
+        $search = $request->string('search')->trim();
+        $sortBy = $request->string('sort_by', 'newest');
 
-        $reviews = EcommerceHelper::getProductReviews($product, $star, $perPage);
+        $reviews = EcommerceHelper::getProductReviews($product, $star, $perPage, $search, $sortBy);
 
         if ($star) {
             $message = __(':total review(s) ":star star" for ":product"', [

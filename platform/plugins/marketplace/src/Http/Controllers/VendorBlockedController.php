@@ -26,14 +26,20 @@ class VendorBlockedController extends BaseController
         $customer->status = CustomerStatusEnum::LOCKED;
         $customer->save();
 
-        if ($customer->store->exists()) {
-            $customer->store->update(['status' => StoreStatusEnum::BLOCKED]);
+        $store = $customer->store;
+
+        if ($store->exists()) {
+            $store->update(['status' => StoreStatusEnum::BLOCKED]);
         }
 
         EmailHandler::setModule(MARKETPLACE_MODULE_SCREEN_NAME)
             ->setVariableValues([
                 'block_reason' => $customer->block_reason,
                 'block_date' => Carbon::now(),
+                'store_name' => $store->name,
+                'store_phone' => $store->phone,
+                'store_address' => $store->full_address,
+                'store_url' => $store->url,
             ])
             ->sendUsingTemplate('vendor-account-blocked', $customer->email);
 
@@ -53,12 +59,20 @@ class VendorBlockedController extends BaseController
         $customer->status = CustomerStatusEnum::ACTIVATED;
         $customer->save();
 
-        if ($customer->store->exists()) {
-            $customer->store->update(['status' => StoreStatusEnum::PUBLISHED]);
+        $store = $customer->store;
+
+        if ($store->exists()) {
+            $store->update(['status' => StoreStatusEnum::PUBLISHED]);
         }
 
         EmailHandler::setModule(MARKETPLACE_MODULE_SCREEN_NAME)
-            ->setVariableValues(['unblock_date' => Carbon::now()])
+            ->setVariableValues([
+                'store_name' => $store->name,
+                'store_phone' => $store->phone,
+                'store_address' => $store->full_address,
+                'store_url' => $store->url,
+                'unblock_date' => Carbon::now(),
+            ])
             ->sendUsingTemplate('vendor-account-unblocked', $customer->email);
 
         return $this

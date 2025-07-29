@@ -33,11 +33,11 @@ class ProductCollection extends BaseModel
 
     protected static function booted(): void
     {
-        self::saving(function (self $model) {
+        self::saving(function (self $model): void {
             $model->slug = self::createSlug($model->slug ?: $model->name, $model->getKey());
         });
 
-        static::deleted(function (ProductCollection $collection) {
+        static::deleted(function (ProductCollection $collection): void {
             $collection->discounts()->detach();
         });
     }

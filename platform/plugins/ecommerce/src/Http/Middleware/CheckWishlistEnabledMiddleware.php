@@ -10,9 +10,7 @@ class CheckWishlistEnabledMiddleware
 {
     public function handle(Request $request, Closure $closure)
     {
-        if (! EcommerceHelper::isWishlistEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isWishlistEnabled(), 404);
 
         return $closure($request);
     }

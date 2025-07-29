@@ -38,7 +38,7 @@ class CategoryForm extends FormAbstract
 
                         return Category::query()
                                 ->whereIn('parent_id', [0, null])
-                                ->orderByDesc('order')
+                                ->latest('order')
                                 ->value('order') + 1;
                     })
             )
@@ -72,7 +72,7 @@ class CategoryForm extends FormAbstract
             ->add('is_default', OnOffField::class, IsDefaultFieldOption::make())
             ->add(
                 'icon',
-                $this->getFormHelper()->hasCustomField('themeIcon') ? 'themeIcon' : CoreIconField::class,
+                CoreIconField::class,
                 CoreIconFieldOption::make()
             )
             ->add(

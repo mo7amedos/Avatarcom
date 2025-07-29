@@ -7,11 +7,11 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
+        Schema::table('users', function (Blueprint $table): void {
             $table->dropColumn('name');
         });
 
-        Schema::table('users', function (Blueprint $table) {
+        Schema::table('users', function (Blueprint $table): void {
             $table->string('first_name', 120)->nullable();
             $table->string('last_name', 120)->nullable();
             $table->string('username', 60)->unique()->nullable();
@@ -23,7 +23,7 @@ return new class () extends Migration {
             $table->timestamp('last_login')->nullable();
         });
 
-        Schema::create('activations', function (Blueprint $table) {
+        Schema::create('activations', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->index();
             $table->string('code', 120);
@@ -32,7 +32,7 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('roles', function (Blueprint $table) {
+        Schema::create('roles', function (Blueprint $table): void {
             $table->id();
             $table->string('slug', 120)->unique();
             $table->string('name', 120);
@@ -44,14 +44,14 @@ return new class () extends Migration {
             $table->timestamps();
         });
 
-        Schema::create('role_users', function (Blueprint $table) {
+        Schema::create('role_users', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('user_id')->index();
             $table->foreignId('role_id')->index();
             $table->nullableTimestamps();
         });
 
-        Schema::create('user_meta', function (Blueprint $table) {
+        Schema::create('user_meta', function (Blueprint $table): void {
             $table->id();
             $table->string('key', 120)->nullable();
             $table->string('value')->nullable();

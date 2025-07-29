@@ -14,7 +14,7 @@ return new class () extends Migration {
         try {
             Schema::disableForeignKeyConstraints();
 
-            Schema::table('ec_product_collection_products', function (Blueprint $table) {
+            Schema::table('ec_product_collection_products', function (Blueprint $table): void {
                 $table->dropColumn('id');
             });
         } catch (Throwable) {

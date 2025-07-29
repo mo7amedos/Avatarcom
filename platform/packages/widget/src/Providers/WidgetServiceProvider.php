@@ -49,7 +49,7 @@ class WidgetServiceProvider extends ServiceProvider
             ->loadAndPublishTranslations()
             ->publishAssets();
 
-        $this->app->booted(function () {
+        $this->app->booted(function (): void {
             WidgetGroup::setGroup([
                 'id' => 'primary_sidebar',
                 'name' => trans('packages/widget::widget.primary_sidebar_name'),
@@ -60,7 +60,7 @@ class WidgetServiceProvider extends ServiceProvider
             register_widget(Text::class);
         });
 
-        DashboardMenu::default()->beforeRetrieving(function () {
+        DashboardMenu::default()->beforeRetrieving(function (): void {
             DashboardMenu::make()
                 ->registerItem(
                     DashboardMenuItem::make()
@@ -74,7 +74,7 @@ class WidgetServiceProvider extends ServiceProvider
                 );
         });
 
-        $this->app['events']->listen(RenderingAdminBar::class, function () {
+        $this->app['events']->listen(RenderingAdminBar::class, function (): void {
             AdminBar::registerLink(
                 trans('packages/widget::widget.name'),
                 route('widgets.index'),
@@ -82,5 +82,7 @@ class WidgetServiceProvider extends ServiceProvider
                 'widgets.index'
             );
         });
+
+        $this->app->register(HookServiceProvider::class);
     }
 }

@@ -11,7 +11,7 @@ return new class () extends Migration {
             return;
         }
 
-        Schema::table('ec_product_cross_sale_relations', function (Blueprint $table) {
+        Schema::table('ec_product_cross_sale_relations', function (Blueprint $table): void {
             $table->boolean('is_variant')->default(false);
             $table->decimal('price', 15)->default(0)->nullable();
             $table->string('price_type')->default('fixed');
@@ -21,7 +21,7 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::table('ec_product_cross_sale_relations', function (Blueprint $table) {
+        Schema::table('ec_product_cross_sale_relations', function (Blueprint $table): void {
             $table->dropColumn(['is_variant', 'price', 'price_type', 'apply_to_all_variations']);
         });
     }

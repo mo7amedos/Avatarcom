@@ -18,7 +18,7 @@
     <form
         id="create-account-form"
         method="post"
-        action="{{ route('installers.accounts.createaccounts.store') }}"
+        action="{{ route('installers.accounts.store') }}"
     >
         @csrf
         <div class="row">

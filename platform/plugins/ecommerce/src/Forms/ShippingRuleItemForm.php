@@ -24,7 +24,7 @@ class ShippingRuleItemForm extends FormAbstract
 
         $rules = ShippingRule::query()
             ->whereIn('type', ShippingRuleTypeEnum::keysAllowRuleItems())
-            ->whereHas('shipping', function (Builder $query) {
+            ->whereHas('shipping', function (Builder $query): void {
                 $query->whereNotNull('country');
             })
             ->get();

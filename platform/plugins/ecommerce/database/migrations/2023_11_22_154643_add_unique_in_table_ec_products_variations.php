@@ -8,7 +8,7 @@ return new class () extends Migration {
     public function up(): void
     {
         try {
-            Schema::table('ec_product_variations', function (Blueprint $table) {
+            Schema::table('ec_product_variations', function (Blueprint $table): void {
                 $table->unique(['product_id', 'configurable_product_id']);
             });
         } catch (Throwable) {
@@ -17,7 +17,7 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::table('ec_product_variations', function (Blueprint $table) {
+        Schema::table('ec_product_variations', function (Blueprint $table): void {
             $table->dropUnique(['product_id', 'configurable_product_id']);
         });
     }

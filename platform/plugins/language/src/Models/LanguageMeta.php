@@ -23,7 +23,7 @@ class LanguageMeta extends BaseModel
 
     protected static function booted(): void
     {
-        self::deleted(function (LanguageMeta $languageMeta) {
+        self::deleted(function (LanguageMeta $languageMeta): void {
             $languageMeta->reference()->delete();
         });
     }

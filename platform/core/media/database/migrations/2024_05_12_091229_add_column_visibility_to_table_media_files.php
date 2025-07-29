@@ -8,7 +8,7 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasColumn('media_files', 'visibility')) {
-            Schema::table('media_files', function (Blueprint $table) {
+            Schema::table('media_files', function (Blueprint $table): void {
                 $table->string('visibility')->default('public');
             });
         }
@@ -16,7 +16,7 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::table('media_files', function (Blueprint $table) {
+        Schema::table('media_files', function (Blueprint $table): void {
             $table->dropColumn('visibility');
         });
     }

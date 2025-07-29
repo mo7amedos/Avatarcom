@@ -66,7 +66,7 @@ class CustomFieldForm extends FormAbstract
                     ->required()
                     ->defaultValue(999)
             )
-            ->when(is_plugin_active('language'), function (FormAbstract $form) {
+            ->when(is_plugin_active('language'), function (FormAbstract $form): void {
                 $isDefaultLanguage = ! defined('LANGUAGE_ADVANCED_MODULE_SCREEN_NAME')
                     || ! request()->input('ref_lang')
                     || request()->input('ref_lang') === Language::getDefaultLocaleCode();

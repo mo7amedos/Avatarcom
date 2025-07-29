@@ -4,6 +4,7 @@ namespace Botble\Ecommerce\Http\Controllers\Customers;
 
 use Botble\Ecommerce\Enums\OrderCancellationReasonEnum;
 use Botble\Ecommerce\Enums\OrderHistoryActionEnum;
+use Botble\Ecommerce\Facades\EcommerceHelper;
 use Botble\Ecommerce\Facades\InvoiceHelper;
 use Botble\Ecommerce\Facades\OrderHelper;
 use Botble\Ecommerce\Forms\Fronts\CancelOrderForm;
@@ -20,10 +21,12 @@ class OrderController extends BaseController
 {
     public function __construct()
     {
+        $version = EcommerceHelper::getAssetVersion();
+
         Theme::asset()
-            ->add('customer-style', 'vendor/core/plugins/ecommerce/css/customer.css', ['bootstrap-css']);
+            ->add('customer-style', 'vendor/core/plugins/ecommerce/css/customer.css', ['bootstrap-css'], version: $version);
         Theme::asset()
-            ->add('front-ecommerce-css', 'vendor/core/plugins/ecommerce/css/front-ecommerce.css', version: get_cms_version());
+            ->add('front-ecommerce-css', 'vendor/core/plugins/ecommerce/css/front-ecommerce.css', version: $version);
     }
 
     public function index()
@@ -35,8 +38,7 @@ class OrderController extends BaseController
                 'user_id' => auth('customer')->id(),
                 'is_finished' => 1,
             ])
-            ->withCount(['products'])
-            ->orderByDesc('created_at')
+            ->withCount(['products'])->latest()
             ->paginate(10);
 
         Theme::breadcrumb()
@@ -93,9 +95,7 @@ class OrderController extends BaseController
             ])
             ->firstOrFail();
 
-        if (! $order->isInvoiceAvailable()) {
-            abort(404);
-        }
+        abort_unless($order->isInvoiceAvailable(), 404);
 
         if ($request->input('type') == 'print') {
             return InvoiceHelper::streamInvoice($order->invoice);

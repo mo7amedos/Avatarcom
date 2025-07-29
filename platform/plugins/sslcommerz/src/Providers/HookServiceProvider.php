@@ -18,7 +18,7 @@ class HookServiceProvider extends ServiceProvider
     {
         add_filter(PAYMENT_FILTER_ADDITIONAL_PAYMENT_METHODS, [$this, 'registerSslCommerzMethod'], 18, 2);
 
-        $this->app->booted(function () {
+        $this->app->booted(function (): void {
             add_filter(PAYMENT_FILTER_AFTER_POST_CHECKOUT, [$this, 'checkoutWithSslCommerz'], 18, 2);
         });
 

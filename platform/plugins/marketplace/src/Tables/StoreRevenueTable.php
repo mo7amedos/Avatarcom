@@ -63,19 +63,19 @@ class StoreRevenueTable extends TableAbstract
 
                 return $url ? Html::link($url, $item->order->code, ['target' => '_blank']) : $item->order->code;
             })
-            ->filterColumn('id', function (Builder $query, $keyword) {
+            ->filterColumn('id', function (Builder $query, $keyword): void {
                 if ($keyword) {
                     $query->where('id', $keyword);
                 }
             })
-            ->filterColumn('order_id', function (Builder $query, $keyword) {
+            ->filterColumn('order_id', function (Builder $query, $keyword): void {
                 if ($keyword) {
                     $query
                         ->where('order_id', $keyword)
                         ->orWhereHas('order', fn (Builder $query) => $query->where('code', 'like', '%' . $keyword));
                 }
             })
-            ->filterColumn('type', function (Builder $query, $keyword) {
+            ->filterColumn('type', function (Builder $query, $keyword): void {
                 if ($keyword && in_array($keyword, RevenueTypeEnum::values())) {
                     $query->where('type', $keyword);
                 }
@@ -84,7 +84,7 @@ class StoreRevenueTable extends TableAbstract
         if (! $this->customerId) {
             $data
                 ->editColumn('customer_id', function (Revenue $item) {
-                    if (! $item->customer->id || ! $item->customer->store->id) {
+                    if (! $item->customer->id || ! $item->customer->store?->id) {
                         return '&mdash;';
                     }
 
@@ -119,7 +119,7 @@ class StoreRevenueTable extends TableAbstract
                 'description',
             ])
             ->with(['order:id,code'])
-            ->when($this->customerId, function (Builder $query) {
+            ->when($this->customerId, function (Builder $query): void {
                 $query
                     ->where('customer_id', $this->customerId)
                     ->with([
@@ -174,7 +174,7 @@ class StoreRevenueTable extends TableAbstract
 
     public function getDefaultButtons(): array
     {
-        return array_merge(['export'], parent::getDefaultButtons());
+        return array_unique(array_merge(['export'], parent::getDefaultButtons()));
     }
 
     public function htmlDrawCallbackFunction(): ?string

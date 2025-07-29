@@ -47,7 +47,7 @@ class TrackingSettingForm extends SettingForm
                     ->value(app(GoogleTagManager::class)->isEnabled())
                     ->helperText(trans(
                         'plugins/ecommerce::setting.tracking.form.google_tag_manager_tracking_info',
-                        ['website_tracking' => Html::link(route('settings.website-tracking'), trans('core/setting::setting.website_tracking.title'))]
+                        ['website_tracking' => Html::link(route('settings.website-tracking'), trans('packages/theme::theme.settings.website_tracking.title'))]
                     ))
             );
     }

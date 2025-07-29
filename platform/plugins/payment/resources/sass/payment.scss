@@ -155,7 +155,7 @@
     transition: 0.25s;
 
     > p {
-        padding-left: 30px;
+        padding: 0 30px;
         margin-bottom: 0;
     }
 }
@@ -234,10 +234,12 @@
             top: 0.5rem;
             inset-inline-end: 0.5rem;
             width: 4rem;
+            text-align: end;
 
             img {
                 max-width: 100%;
                 height: auto;
+                max-height: 38px;
             }
         }
     }

@@ -1,16 +1,12 @@
-@php
-    $logo = theme_option('logo_in_the_checkout_page') ?: theme_option('logo');
-@endphp
-
-@if ($logo)
-    <div class="checkout-logo">
+@if ($logo = theme_option('logo_in_the_checkout_page') ?: Theme::getLogo())
+    <div class="checkout-logo text-center text-sm-start">
         <a
             href="{{ BaseHelper::getHomepageUrl() }}"
-            title="{{ theme_option('site_title') }}"
+            title="{{ $siteTitle = Theme::getSiteTitle() }}"
         >
             <img
                 src="{{ RvMedia::getImageUrl($logo) }}"
-                alt="{{ theme_option('site_title') }}"
+                alt="{{ $siteTitle }}"
             />
         </a>
     </div>

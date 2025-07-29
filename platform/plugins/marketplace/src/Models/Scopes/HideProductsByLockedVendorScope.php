@@ -16,12 +16,12 @@ class HideProductsByLockedVendorScope implements Scope
         }
 
         $builder
-            ->where(function ($query) {
+            ->where(function ($query): void {
                 $query
                     ->where('ec_products.is_variation', true)
                     ->orWhereNull('ec_products.store_id')
                     ->orWhereDoesntHave('store')
-                    ->orWhereHas('store', function ($query) {
+                    ->orWhereHas('store', function ($query): void {
                         $query
                             ->where('status', StoreStatusEnum::PUBLISHED);
                     });

@@ -10,6 +10,8 @@ return [
         'helper_text' => 'Preview: :url',
         'turn_off_automatic_url_translation_into_latin' => 'Turn off automatic URL translation into Latin?',
         'available_variables' => 'Available variables',
+        'permalink_structure' => 'Generate URL based on',
+        'permalink_structure_helper' => 'Choose how to generate default URL for your content.',
     ],
     'preview' => 'Preview',
     'prefix_for' => 'Prefix for :name',

@@ -2,6 +2,6 @@
 
 use Botble\Base\Facades\AdminHelper;
 
-AdminHelper::registerRoutes(function () {
+AdminHelper::registerRoutes(function (): void {
     require __DIR__ . '/web-actions.php';
 });

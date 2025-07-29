@@ -1,8 +1,4 @@
-@if (! (bool) get_ecommerce_setting('disable_shipping_options', false))
-    @php
-        $shipping = array_filter($shipping ?? []);
-    @endphp
-
+<div @style(['display: none' => (bool) get_ecommerce_setting('disable_shipping_options', false)])>
     @if (! empty($shipping))
         <div class="payment-checkout-form">
             <input
@@ -33,7 +29,6 @@
             </ul>
         </div>
     @else
-
         @php
             $sessionCheckoutData = $sessionCheckoutData ?? OrderHelper::getOrderSessionData();
         @endphp
@@ -44,4 +39,4 @@
             <p class="text-muted">{{ __('Please fill out all shipping information to view available shipping methods!') }}</p>
         @endif
     @endif
-@endif
+</div>

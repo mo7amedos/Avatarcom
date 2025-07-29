@@ -8,7 +8,7 @@ return new class () extends Migration {
     public function up(): void
     {
         if (Schema::hasColumn('ec_product_attributes', 'status')) {
-            Schema::table('ec_product_attributes', function (Blueprint $table) {
+            Schema::table('ec_product_attributes', function (Blueprint $table): void {
                 $table->dropColumn('status');
             });
         }
@@ -17,7 +17,7 @@ return new class () extends Migration {
     public function down(): void
     {
         if (! Schema::hasColumn('ec_product_attributes', 'status')) {
-            Schema::table('ec_product_attributes', function (Blueprint $table) {
+            Schema::table('ec_product_attributes', function (Blueprint $table): void {
                 $table->string('status', 60)->default('published');
             });
         }

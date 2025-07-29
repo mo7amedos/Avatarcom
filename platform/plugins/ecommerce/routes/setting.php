@@ -3,12 +3,12 @@
 use Botble\Base\Facades\AdminHelper;
 use Illuminate\Support\Facades\Route;
 
-AdminHelper::registerRoutes(function () {
+AdminHelper::registerRoutes(function (): void {
     Route::group([
         'namespace' => 'Botble\Ecommerce\Http\Controllers\Settings',
-    ], function () {
-        Route::group(['prefix' => 'ecommerce'], function () {
-            Route::prefix('settings')->group(function () {
+    ], function (): void {
+        Route::group(['prefix' => 'ecommerce'], function (): void {
+            Route::prefix('settings')->group(function (): void {
                 Route::get('general', [
                     'as' => 'ecommerce.settings.general',
                     'uses' => 'GeneralSettingController@edit',
@@ -217,6 +217,12 @@ AdminHelper::registerRoutes(function () {
                 Route::put('webhook', [
                     'as' => 'ecommerce.settings.webhook.update',
                     'uses' => 'WebhookSettingController@update',
+                    'permission' => 'ecommerce.settings.webhook',
+                ]);
+
+                Route::post('webhook/test', [
+                    'as' => 'ecommerce.settings.webhook.test',
+                    'uses' => 'WebhookTestController@test',
                     'permission' => 'ecommerce.settings.webhook',
                 ]);
 

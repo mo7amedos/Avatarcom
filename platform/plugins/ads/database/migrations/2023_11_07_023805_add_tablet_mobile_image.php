@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::table('ads', function (Blueprint $table) {
+        Schema::table('ads', function (Blueprint $table): void {
             $table->string('tablet_image')->nullable();
             $table->string('mobile_image')->nullable();
         });
@@ -15,7 +15,7 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::table('ads', function (Blueprint $table) {
+        Schema::table('ads', function (Blueprint $table): void {
             $table->dropColumn('tablet_image');
             $table->dropColumn('mobile_image');
         });

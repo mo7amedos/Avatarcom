@@ -161,6 +161,29 @@ class Botble {
         }
     }
 
+    static handleDatatableError(error) {
+        let errorMessage = BotbleVariables.languages.tables.error_loading
+            ? BotbleVariables.languages.tables.error_loading
+            : 'An error occurred while loading the data. Please refresh the page and try again.';
+
+        if (typeof error.responseJSON !== 'undefined') {
+            if (typeof error.responseJSON.message !== 'undefined') {
+                // Remove any sensitive information from error message
+                errorMessage = error.responseJSON.message
+                    .replace(/table\s+[a-zA-Z0-9_-]+/g, 'table')
+                    .replace('botble-', '')
+                    .replace(/column\s+['"]\w+['"]/g, 'column')
+                    .replace(/parameter\s+['"]\w+['"]/g, 'parameter')
+                    .replace(/row\s+\d+/g, 'row')
+                    .replace(/\s+for\s+\d+/g, '')
+                    .replace(/\s+\d+,\s+/g, ' ')
+                    .replace(/\s+\d+\./g, '.');
+            }
+        }
+
+        Botble.showError(errorMessage);
+    }
+
     static handleValidationError(errors) {
         let message = ''
         $.each(errors, (index, item) => {
@@ -571,15 +594,17 @@ class Botble {
         $(document)
             .find('select.select-autocomplete')
             .each(function (index, element) {
+                const $element = $(element)
+
                 Botble.select(element, {
-                    minimumInputLength: $(element).data('minimum-input') || 1,
+                    minimumInputLength: $element.data('minimum-input') || 1,
                     width: '100%',
                     delay: 250,
                     ajax: {
-                        url: $(element).data('url'),
+                        url: $element.data('url'),
                         data: (params) => ({ q: params.term, page: params.page || 1 }),
                         dataType: 'json',
-                        type: $(element).data('type') || 'GET',
+                        type: $element.data('type') || 'GET',
                         processResults: function (response) {
                             return {
                                 results: $.map(response.data, function (item) {
@@ -702,22 +727,22 @@ class Botble {
             })
 
         if (jQuery().timepicker) {
-            $('.timepicker-default').timepicker({
+            $(document).find('.timepicker-default').timepicker({
                 autoclose: true,
                 showSeconds: false,
                 minuteStep: 1,
                 defaultTime: false,
             })
 
-            $('.timepicker-24').timepicker({
+            $(document).find('.timepicker-24').timepicker({
                 autoclose: true,
                 minuteStep: 5,
                 showSeconds: false,
                 showMeridian: false,
                 defaultTime: false,
                 icons: {
-                    up: 'icon ti ti-chevron-up',
-                    down: 'icon ti ti-chevron-down',
+                    up: 'icon fa fa-chevron-up',
+                    down: 'icon fa fa-chevron-down',
                 },
             })
         }
@@ -820,6 +845,7 @@ class Botble {
                 || text.includes('</a>')
                 || text.includes(' href=')
                 || text.includes('target="_blank"')
+                || text.includes('<img src="')
             ) {
                 return text
             }
@@ -1239,7 +1265,6 @@ class Botble {
                         folderId: 0,
                     })
                     .then(({ data }) => {
-                        form[0].reset()
                         modal.modal('hide')
 
                         const $imageBox = $(form.find('input[name="image-box-target"]').val())
@@ -1248,9 +1273,12 @@ class Botble {
                         $imageBox.find('[data-bb-toggle="image-picker-remove"]').show()
                         $imageBox.find('.preview-image').removeClass('default-image')
                         $imageBox.find('.preview-image-wrapper').show()
+
+                        setTimeout(function() {
+                            form[0].reset()
+                        }, 1000)
                     })
             } else {
-                form[0].reset()
                 modal.modal('hide')
 
                 const $imageBox = $(form.find('input[name="image-box-target"]').val())
@@ -1259,6 +1287,10 @@ class Botble {
                 $imageBox.find('[data-bb-toggle="image-picker-remove"]').show()
                 $imageBox.find('.preview-image').removeClass('default-image')
                 $imageBox.find('.preview-image-wrapper').show()
+
+                setTimeout(function() {
+                    form[0].reset()
+                }, 1000)
             }
         })
 
@@ -1382,91 +1414,180 @@ class Botble {
     }
 
     processAuthorize() {
+        // Check if we should make the membership authorization request
+        const shouldMakeAuthRequest = () => {
+            const lastAuthTime = localStorage.getItem('membership_authorization_time')
+            if (!lastAuthTime) {
+                return true
+            }
+
+            // Call once every 3 days (259200000 ms)
+            const threeDaysInMs = 3 * 24 * 60 * 60 * 1000
+            return Date.now() - parseInt(lastAuthTime) > threeDaysInMs
+        }
+
+        if (!shouldMakeAuthRequest()) {
+            return
+        }
+
         $httpClient
             .makeWithoutErrorHandler()
             .post(BotbleVariables.authorize_url)
-            .catch(() => {})
+            .then(() => {
+                // Store the current time as the last authorization time
+                localStorage.setItem('membership_authorization_time', Date.now().toString())
+            })
+            .catch(() => {
+                // Even on error, we've made the request, so store the time
+                localStorage.setItem('membership_authorization_time', Date.now().toString())
+            })
     }
 
     countMenuItemNotifications() {
         let $menuItems = $('.menu-item-count')
         if ($menuItems.length) {
+            // Check if we should make the menu items count request
+            const shouldCheckMenuItemsCount = () => {
+                const lastCheckTime = localStorage.getItem('menu_items_count_check_time')
+                if (!lastCheckTime) {
+                    return true
+                }
+
+                // Call once every 3 minutes (180000 ms)
+                const threeMinutesInMs = 3 * 60 * 1000
+                return Date.now() - parseInt(lastCheckTime) > threeMinutesInMs
+            }
+
+            // Try to get cached menu items count data
+            const cachedMenuItemsCount = localStorage.getItem('menu_items_count_data')
+
+            if (cachedMenuItemsCount && !shouldCheckMenuItemsCount()) {
+                try {
+                    const cachedData = JSON.parse(cachedMenuItemsCount)
+                    this.updateMenuItemsCount(cachedData)
+                    return
+                } catch (e) {
+                    // If there's an error parsing the cached data, proceed with the request
+                }
+            }
+
+            if (!shouldCheckMenuItemsCount()) {
+                return
+            }
+
             $httpClient
                 .make()
                 .get($menuItems.data('url') || BotbleVariables.menu_item_count_url)
                 .then(({ data }) => {
-                    data.data.map((x) => {
-                        if (x.value > 0) {
-                            $(`.menu-item-count.${x.key}`).text(x.value).show().removeClass('hidden')
-                        }
-                    })
+                    // Store the current time as the last check time
+                    localStorage.setItem('menu_items_count_check_time', Date.now().toString())
+
+                    // Store the menu items count data
+                    localStorage.setItem('menu_items_count_data', JSON.stringify(data.data))
+
+                    this.updateMenuItemsCount(data.data)
+                })
+                .catch(() => {
+                    // Even on error, we've made the request, so store the time
+                    localStorage.setItem('menu_items_count_check_time', Date.now().toString())
                 })
         }
     }
 
+    updateMenuItemsCount(data) {
+        if (!data) {
+            return
+        }
+
+        data.map((x) => {
+            if (x.value > 0) {
+                $(`.menu-item-count.${x.key}`).text(x.value).show().removeClass('hidden')
+            }
+        })
+    }
+
     static initFieldCollapse() {
-        $(document).on('click, change', '[data-bb-toggle="collapse"]', function (e) {
-            const target = $(this).data('bb-target')
+        const parseValue = (value) => {
+            if (typeof value === 'string') {
+                try {
+                    return JSON.parse(value)
+                } catch (e) {
+                    return value
+                }
+            }
+            return value
+        }
 
-            let targetElement = null
+        const isEqual = (value1, value2) => String(value1) === String(value2)
 
-            switch (e.currentTarget.type) {
+        const handleCheckbox = (target, isReverse, isChecked) => {
+            const targetElement = $(target)
+            isReverse
+                ? isChecked
+                    ? targetElement.slideUp()
+                    : targetElement.slideDown()
+                : isChecked
+                    ? targetElement.slideDown()
+                    : targetElement.slideUp()
+        }
+
+        const handleValueBasedCollapse = (target, value) => {
+            const targets = $(`${target}[data-bb-value]`)
+            targets.each((_, element) => {
+                const $element = $(element)
+                const bbValue = parseValue($element.data('bb-value'))
+                const shouldShow = Array.isArray(bbValue)
+                    ? bbValue.some((v) => isEqual(v, value))
+                    : isEqual(bbValue, value)
+                shouldShow ? $element.slideDown() : $element.slideUp()
+            })
+        }
+
+        const handleButtonCollapse = (target) => {
+            const targetElement = $(target)
+            if (targetElement.length) {
+                targetElement.slideToggle()
+            }
+        }
+
+        $(document).on('click change', '[data-bb-toggle="collapse"]', (e) => {
+            const $target = $(e.currentTarget)
+            const target = $target.data('bb-target')
+            const type = e.currentTarget.type
+
+            switch (type) {
                 case 'checkbox':
-                    targetElement = $(document).find(target)
-                    const isReverse = $(this).data('bb-reverse')
-                    const isChecked = $(this).prop('checked')
-
-                    if (isReverse) {
-                        isChecked ? targetElement.slideUp() : targetElement.slideDown()
-                    } else {
-                        isChecked ? targetElement.slideDown() : targetElement.slideUp()
-                    }
+                    handleCheckbox(target, $target.data('bb-reverse'), $target.prop('checked'))
                     break
-
                 case 'radio':
                 case 'select-one':
-                    targetElement = $(document).find(`${target}[data-bb-value="${$(this).val()}"]`)
-
-                    const targets = $(document).find(`${target}[data-bb-value]`)
-
-                    if (targetElement.length) {
-                        targets.not(targetElement).slideUp()
-                        targetElement.slideDown()
-                    } else {
-                        targets.slideUp()
-                    }
+                    handleValueBasedCollapse(target, $target.val())
                     break
-
                 case 'button':
-                    targetElement = $(document).find(target)
-
-                    if (targetElement.length) {
-                        targetElement.slideToggle()
-                    }
+                    handleButtonCollapse(target)
                     break
-
                 default:
-                    console.warn(`[Botble] Unknown type ${e.currentTarget.type} of collapse`)
-
-                    break
+                    console.warn(`[Botble] Unknown type ${type} of collapse`)
             }
         })
 
-        let collapsibleTargets = {}
+        const collapsibleTargets = {}
+        $(document)
+            .find('[data-bb-collapse]')
+            .each((_, element) => {
+                collapsibleTargets[$(element).data('bb-trigger')] = true
+            })
 
-        $(document).find('[data-bb-collapse]').each(function () {
-            collapsibleTargets[$(this).data('bb-trigger')] = true
-        })
-
-        $.each(collapsibleTargets, (target) => {
+        Object.keys(collapsibleTargets).forEach((target) => {
             $(document).on('change', target, (e) => {
-                const _target = $(e.currentTarget)
-                let value = _target.val()
+                const $target = $(e.currentTarget)
+                const value = $target.val()
+                const targetSelector = `[data-bb-trigger="${target}"]`
 
-                $(document).find(`[data-bb-trigger="${target}"]`).slideUp()
+                $(targetSelector).slideUp()
 
-                if (e.currentTarget.type !== 'checkbox' || _target.is(':checked')) {
-                    $(document).find(`[data-bb-trigger="${target}"][data-bb-value="${value}"]`).slideDown()
+                if (e.currentTarget.type !== 'checkbox' || $target.is(':checked')) {
+                    handleValueBasedCollapse(targetSelector, value)
                 }
             })
         })
@@ -1689,6 +1810,8 @@ class Botble {
         if (!document.querySelector('[data-bb-color-picker]')) {
             return
         }
+
+        console.log('aaa')
 
         $('[data-bb-color-picker]').each((index, item) => {
             let $current = $(item)

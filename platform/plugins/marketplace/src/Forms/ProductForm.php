@@ -4,9 +4,11 @@ namespace Botble\Marketplace\Forms;
 
 use Botble\Base\Forms\FieldOptions\ContentFieldOption;
 use Botble\Base\Forms\FieldOptions\EditorFieldOption;
+use Botble\Base\Forms\FieldOptions\MediaImageFieldOption;
 use Botble\Base\Forms\FieldOptions\NameFieldOption;
 use Botble\Base\Forms\FieldOptions\NumberFieldOption;
 use Botble\Base\Forms\FieldOptions\SelectFieldOption;
+use Botble\Base\Forms\Fields\MediaImageField;
 use Botble\Base\Forms\Fields\MultiCheckListField;
 use Botble\Base\Forms\Fields\NumberField;
 use Botble\Base\Forms\Fields\SelectField;
@@ -32,7 +34,6 @@ use Botble\Marketplace\Facades\MarketplaceHelper;
 use Botble\Marketplace\Forms\Fields\CustomEditorField;
 use Botble\Marketplace\Forms\Fields\CustomImagesField;
 use Botble\Marketplace\Http\Requests\ProductRequest;
-use Botble\Marketplace\Models\Scopes\SpecificationVendorScope;
 use Botble\Marketplace\Tables\ProductVariationTable;
 
 class ProductForm extends BaseProductForm
@@ -96,7 +97,7 @@ class ProductForm extends BaseProductForm
                     'priority' => 9999,
                 ],
             ])
-            ->when(EcommerceHelper::isEnabledSupportDigitalProducts() && ! EcommerceHelper::isDisabledPhysicalProduct(), function () {
+            ->when(EcommerceHelper::isEnabledSupportDigitalProducts() && ! EcommerceHelper::isDisabledPhysicalProduct(), function (): void {
                 $this->add('product_type', 'hidden', [
                     'value' => request()->input('product_type') ?: ProductTypeEnum::PHYSICAL,
                 ]);
@@ -110,7 +111,7 @@ class ProductForm extends BaseProductForm
                     ->selected(old('categories', $selectedCategories))
                     ->addAttribute('card-body-class', 'p-0')
             )
-            ->when($brands, function () use ($brands) {
+            ->when($brands, function () use ($brands): void {
                 $this
                     ->add(
                         'brand_id',
@@ -123,7 +124,13 @@ class ProductForm extends BaseProductForm
                             ->allowClear()
                     );
             })
-            ->when($productCollections, function () use ($productCollections) {
+            ->add(
+                'image',
+                MediaImageField::class,
+                MediaImageFieldOption::make()
+                    ->label(trans('plugins/ecommerce::products.form.featured_image'))
+            )
+            ->when($productCollections, function () use ($productCollections): void {
                 $selectedProductCollections = [];
 
                 /**
@@ -145,7 +152,7 @@ class ProductForm extends BaseProductForm
                         'value' => old('product_collections', $selectedProductCollections),
                     ]);
             })
-            ->when($productLabels, function () use ($productLabels) {
+            ->when($productLabels, function () use ($productLabels): void {
                 $selectedProductLabels = [];
 
                 /**
@@ -164,8 +171,8 @@ class ProductForm extends BaseProductForm
                         'value' => old('product_labels', $selectedProductLabels),
                     ]);
             })
-            ->when(EcommerceHelper::isTaxEnabled(), function () {
-                $taxes = Tax::query()->orderBy('percentage')->get()->pluck('title_with_percentage', 'id')->all();
+            ->when(EcommerceHelper::isTaxEnabled(), function (): void {
+                $taxes = Tax::query()->oldest('percentage')->get()->pluck('title_with_percentage', 'id')->all();
 
                 if ($taxes) {
                     $selectedTaxes = [];
@@ -188,7 +195,7 @@ class ProductForm extends BaseProductForm
                     ]);
                 }
             })
-            ->when(EcommerceHelper::isCartEnabled(), function (ProductForm $form) {
+            ->when(EcommerceHelper::isCartEnabled(), function (ProductForm $form): void {
                 $form
                     ->add(
                         'minimum_order_quantity',
@@ -226,7 +233,6 @@ class ProductForm extends BaseProductForm
                     ->headerActionContent(view('plugins/ecommerce::products.partials.specification-table.header', [
                         'model' => $this->getModel(),
                         'tables' => SpecificationTable::query()
-                            ->withGlobalScope('vendor', new SpecificationVendorScope())
                             ->pluck('name', 'id'),
                     ])->render())
                     ->content(view('plugins/ecommerce::products.partials.specification-table.content', [

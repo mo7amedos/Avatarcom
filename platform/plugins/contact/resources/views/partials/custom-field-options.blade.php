@@ -3,10 +3,10 @@
         <x-core::table.header.cell>
             {{ trans('plugins/contact::contact.custom_field.option.label') }}
         </x-core::table.header.cell>
-        <x-core::table.header.cell>
-            {{ trans('plugins/contact::contact.custom_field.option.value') }}
-        </x-core::table.header.cell>
         @if($isDefaultLanguage)
+            <x-core::table.header.cell>
+                {{ trans('plugins/contact::contact.custom_field.option.value') }}
+            </x-core::table.header.cell>
             <x-core::table.header.cell />
         @endif
     </x-core::table.header>
@@ -26,16 +26,16 @@
                         data-bb-toggle="option-label"
                     />
                 </x-core::table.body.cell>
-                <x-core::table.body.cell>
-                    <input
-                        type="text"
-                        class="form-control"
-                        name="options[{{ $key }}][value]"
-                        value="{{ $option->value }}"
-                        data-bb-toggle="option-value"
-                    />
-                </x-core::table.body.cell>
-                @if($isDefaultLanguage)
+                @if ($isDefaultLanguage)
+                    <x-core::table.body.cell>
+                        <input
+                                type="text"
+                                class="form-control"
+                                name="options[{{ $key }}][value]"
+                                value="{{ $option->value }}"
+                                data-bb-toggle="option-value"
+                            />
+                    </x-core::table.body.cell>
                     <x-core::table.body.cell style="width: 7%">
                         <x-core::button
                             type="button"

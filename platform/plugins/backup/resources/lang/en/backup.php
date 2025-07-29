@@ -30,4 +30,6 @@ return [
     'important_message_pgsql2' => 'You can run the command <code>php artisan cms:backup:create {name}</code> to generate the backup or <code>php artisan cms:backup:restore</code> to restore the latest backup.',
     'cannot_restore_database' => 'Cannot restore database. The database backup is missing!',
     'database_driver_not_supported' => 'Database driver is not supported.',
+    'backup_only_db' => 'Backup only database',
+    'backup_only_db_helper' => 'Backup only database without uploaded files. This is useful when you want to backup the database only.',
 ];

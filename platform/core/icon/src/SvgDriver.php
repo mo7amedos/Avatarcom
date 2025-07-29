@@ -27,6 +27,8 @@ class SvgDriver extends IconDriver
     public function render(string $name, array $attributes = []): string
     {
         if (! $this->has($name)) {
+            info(sprintf('Icon "%s" not found.', $name));
+
             throw_if(App::hasDebugModeEnabled(), SvgNotFoundException::missing($name));
 
             return '';
@@ -34,7 +36,14 @@ class SvgDriver extends IconDriver
 
         $contents = $this->getContents($name);
 
+        // Remove XML declaration
         $contents = trim(preg_replace('/^(<\?xml.+?\?>)/', '', $contents));
+
+        // Remove HTML comments (including multi-line comments)
+        $contents = preg_replace('/<!--.*?-->/s', '', $contents);
+
+        // Clean up any extra whitespace
+        $contents = trim($contents);
 
         return str_replace(
             '<svg',
@@ -50,6 +59,8 @@ class SvgDriver extends IconDriver
 
     protected function getContents(string $name): string
     {
+        $name = Str::startsWith($name, 'ti ti-') ? $name : 'ti ti-' . $name;
+
         if (! $this->has($name)) {
             return '';
         }
@@ -71,7 +82,7 @@ class SvgDriver extends IconDriver
         foreach ($files as $file) {
             $basename = str_replace('.svg', '', basename($file));
             $name = sprintf('ti ti-%s', $basename);
-            $icons[$basename] = [
+            $icons[$name] = [
                 'name' => $name,
                 'basename' => $basename,
                 'path' => $file,
@@ -86,7 +97,7 @@ class SvgDriver extends IconDriver
         $name = Str::startsWith($name, 'ti ti-') ? $name : 'ti ti-' . $name;
         $basename = $this->normalizeName($name);
 
-        if (isset($this->icons[$basename])) {
+        if (isset($this->icons[$name])) {
             return true;
         }
 
@@ -96,7 +107,7 @@ class SvgDriver extends IconDriver
             return false;
         }
 
-        $this->icons[$basename] = [
+        $this->icons[$name] = [
             'name' => $name,
             'basename' => $basename,
             'path' => $file,

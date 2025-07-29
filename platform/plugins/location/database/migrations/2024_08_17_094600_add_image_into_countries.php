@@ -8,7 +8,7 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasColumn('countries', 'image')) {
-            Schema::table('countries', function (Blueprint $table) {
+            Schema::table('countries', function (Blueprint $table): void {
                 $table->string('image')->after('order')->nullable();
             });
         }
@@ -17,7 +17,7 @@ return new class () extends Migration {
     public function down(): void
     {
         if (Schema::hasColumn('countries', 'image')) {
-            Schema::table('countries', function (Blueprint $table) {
+            Schema::table('countries', function (Blueprint $table): void {
                 $table->dropColumn('image');
             });
         }

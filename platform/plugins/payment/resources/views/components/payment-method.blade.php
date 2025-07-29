@@ -20,12 +20,28 @@
         value="{{ $name }}"
         @checked($isSelected)
     >
-    <label for="{{ $id }}">
+    <label for="{{ $id }}" class="form-label fw-medium">
         {{ $paymentLabel = ($label ?: get_payment_setting('name', $name) ?: setting('payment_' . $name . '_name') ?: $paymentName) }}
     </label>
 
     <div @class(['payment_collapse_wrap collapse mt-1', 'show' => $isSelected])>
-        <p>{!! BaseHelper::clean($description ?: get_payment_setting('description', $name) ?: setting('payment_' . $name . '_description')) !!}</p>
+        <p class="text-muted">{!! BaseHelper::clean($description ?: get_payment_setting('description', $name) ?: setting('payment_' . $name . '_description')) !!}</p>
+        @php
+            $feeValue = get_payment_setting('fee', $name, 0);
+            $feeType = get_payment_setting('fee_type', $name, \Botble\Payment\Enums\PaymentFeeTypeEnum::FIXED);
+            $orderAmount = apply_filters('payment_order_total_amount', 0);
+            $fee = \Botble\Payment\Supports\PaymentFeeHelper::calculateFee($name, $orderAmount);
+        @endphp
+        @if ($feeValue > 0)
+            <p class="text-warning">
+                @if ($feeType === \Botble\Payment\Enums\PaymentFeeTypeEnum::PERCENTAGE)
+                    {{ trans('plugins/payment::payment.payment_fee') }}: {{ format_price($fee) }} ({{ $feeValue }}%)
+                @else
+                    {{ trans('plugins/payment::payment.payment_fee') }}: {{ format_price($fee) }}
+                @endif
+                <input type="hidden" name="payment_fee" value="{{ $fee }}" class="payment-fee-input" data-method="{{ $name }}">
+            </p>
+        @endif
 
         {{ $slot }}
 

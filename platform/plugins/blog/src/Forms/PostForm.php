@@ -42,7 +42,7 @@ class PostForm extends FormAbstract
             )
             ->add('content', EditorField::class, ContentFieldOption::make()->allowedShortcodes())
             ->add('status', SelectField::class, StatusFieldOption::make())
-            ->when(get_post_formats(true), function (PostForm $form, array $postFormats) {
+            ->when(get_post_formats(true), function (PostForm $form, array $postFormats): void {
                 if (count($postFormats) > 1) {
                     $choices = [];
 
@@ -70,6 +70,7 @@ class PostForm extends FormAbstract
                             ->wherePublished()
                             ->select(['id', 'name', 'parent_id'])
                             ->with('activeChildren')
+                            ->where('parent_id', 0)
                             ->get();
                     })
                     ->when($this->getModel()->getKey(), function (SelectFieldOption $fieldOption) {

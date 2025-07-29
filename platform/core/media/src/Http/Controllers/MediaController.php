@@ -25,7 +25,6 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use League\Flysystem\UnableToWriteFile;
 use Throwable;
@@ -114,13 +113,7 @@ class MediaController extends BaseController
                     [
                         'id' => 0,
                         'name' => trans('core/media::media.all_media'),
-                        'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                            <path d="M15 8h.01"></path>
-                            <path d="M3 6a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v12a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3v-12z"></path>
-                            <path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l5 5"></path>
-                            <path d="M14 14l1 -1c.928 -.893 2.072 -.893 3 0l3 3"></path>
-                        </svg>',
+                        'icon' => BaseHelper::renderIcon('ti ti-photo'),
                     ],
                 ];
 
@@ -137,14 +130,7 @@ class MediaController extends BaseController
                     [
                         'id' => 0,
                         'name' => trans('core/media::media.trash'),
-                        'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                            <path d="M4 7l16 0"></path>
-                            <path d="M10 11l0 6"></path>
-                            <path d="M14 11l0 6"></path>
-                            <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"></path>
-                            <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"></path>
-                        </svg>',
+                        'icon' => BaseHelper::renderIcon('ti ti-trash'),
                     ],
                 ];
 
@@ -166,26 +152,77 @@ class MediaController extends BaseController
                     [
                         'id' => 0,
                         'name' => trans('core/media::media.recent'),
-                        'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                            <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"></path>
-                            <path d="M12 7v5l3 3"></path>
-                        </svg>',
+                        'icon' => BaseHelper::renderIcon('ti ti-clock'),
                     ],
                 ];
 
-                if (! count($request->input('recent_items', []))) {
-                    break;
+                // Get recent items from the server instead of client-side localStorage
+                $recentItems = MediaSetting::query()
+                    ->where([
+                        'key' => 'recent_items',
+                        'user_id' => Auth::guard()->id(),
+                    ])->first();
+
+                // If we're in a specific folder, show all files in that folder
+                if ($folderId > 0) {
+                    // When in a specific folder, show all files in that folder like normal
+                    $queried = $this->fileRepository->getFilesByFolderId(
+                        $folderId,
+                        $paramsFile,
+                        true,
+                        $paramsFolder
+                    );
+
+                    $folders = FolderResource::collection($queried->where('is_folder', 1));
+                    $files = FileResource::collection($queried->where('is_folder', 0));
+                } else {
+                    // When in root recent view, show all recent items
+                    if (! empty($recentItems)) {
+                        $recentValue = $recentItems->value;
+
+                        // Separate file IDs and folder IDs
+                        $fileIds = [];
+                        $folderIds = [];
+
+                        foreach ($recentValue as $item) {
+                            if (isset($item['is_folder']) && $item['is_folder']) {
+                                $folderIds[] = $item['id'];
+                            } else {
+                                $fileIds[] = $item['id'];
+                            }
+                        }
+
+                        // Get folders
+                        if (count($folderIds) > 0) {
+                            $paramsFolder = array_merge_recursive($paramsFolder, [
+                                'condition' => [
+                                    ['media_folders.id', 'IN', $folderIds],
+                                ],
+                            ]);
+                        }
+
+                        // Get files
+                        if (count($fileIds) > 0) {
+                            $paramsFile = array_merge_recursive($paramsFile, [
+                                'condition' => [
+                                    ['media_files.id', 'IN', $fileIds],
+                                ],
+                            ]);
+                        }
+
+                        if (count($fileIds) > 0 || count($folderIds) > 0) {
+                            $queried = $this->fileRepository->getFilesByFolderId(
+                                0,
+                                $paramsFile,
+                                true, // Include folders
+                                $paramsFolder
+                            );
+
+                            $folders = FolderResource::collection($queried->where('is_folder', 1));
+                            $files = FileResource::collection($queried->where('is_folder', 0));
+                        }
+                    }
                 }
-
-                $queried = $this->fileRepository->getFilesByFolderId(
-                    0,
-                    array_merge($paramsFile, ['recent_items' => $request->input('recent_items', [])]),
-                    false,
-                    $paramsFolder
-                );
-
-                $files = FileResource::collection($queried);
 
                 break;
 
@@ -194,10 +231,7 @@ class MediaController extends BaseController
                     [
                         'id' => 0,
                         'name' => trans('core/media::media.favorites'),
-                        'icon' => '<svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                            <path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"></path>
-                        </svg>',
+                        'icon' => BaseHelper::renderIcon('ti ti-star'),
                     ],
                 ];
 
@@ -230,12 +264,45 @@ class MediaController extends BaseController
                         ],
                     ]);
 
-                    $queried = $this->fileRepository->getFilesByFolderId(
-                        $folderId,
-                        $paramsFile,
-                        true,
-                        $paramsFolder
-                    );
+                    // If we're in a specific folder, show all files in that folder
+                    if ($folderId > 0) {
+                        // When in a specific folder, show all files in that folder like normal
+                        // Remove the favorites filter to show all files in the folder
+                        $cleanParamsFile = $paramsFile;
+                        if (isset($cleanParamsFile['condition'])) {
+                            foreach ($cleanParamsFile['condition'] as $key => $condition) {
+                                if (is_array($condition) && count($condition) > 2 && $condition[0] === 'media_files.id' && $condition[1] === 'IN') {
+                                    unset($cleanParamsFile['condition'][$key]);
+                                }
+                            }
+                        }
+
+                        $cleanParamsFolder = $paramsFolder;
+                        if (isset($cleanParamsFolder['condition'])) {
+                            foreach ($cleanParamsFolder['condition'] as $key => $condition) {
+                                if (is_array($condition) && count($condition) > 2 && $condition[0] === 'media_folders.id' && $condition[1] === 'IN') {
+                                    unset($cleanParamsFolder['condition'][$key]);
+                                }
+                            }
+                        }
+
+                        $queried = $this->fileRepository->getFilesByFolderId(
+                            $folderId,
+                            $cleanParamsFile,
+                            true,
+                            $cleanParamsFolder
+                        );
+                    } else {
+                        // When in root favorites view, show all favorited items regardless of folder
+                        $paramsFile['is_favorite'] = true;
+
+                        $queried = $this->fileRepository->getFilesByFolderId(
+                            0,
+                            $paramsFile,
+                            true,
+                            $paramsFolder
+                        );
+                    }
 
                     $folders = FolderResource::collection($queried->where('is_folder', 1));
 
@@ -307,17 +374,31 @@ class MediaController extends BaseController
         switch ($type) {
             case 'trash':
                 $error = false;
+
+                $skipTrash = $request->input('skip_trash', false);
+
                 foreach ($request->input('selected') as $item) {
-                    $id = $item['id'];
+                    $condition = [
+                        'id' => $item['id'],
+                    ];
+
                     if (! $item['is_folder']) {
                         try {
-                            $this->fileRepository->deleteBy(['id' => $id]);
+                            if ($skipTrash) {
+                                $this->fileRepository->forceDelete($condition);
+                            } else {
+                                $this->fileRepository->deleteBy($condition);
+                            }
                         } catch (Exception $exception) {
                             BaseHelper::logError($exception);
                             $error = true;
                         }
                     } else {
-                        $this->folderRepository->deleteFolder($id);
+                        if ($skipTrash) {
+                            $this->folderRepository->forceDelete($condition);
+                        } else {
+                            $this->folderRepository->deleteFolder($item['id']);
+                        }
                     }
                 }
 
@@ -354,6 +435,45 @@ class MediaController extends BaseController
                 }
 
                 $response = RvMedia::responseSuccess([], trans('core/media::media.restore_success'));
+
+                break;
+
+            case 'move':
+                $error = false;
+                $newFolderId = $request->input('destination');
+
+                foreach ($request->input('selected') as $item) {
+                    if (! $item['is_folder']) {
+                        try {
+                            $file = $this->fileRepository->getFirstBy(['id' => $item['id']]);
+                            if ($file) {
+                                $this->moveFile($file, $newFolderId);
+                            }
+                        } catch (Exception $exception) {
+                            BaseHelper::logError($exception);
+                            $error = true;
+                        }
+                    } else {
+                        try {
+                            $folder = $this->folderRepository->getFirstBy(['id' => $item['id']]);
+                            if ($folder) {
+                                $folder->parent_id = $newFolderId;
+                                $folder->save();
+                            }
+                        } catch (Exception $exception) {
+                            BaseHelper::logError($exception);
+                            $error = true;
+                        }
+                    }
+                }
+
+                if ($error) {
+                    $response = RvMedia::responseError(trans('core/media::media.move_error'));
+
+                    break;
+                }
+
+                $response = RvMedia::responseSuccess([], trans('core/media::media.move_success'));
 
                 break;
 
@@ -512,6 +632,56 @@ class MediaController extends BaseController
 
                 break;
 
+            case 'add_recent':
+                // Validate the input
+                $itemId = $request->input('item.id');
+
+                // If the item ID is not valid, return an error
+                if (empty($itemId)) {
+                    $response = RvMedia::responseError('Invalid item ID');
+
+                    break;
+                }
+
+                $meta = MediaSetting::query()->firstOrCreate([
+                    'key' => 'recent_items',
+                    'user_id' => Auth::guard()->id(),
+                ]);
+
+                $value = $meta->value ?: [];
+
+                // Add the new item to the recent items list
+                // Only store essential information (id and is_folder)
+                $recentItem = [
+                    'id' => $itemId,
+                    'is_folder' => (bool) $request->input('item.is_folder', false),
+                ];
+
+                // Check if the item already exists in the list
+                foreach ($value as $key => $item) {
+                    if ($item['id'] == $recentItem['id'] && isset($item['is_folder']) && $item['is_folder'] == $recentItem['is_folder']) {
+                        // Remove it so we can add it to the beginning (most recent)
+                        unset($value[$key]);
+
+                        break;
+                    }
+                }
+
+                // Add the item to the beginning of the array
+                array_unshift($value, $recentItem);
+
+                // Limit to 20 most recent items
+                if (count($value) > 20) {
+                    $value = array_slice($value, 0, 20);
+                }
+
+                $meta->value = $value;
+                $meta->save();
+
+                $response = RvMedia::responseSuccess([], trans('core/media::media.add_recent_success'));
+
+                break;
+
             case 'crop':
                 $validated = Validator::validate($request->input(), [
                     'imageId' => ['required', 'string', 'exists:media_files,id'],
@@ -578,9 +748,8 @@ class MediaController extends BaseController
                 Validator::validate($request->input(), [
                     'selected' => ['required', 'array'],
                     'selected.*.id' => ['required', 'string'],
-                    'selected.*.name' => ['required', 'string'],
+                    'selected.*.name' => ['required', 'string', 'max:120'],
                     'selected.*.is_folder' => ['required', 'boolean'],
-                    'selected.*.rename_physical_file' => ['sometimes', 'boolean'],
                 ]);
 
                 foreach ($request->input('selected') as $item) {
@@ -621,6 +790,12 @@ class MediaController extends BaseController
                 break;
 
             case 'alt_text':
+                Validator::validate($request->input(), [
+                    'selected' => ['required', 'array'],
+                    'selected.*.id' => ['required', 'exists:media_files,id'],
+                    'selected.*.alt' => ['nullable', 'string', 'max:220'],
+                ]);
+
                 foreach ($request->input('selected') as $item) {
                     if (! $item['id']) {
                         continue;
@@ -705,6 +880,30 @@ class MediaController extends BaseController
         return $file;
     }
 
+    protected function moveFile(MediaFile $file, int|string|null $newFolderId = null)
+    {
+        if ($newFolderId === null) {
+            return $file;
+        }
+
+        $oldPath = RvMedia::getRealPath($file->url);
+        $newFolderPath = RvMedia::getRealPath($this->folderRepository->getFullPath($newFolderId));
+        $newPath = $newFolderPath . '/' . File::basename($file->url);
+
+        if (Storage::exists($oldPath)) {
+            Storage::move($oldPath, $newPath);
+            $file->url = str_replace(
+                RvMedia::getRealPath(File::dirname($file->url)),
+                RvMedia::getRealPath($this->folderRepository->getFullPath($newFolderId)),
+                $file->url
+            );
+            $file->folder_id = $newFolderId;
+            $file->save();
+        }
+
+        return $file;
+    }
+
     public function download(Request $request)
     {
         $items = $request->input('selected', []);
@@ -712,20 +911,7 @@ class MediaController extends BaseController
         if (count($items) == 1 && ! $items[0]['is_folder']) {
             $file = MediaFile::query()->withTrashed()->find($items[0]['id']);
             if (! empty($file) && $file->type != 'video') {
-                $filePath = RvMedia::getRealPath($file->url);
-
-                if (! RvMedia::isUsingCloud()) {
-                    if (! File::exists($filePath)) {
-                        return RvMedia::responseError(trans('core/media::media.file_not_exists'));
-                    }
-
-                    return response()->download($filePath, Str::slug($file->name));
-                }
-
-                return response()->make(Http::withoutVerifying()->get($filePath)->body(), 200, [
-                    'Content-type' => $file->mime_type,
-                    'Content-Disposition' => sprintf('attachment; filename="%s"', File::basename($filePath)),
-                ]);
+                return RvMedia::responseDownloadFile($file->url);
             }
         } else {
             $fileName = Storage::disk('local')->path('download-' . Carbon::now()->format('Y-m-d-h-i-s') . '.zip');

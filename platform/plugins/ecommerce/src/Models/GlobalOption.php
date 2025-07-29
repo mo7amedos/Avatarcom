@@ -18,7 +18,7 @@ class GlobalOption extends BaseModel
 
     protected static function booted(): void
     {
-        self::deleted(function (GlobalOption $option) {
+        self::deleted(function (GlobalOption $option): void {
             $option->values()->delete();
         });
     }
@@ -27,7 +27,7 @@ class GlobalOption extends BaseModel
     {
         return $this
             ->hasMany(GlobalOptionValue::class, 'option_id')
-            ->orderBy('order');
+            ->oldest('order');
     }
 
     protected function optionName(): Attribute

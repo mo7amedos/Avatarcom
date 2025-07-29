@@ -64,7 +64,7 @@ class ReviewController extends BaseController
 
         $review = Review::query()
             ->where('product_id', $request->input('product_id'))
-            ->where(function (Builder $query) use ($request) {
+            ->where(function (Builder $query) use ($request): void {
                 $query
                     ->whereNotNull('customer_id')
                     ->where('customer_id', $request->input('customer_id'));
@@ -116,7 +116,7 @@ class ReviewController extends BaseController
     public function ajaxSearchCustomers(SelectSearchAjaxRequest $request)
     {
         $customers = Customer::query()
-            ->where(function (Builder $query) use ($request) {
+            ->where(function (Builder $query) use ($request): void {
                 $keyword = "%{$request->input('search')}%";
 
                 $query

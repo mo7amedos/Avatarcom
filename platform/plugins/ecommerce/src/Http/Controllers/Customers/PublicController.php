@@ -47,17 +47,19 @@ class PublicController extends BaseController
 {
     public function __construct()
     {
-        Theme::asset()
-            ->add('customer-style', 'vendor/core/plugins/ecommerce/css/customer.css', ['bootstrap-css']);
+        $version = EcommerceHelper::getAssetVersion();
 
         Theme::asset()
-            ->add('front-ecommerce-css', 'vendor/core/plugins/ecommerce/css/front-ecommerce.css', version: get_cms_version());
+            ->add('customer-style', 'vendor/core/plugins/ecommerce/css/customer.css', ['bootstrap-css'], version: $version);
+
+        Theme::asset()
+            ->add('front-ecommerce-css', 'vendor/core/plugins/ecommerce/css/front-ecommerce.css', version: $version);
 
         Theme::asset()
             ->container('footer')
-            ->add('ecommerce-utilities-js', 'vendor/core/plugins/ecommerce/js/utilities.js', ['jquery'])
-            ->add('cropper-js', 'vendor/core/plugins/ecommerce/libraries/cropper.js', ['jquery'])
-            ->add('avatar-js', 'vendor/core/plugins/ecommerce/js/avatar.js', ['jquery']);
+            ->add('ecommerce-utilities-js', 'vendor/core/plugins/ecommerce/js/utilities.js', ['jquery'], version: $version)
+            ->add('cropper-js', 'vendor/core/plugins/ecommerce/libraries/cropper.js', ['jquery'], version: $version)
+            ->add('avatar-js', 'vendor/core/plugins/ecommerce/js/avatar.js', ['jquery'], version: $version);
     }
 
     public function getOverview()
@@ -79,7 +81,7 @@ class PublicController extends BaseController
 
     public function getEditAccount()
     {
-        SeoHelper::setTitle(__('Profile'));
+        SeoHelper::setTitle(__('Account Settings'));
 
         Theme::asset()
             ->add(
@@ -103,15 +105,16 @@ class PublicController extends BaseController
         }
 
         Theme::breadcrumb()
-            ->add(__('Profile'), route('customer.edit-account'));
+            ->add(__('Account Settings'), route('customer.edit-account'));
 
         $customer = auth('customer')->user();
 
         $form = CustomerForm::createFromModel($customer);
+        $passwordForm = ChangePasswordForm::create();
 
         return Theme::scope(
             'ecommerce.customers.edit-account',
-            compact('form'),
+            compact('form', 'passwordForm'),
             'plugins/ecommerce::themes.customers.edit-account'
         )
             ->render();
@@ -126,13 +129,21 @@ class PublicController extends BaseController
 
         CustomerForm::createFromModel($customer)
             ->setRequest($request)
-            ->saving(function (CustomerForm $form) {
+            ->saving(function (CustomerForm $form): void {
                 $model = $form->getModel();
                 $request = $form->getRequest();
 
-                $model->fill($request->except(['email']));
+                $data = $request->input();
 
-                $model->dob = Carbon::createFromFormat(BaseHelper::getDateFormat(), $request->input('dob'));
+                if ($model->email) {
+                    $data = $request->except(['email']);
+                }
+
+                $model->fill($data);
+
+                if (get_ecommerce_setting('enabled_customer_dob_field', true) && ($dob = $request->input('dob'))) {
+                    $model->dob = Carbon::createFromFormat(BaseHelper::getDateFormat(), $dob);
+                }
 
                 $model->save();
 
@@ -147,18 +158,8 @@ class PublicController extends BaseController
 
     public function getChangePassword()
     {
-        SeoHelper::setTitle(__('Change Password'));
-
-        Theme::breadcrumb()
-            ->add(__('Change Password'), route('customer.change-password'));
-
-        $form = ChangePasswordForm::create();
-
-        return Theme::scope(
-            'ecommerce.customers.change-password',
-            compact('form'),
-            'plugins/ecommerce::themes.customers.change-password'
-        )->render();
+        // Redirect to the edit account page since change password is now part of it
+        return redirect()->route('customer.edit-account');
     }
 
     public function postChangePassword(UpdatePasswordRequest $request)
@@ -167,7 +168,7 @@ class PublicController extends BaseController
 
         ChangePasswordForm::createFromModel($user)
             ->setRequest($request)
-            ->saving(function (ChangePasswordForm $form) {
+            ->saving(function (ChangePasswordForm $form): void {
                 $model = $form->getModel();
                 $request = $form->getRequest();
 
@@ -178,6 +179,7 @@ class PublicController extends BaseController
 
         return $this
             ->httpResponse()
+            ->setNextUrl(route('customer.edit-account'))
             ->setMessage(trans('core/acl::users.password_update_success'));
     }
 
@@ -187,8 +189,7 @@ class PublicController extends BaseController
 
         $addresses = Address::query()
             ->where('customer_id', auth('customer')->id())
-            ->orderByDesc('is_default')
-            ->orderByDesc('created_at')
+            ->latest('is_default')->latest()
             ->paginate(10);
 
         Theme::breadcrumb()
@@ -222,7 +223,7 @@ class PublicController extends BaseController
     {
         $form = AddressForm::create();
 
-        $form->setRequest($request)->saving(function (AddressForm $form) {
+        $form->setRequest($request)->saving(function (AddressForm $form): void {
             $model = $form->getModel();
             $request = $form->getRequest();
 
@@ -308,7 +309,7 @@ class PublicController extends BaseController
 
         $form = AddressForm::createFromModel($address)->setRequest($request);
 
-        $form->saving(function (AddressForm $form) {
+        $form->saving(function (AddressForm $form): void {
             $model = $form->getModel();
             $request = $form->getRequest();
 
@@ -376,9 +377,7 @@ class PublicController extends BaseController
 
     public function getReturnOrder(int|string $orderId)
     {
-        if (! EcommerceHelper::isOrderReturnEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isOrderReturnEnabled(), 404);
 
         /**
          * @var Order $order
@@ -392,9 +391,7 @@ class PublicController extends BaseController
             ->with('products')
             ->firstOrFail();
 
-        if (! $order->canBeReturned()) {
-            abort(404);
-        }
+        abort_unless($order->canBeReturned(), 404);
 
         SeoHelper::setTitle(__('Request Return Product(s) In Order :id', ['id' => $order->code]));
 
@@ -420,9 +417,7 @@ class PublicController extends BaseController
 
     public function postReturnOrder(OrderReturnRequest $request)
     {
-        if (! EcommerceHelper::isOrderReturnEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isOrderReturnEnabled(), 404);
 
         /**
          * @var Order $order
@@ -507,15 +502,12 @@ class PublicController extends BaseController
 
     public function getListReturnOrders()
     {
-        if (! EcommerceHelper::isOrderReturnEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isOrderReturnEnabled(), 404);
 
         SeoHelper::setTitle(__('Order Return Requests'));
 
         $requests = OrderReturn::query()
-            ->where('user_id', auth('customer')->id())
-            ->orderByDesc('created_at')
+            ->where('user_id', auth('customer')->id())->latest()
             ->withCount('items')
             ->paginate(10);
 
@@ -531,9 +523,7 @@ class PublicController extends BaseController
 
     public function getDetailReturnOrder(int|string $id)
     {
-        if (! EcommerceHelper::isOrderReturnEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isOrderReturnEnabled(), 404);
 
         SeoHelper::setTitle(__('Order Return Requests'));
 
@@ -561,30 +551,27 @@ class PublicController extends BaseController
 
     public function getDownloads()
     {
-        if (! EcommerceHelper::isEnabledSupportDigitalProducts()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isEnabledSupportDigitalProducts(), 404);
 
         SeoHelper::setTitle(__('Downloads'));
 
         $orderProducts = OrderProduct::query()
-            ->whereHas('order', function (Builder $query) {
+            ->whereHas('order', function (Builder $query): void {
                 $query
                     ->where('user_id', auth('customer')->id())
                     ->where('is_finished', 1)
-                    ->when(is_plugin_active('payment'), function (Builder $query) {
+                    ->when(is_plugin_active('payment'), function (Builder $query): void {
                         $query
-                            ->where(function (Builder $query) {
+                            ->where(function (Builder $query): void {
                                 $query
                                     ->where('amount', 0)
-                                    ->orWhereHas('payment', function ($query) {
+                                    ->orWhereHas('payment', function ($query): void {
                                         $query->where('status', PaymentStatusEnum::COMPLETED);
                                     });
                             });
                     });
             })
-            ->where('product_type', ProductTypeEnum::DIGITAL)
-            ->orderByDesc('created_at')
+            ->where('product_type', ProductTypeEnum::DIGITAL)->latest()
             ->with(['order', 'product', 'productFiles', 'product.productFiles'])
             ->paginate(10);
 
@@ -600,28 +587,26 @@ class PublicController extends BaseController
 
     public function getDownload(int|string $id, Request $request)
     {
-        if (! EcommerceHelper::isEnabledSupportDigitalProducts()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isEnabledSupportDigitalProducts(), 404);
 
         $orderProduct = OrderProduct::query()
             ->where([
                 'id' => $id,
                 'product_type' => ProductTypeEnum::DIGITAL,
             ])
-            ->whereHas('order', function (Builder $query) {
+            ->whereHas('order', function (Builder $query): void {
                 $query
                     ->when(
                         auth('customer')->id(),
                         fn (Builder $query, $customerId) => $query->where('user_id', $customerId)
                     )
                     ->where('is_finished', 1)
-                    ->when(is_plugin_active('payment'), function (Builder $query) {
+                    ->when(is_plugin_active('payment'), function (Builder $query): void {
                         $query
-                            ->where(function (Builder $query) {
+                            ->where(function (Builder $query): void {
                                 $query
                                     ->where('amount', 0)
-                                    ->orWhereHas('payment', function ($query) {
+                                    ->orWhereHas('payment', function ($query): void {
                                         $query->where('status', PaymentStatusEnum::COMPLETED);
                                     });
                             });
@@ -630,23 +615,17 @@ class PublicController extends BaseController
             ->with(['order', 'product'])
             ->first();
 
-        if (! $orderProduct) {
-            abort(404);
-        }
+        abort_unless($orderProduct, 404);
 
         $order = $orderProduct->order;
 
         if (auth('customer')->check()) {
-            if ($order->user_id != auth('customer')->id()) {
-                abort(404);
-            }
+            abort_if($order->user_id != auth('customer')->id(), 404);
         } elseif ($hash = $request->input('hash')) {
             $this
                 ->httpResponse()
                 ->setNextUrl(BaseHelper::getHomepageUrl());
-            if (! $orderProduct->download_token || ! Hash::check($orderProduct->download_token, $hash)) {
-                abort(404);
-            }
+            abort_if(! $orderProduct->download_token || ! Hash::check($orderProduct->download_token, $hash), 404);
         } else {
             abort(404);
         }
@@ -759,9 +738,7 @@ class PublicController extends BaseController
 
     public function getProductReviews(ProductInterface $productRepository)
     {
-        if (! EcommerceHelper::isReviewEnabled()) {
-            abort(404);
-        }
+        abort_unless(EcommerceHelper::isReviewEnabled(), 404);
 
         SeoHelper::setTitle(__('Product Reviews'));
 
@@ -774,11 +751,11 @@ class PublicController extends BaseController
 
         $reviews = Review::query()
             ->where('customer_id', $customerId)
-            ->whereHas('product', function ($query) {
+            ->whereHas('product', function ($query): void {
                 $query->wherePublished();
             })
             ->with(['product', 'product.slugable'])
-            ->orderByDesc('ec_reviews.created_at')
+            ->latest('ec_reviews.created_at')
             ->paginate(12);
 
         $products = $productRepository->productsNeedToReviewByCustomer($customerId);

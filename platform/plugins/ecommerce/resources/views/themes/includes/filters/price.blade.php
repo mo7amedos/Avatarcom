@@ -3,7 +3,7 @@
 @endphp
 
 <div class="bb-product-filter">
-    <h4 class="bb-product-filter-title border-0 mb-3">{{ __('Price Filter') }}</h4>
+    <h4 class="bb-product-filter-title border-0 mb-3">{{ __('Price') }}</h4>
 
     <div class="bb-product-filter-content">
         <div class="bb-product-price-filter">
@@ -13,7 +13,7 @@
                     <input name="min_price" type="hidden" value="{{ BaseHelper::stringify(request()->query('min_price')) }}" />
                     <input name="max_price" type="hidden" value="{{ BaseHelper::stringify(request()->query('max_price')) }}" />
                     <span class="input-range-label">
-                        {{ __('Price:') }} <span class="from"></span> &mdash; <span class="to"></span>
+                        <span class="from"></span> &mdash; <span class="to"></span>
                     </span>
                 </span>
             </div>

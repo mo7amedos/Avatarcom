@@ -14,8 +14,10 @@
                 @foreach ($returnRequest->items as $returnRequestItem)
                     @php
                         $orderProduct = $returnRequestItem->orderProduct;
-                        $product = $orderProduct->product;
+                        $product = $orderProduct?->product;
                     @endphp
+
+                    @continue(! $orderProduct || ! $product)
 
                     <x-core::table.body.row>
                         <x-core::table.body.cell style="width: 80px">

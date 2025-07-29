@@ -3,9 +3,11 @@
 namespace Botble\Base\Providers;
 
 use Botble\Base\Commands\ActivateLicenseCommand;
+use Botble\Base\Commands\CacheWarmCommand;
 use Botble\Base\Commands\CleanupSystemCommand;
 use Botble\Base\Commands\ClearExpiredCacheCommand;
 use Botble\Base\Commands\ClearLogCommand;
+use Botble\Base\Commands\CompressImagesCommand;
 use Botble\Base\Commands\ExportDatabaseCommand;
 use Botble\Base\Commands\FetchGoogleFontsCommand;
 use Botble\Base\Commands\GoogleFontsUpdateCommand;
@@ -27,6 +29,7 @@ class CommandServiceProvider extends ServiceProvider
 
         $this->commands([
             ActivateLicenseCommand::class,
+            CacheWarmCommand::class,
             CleanupSystemCommand::class,
             ClearExpiredCacheCommand::class,
             ClearLogCommand::class,
@@ -37,6 +40,7 @@ class CommandServiceProvider extends ServiceProvider
             PublishAssetsCommand::class,
             UpdateCommand::class,
             GoogleFontsUpdateCommand::class,
+            CompressImagesCommand::class,
         ]);
 
         AboutCommand::add('Core Information', fn () => [
@@ -44,7 +48,7 @@ class CommandServiceProvider extends ServiceProvider
             'Core Version' => get_core_version(),
         ]);
 
-        $this->app->afterResolving(Schedule::class, function (Schedule $schedule) {
+        $this->app->afterResolving(Schedule::class, function (Schedule $schedule): void {
             $schedule->command(ClearExpiredCacheCommand::class)->everyFiveMinutes();
         });
     }

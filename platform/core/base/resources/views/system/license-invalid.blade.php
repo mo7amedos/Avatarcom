@@ -7,7 +7,7 @@
 <x-core::alert
     type="warning"
     :important="true"
-    @class(['alert-license alert-sticky small', 'vertical-wrapper' => AdminAppearance::isVerticalLayout()])
+    @class(['alert-license alert-sticky small bg-warning text-white', 'vertical-wrapper' => AdminAppearance::isVerticalLayout()])
     icon=""
     @style(['display: none' => $hidden ?? true])
     data-bb-toggle="authorized-reminder"

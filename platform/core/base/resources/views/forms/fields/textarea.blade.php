@@ -14,5 +14,10 @@
         @endif
     </x-slot:label>
 
+    @php
+        $id = Arr::get($options['attr'], 'id', $name);
+        Arr::set($options['attr'], 'id', $id);
+    @endphp
+
     {!! Form::textarea($name, $options['value'], $options['attr']) !!}
 </x-core::form.field>

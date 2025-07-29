@@ -42,7 +42,7 @@ class ProductAttribute extends BaseModel
 
     protected static function booted(): void
     {
-        self::saving(function (self $model) {
+        self::saving(function (self $model): void {
             $model->slug = self::createSlug($model->title, $model->getKey());
         });
 
@@ -60,8 +60,8 @@ class ProductAttribute extends BaseModel
     {
         if ($attributeSet && $attributeSet->use_image_from_product_variation) {
             foreach ($productVariations as $productVariation) {
-                $attribute = $productVariation->productAttributes->where('attribute_set_id', $attributeSet->id)->first();
-                if ($attribute && $attribute->id == $this->id && ($image = $productVariation->product->image)) {
+                $attribute = $productVariation->productAttributes->where('attribute_set_id', $attributeSet->getKey())->first();
+                if ($attribute && $attribute->id == $this->getKey() && ($image = $productVariation->product->image)) {
                     return 'background-image: url(' . RvMedia::getImageUrl($image) . '); background-size: cover; background-repeat: no-repeat; background-position: center;';
                 }
             }

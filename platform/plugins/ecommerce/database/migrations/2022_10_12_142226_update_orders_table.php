@@ -10,7 +10,7 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasColumn('ec_orders', 'code')) {
-            Schema::table('ec_orders', function (Blueprint $table) {
+            Schema::table('ec_orders', function (Blueprint $table): void {
                 $table->string('code')->after('id')->unique()->nullable();
             });
         }
@@ -21,7 +21,7 @@ return new class () extends Migration {
         }
 
         if (! Schema::hasColumn('ec_order_product', 'product_image')) {
-            Schema::table('ec_order_product', function (Blueprint $table) {
+            Schema::table('ec_order_product', function (Blueprint $table): void {
                 $table->string('product_image')->after('product_name')->nullable();
             });
         }
@@ -34,11 +34,11 @@ return new class () extends Migration {
 
     public function down(): void
     {
-        Schema::table('ec_orders', function (Blueprint $table) {
+        Schema::table('ec_orders', function (Blueprint $table): void {
             $table->dropColumn('code');
         });
 
-        Schema::table('ec_order_product', function (Blueprint $table) {
+        Schema::table('ec_order_product', function (Blueprint $table): void {
             $table->dropColumn('product_image');
         });
     }

@@ -92,7 +92,8 @@ abstract class MolliePaymentAbstract implements ProduceServiceInterface
                 /*
                  * https://docs.mollie.com/reference/v2/refunds-api/create-refund
                  */
-                $description = Arr::get($options, 'refund_note') ?: get_order_code(Arr::get($options, 'order_id'));
+                $description = Arr::get($options, 'refund_note');
+
                 $refund = $payment->refund([
                     'amount' => [
                         'currency' => $this->paymentCurrency,

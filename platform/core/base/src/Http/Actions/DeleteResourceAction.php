@@ -78,12 +78,27 @@ class DeleteResourceAction implements Responsable
         call_user_func($this->beforeDeleting, $this);
     }
 
+    public function silent(bool $silent = true): static
+    {
+        $this->silent = $silent;
+
+        return $this;
+    }
+
     protected function dispatchDelete(): void
     {
         if (! isset($this->deleteUsing)) {
+            if (! $this->model->exists) {
+                $this->httpResponse->setError()->setMessage(trans('core/base::notices.delete_failed_message'));
+
+                return;
+            }
+
             $this->model->delete();
 
-            DeletedContentEvent::dispatch($this->model::class, $this->request, $this->model);
+            if (! $this->silent) {
+                DeletedContentEvent::dispatch($this->model::class, $this->request, $this->model);
+            }
 
             $this->httpResponse->withDeletedSuccessMessage();
 
@@ -102,18 +117,23 @@ class DeleteResourceAction implements Responsable
         call_user_func($this->afterDeleting, $this);
     }
 
+    public function processDelete(): void
+    {
+        DB::beginTransaction();
+
+        $this->dispatchBeforeDeleting();
+
+        $this->dispatchDelete();
+
+        $this->dispatchAfterDeleting();
+
+        DB::commit();
+    }
+
     public function toResponse($request): BaseHttpResponse
     {
         try {
-            DB::beginTransaction();
-
-            $this->dispatchBeforeDeleting();
-
-            $this->dispatchDelete();
-
-            $this->dispatchAfterDeleting();
-
-            DB::commit();
+            $this->processDelete();
 
             return $this->httpResponse;
         } catch (Throwable $exception) {

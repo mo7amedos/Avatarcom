@@ -106,7 +106,7 @@ class ShippingRuleItemImport implements
                         if ($value['shipping_rule'] == $row['shipping_rule'] &&
                             $value['country'] == $row['country'] &&
                             $value['shipping_rule_id'] == 0) {
-                            $value['shipping_rule_id'] = $shippingRule->id;
+                            $value['shipping_rule_id'] = $shippingRule->getKey();
                         }
 
                         return $value;
@@ -166,7 +166,7 @@ class ShippingRuleItemImport implements
                 'name' => $name,
                 'type' => $type,
             ])
-            ->whereHas('shipping', function ($query) use ($country) {
+            ->whereHas('shipping', function ($query) use ($country): void {
                 $query->where('country', $country);
             })
             ->first();
@@ -390,6 +390,10 @@ class ShippingRuleItemImport implements
                         $value = $this->getDate($value);
                     }
                 }
+
+                break;
+            case 'string':
+                $value = (string) $value;
 
                 break;
         }

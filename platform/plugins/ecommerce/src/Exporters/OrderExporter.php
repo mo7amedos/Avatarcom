@@ -7,10 +7,42 @@ use Botble\DataSynchronize\Exporter\ExportCounter;
 use Botble\DataSynchronize\Exporter\Exporter;
 use Botble\Ecommerce\Models\Order;
 use Botble\Ecommerce\Models\OrderProduct;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class OrderExporter extends Exporter
 {
+    protected ?int $limit = null;
+
+    protected ?string $status = null;
+
+    protected ?string $startDate = null;
+
+    protected ?string $endDate = null;
+
+    public function setLimit(?int $limit): static
+    {
+        $this->limit = $limit;
+
+        return $this;
+    }
+
+    public function setStatus(?string $status): static
+    {
+        $this->status = $status;
+
+        return $this;
+    }
+
+    public function setDateRange(?string $startDate, ?string $endDate): static
+    {
+        $this->startDate = $startDate;
+        $this->endDate = $endDate;
+
+        return $this;
+    }
+
     public function getLabel(): string
     {
         return trans('plugins/ecommerce::order.menu');
@@ -32,7 +64,7 @@ class OrderExporter extends Exporter
             ExportColumn::make('sub_total'),
             ExportColumn::make('shipping_address_full_address')->label('Shipping Address'),
             ExportColumn::make('billing_address_full_address')->label('Billing Address'),
-            ExportColumn::make('payment_payment_channel'),
+            ExportColumn::make('payment_channel'),
             ExportColumn::make('payment_status'),
             ExportColumn::make('payment_amount'),
             ExportColumn::make('payment_created_at')->label('Payment Date'),
@@ -45,25 +77,60 @@ class OrderExporter extends Exporter
         ];
     }
 
+    protected function applyFilters(Builder $query): void
+    {
+        if ($this->status) {
+            $query->where('status', $this->status);
+        }
+
+        if ($this->startDate) {
+            $query->whereDate('created_at', '>=', Carbon::parse($this->startDate));
+        }
+
+        if ($this->endDate) {
+            $query->whereDate('created_at', '<=', Carbon::parse($this->endDate));
+        }
+
+        if ($this->limit) {
+            $query->latest()->limit($this->limit);
+        } else {
+            $query->oldest();
+        }
+    }
+
+    public function collection(): Collection
+    {
+        $query = Order::query()
+            ->with([
+                'shippingAddress',
+                'billingAddress',
+                'payment',
+                'user',
+                'products',
+                'shipment',
+            ]);
+
+        $this->applyFilters($query);
+
+        return $query->get();
+    }
+
     public function counters(): array
     {
+        $query = Order::query();
+
+        $this->applyFilters($query);
+
         return [
             ExportCounter::make()
                 ->label(trans('plugins/ecommerce::order.export.total_orders'))
-                ->value(Order::query()->count()),
+                ->value($query->count()),
         ];
     }
 
     public function hasDataToExport(): bool
     {
         return Order::query()->exists();
-    }
-
-    public function collection(): Collection
-    {
-        return Order::query()
-            ->with(['shippingAddress', 'billingAddress', 'payment', 'user', 'products'])
-            ->get();
     }
 
     /**
@@ -73,10 +140,10 @@ class OrderExporter extends Exporter
     {
         $products = $row
             ->products
-            ->map(fn (OrderProduct $product) => $product->product_name . ' x ' . $product->qty)
+            ->map(fn (OrderProduct $product) => $product->product_name . (! empty($product->options['sku']) ? ' (' . $product->options['sku'] . ')' : null) . ' x ' . $product->qty)
             ->implode(', ');
 
-        return [
+        $data = [
             'id' => $row->getKey(),
             'created_at' => $row->created_at,
             'status' => $row->status,
@@ -101,5 +168,12 @@ class OrderExporter extends Exporter
             'shipment_shipping_company_name' => $row->shipment->shipping_company_name,
             'products' => $products,
         ];
+
+        return parent::map($data);
+    }
+
+    protected function getView(): string
+    {
+        return 'plugins/ecommerce::orders.export';
     }
 }

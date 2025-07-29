@@ -56,7 +56,7 @@ class UserController extends BaseSystemController
         $form = UserForm::create();
         $user = null;
 
-        $form->saving(function (UserForm $form) use ($service, $request, &$user) {
+        $form->saving(function (UserForm $form) use ($service, $request, &$user): void {
             $user = $service->execute($request);
 
             $form->setModel($user);
@@ -72,7 +72,7 @@ class UserController extends BaseSystemController
     public function destroy(User $user)
     {
         return DeleteResourceAction::make($user)
-            ->beforeDeleting(function (DeleteResourceAction $action) {
+            ->beforeDeleting(function (DeleteResourceAction $action): void {
                 $request = $action->getRequest();
                 $model = $action->getModel();
 
@@ -196,7 +196,7 @@ class UserController extends BaseSystemController
     public function updatePreferences(User $user, PreferenceRequest $request)
     {
         PreferenceForm::createFromModel($user)
-            ->saving(function (PreferenceForm $form) use ($request) {
+            ->saving(function (PreferenceForm $form) use ($request): void {
                 /**
                  * @var User $model
                  */

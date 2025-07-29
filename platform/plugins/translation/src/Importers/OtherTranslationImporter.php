@@ -25,11 +25,13 @@ class OtherTranslationImporter extends Importer implements WithMapping
     {
         $columns = [
             ImportColumn::make('key')
-                ->rules(['required', 'string'], trans('plugins/translation::translation.import.rules.key')),
+                ->rules(['required', 'string'], trans('plugins/translation::translation.import.rules.key'))
+                ->heading('key'),
         ];
 
         foreach (Language::getAvailableLocales() as $locale) {
             $columns[] = ImportColumn::make($locale['locale'])
+                ->label($locale['locale'])
                 ->rules(
                     ['nullable', 'string', 'max:10000'],
                     trans(
@@ -61,6 +63,14 @@ class OtherTranslationImporter extends Importer implements WithMapping
 
     public function map(mixed $row): array
     {
+        if (empty($row['key'])) {
+            return [];
+        }
+
+        if (! str_contains($row['key'], '::')) {
+            return $row;
+        }
+
         [$group, $key] = explode('::', $row['key']);
 
         return [
@@ -93,5 +103,10 @@ class OtherTranslationImporter extends Importer implements WithMapping
         }
 
         return $count;
+    }
+
+    public function headerToSnakeCase(): bool
+    {
+        return false;
     }
 }

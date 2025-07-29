@@ -29,7 +29,7 @@ class CustomerForm extends FormFront
                 TextFieldOption::make()
                     ->label(__('Full Name'))
             )
-            ->when(get_ecommerce_setting('enabled_customer_dob_field', true), function (CustomerForm $form) {
+            ->when(get_ecommerce_setting('enabled_customer_dob_field', true), function (CustomerForm $form): void {
                 $form->add(
                     'dob',
                     TextField::class,
@@ -45,7 +45,7 @@ class CustomerForm extends FormFront
                 'email',
                 EmailField::class,
                 EmailFieldOption::make()
-                    ->disabled()
+                    ->disabled($this->getModel()->email)
             )
             ->add(
                 'phone',

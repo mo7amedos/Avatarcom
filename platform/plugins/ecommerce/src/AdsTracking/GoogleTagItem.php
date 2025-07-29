@@ -7,7 +7,7 @@ class GoogleTagItem
     protected array $attributes = [];
 
     public function __construct(
-        string $id,
+        string|int $id,
         string $name,
         float $price,
         ?int $quantity = null,

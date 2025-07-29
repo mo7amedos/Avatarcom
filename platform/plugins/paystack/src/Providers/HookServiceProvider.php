@@ -2,23 +2,24 @@
 
 namespace Botble\Paystack\Providers;
 
+use Botble\Base\Facades\BaseHelper;
 use Botble\Base\Facades\Html;
 use Botble\Payment\Enums\PaymentMethodEnum;
 use Botble\Payment\Facades\PaymentMethods;
 use Botble\Paystack\Forms\PaystackPaymentMethodForm;
 use Botble\Paystack\Services\Gateways\PaystackPaymentService;
+use Botble\Paystack\Services\Paystack;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\ServiceProvider;
 use Throwable;
-use Unicodeveloper\Paystack\Facades\Paystack;
 
 class HookServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
         add_filter(PAYMENT_FILTER_ADDITIONAL_PAYMENT_METHODS, [$this, 'registerPaystackMethod'], 16, 2);
-        $this->app->booted(function () {
+        $this->app->booted(function (): void {
             add_filter(PAYMENT_FILTER_AFTER_POST_CHECKOUT, [$this, 'checkoutWithPaystack'], 16, 2);
         });
 
@@ -138,8 +139,10 @@ class HookServiceProvider extends ServiceProvider
         }
 
         try {
+            $payStack = $this->app->make(Paystack::class);
+
             $requestData = [
-                'reference' => Paystack::genTranxRef(),
+                'reference' => $payStack->genTranxRef(),
                 'quantity' => 1,
                 'currency' => $paymentData['currency'],
                 'amount' => (int) $paymentData['amount'] * 100,
@@ -154,7 +157,7 @@ class HookServiceProvider extends ServiceProvider
 
             do_action('payment_before_making_api_request', PAYSTACK_PAYMENT_METHOD_NAME, $requestData);
 
-            $response = Paystack::getAuthorizationResponse($requestData);
+            $response = $payStack->getAuthorizationResponse($requestData);
 
             do_action('payment_after_api_response', PAYSTACK_PAYMENT_METHOD_NAME, $requestData, (array) $response);
 
@@ -168,6 +171,8 @@ class HookServiceProvider extends ServiceProvider
         } catch (Throwable $exception) {
             $data['error'] = true;
             $data['message'] = json_encode($exception->getMessage());
+
+            BaseHelper::logError($exception);
         }
 
         return $data;

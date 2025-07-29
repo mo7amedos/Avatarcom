@@ -12,7 +12,7 @@ class MailConfigServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        $this->app->booted(function () {
+        $this->app->booted(function (): void {
             add_filter(
                 BASE_FILTER_AFTER_SETTING_EMAIL_CONTENT,
                 [EmailSettingHooks::class, 'addEmailTemplateSettings'],
@@ -25,7 +25,15 @@ class MailConfigServiceProvider extends ServiceProvider
                 return;
             }
 
-            $this->app->resolving(MailManager::class, function () use ($config) {
+            $this->app->resolving(MailManager::class, function () use ($config): void {
+                static $configured = false;
+
+                if ($configured) {
+                    return;
+                }
+
+                $configured = true;
+
                 $setting = $this->app->make(SettingStore::class);
 
                 $defaultMailDriver = function_exists('proc_open') ? 'sendmail' : 'smtp';
@@ -39,13 +47,6 @@ class MailConfigServiceProvider extends ServiceProvider
                             'address' => $setting->get('email_from_address', $config->get('mail.from.address')),
                             'name' => $setting->get('email_from_name', $config->get('mail.from.name')),
                         ],
-                        'stream' => [
-                            'ssl' => [
-                                'allow_self_signed' => true,
-                                'verify_peer' => false,
-                                'verify_peer_name' => false,
-                            ],
-                        ],
                     ]),
                 ]);
 
@@ -54,12 +55,9 @@ class MailConfigServiceProvider extends ServiceProvider
                         $config->set([
                             'mail.mailers.smtp' => array_merge($config->get('mail.mailers.smtp'), [
                                 'transport' => 'smtp',
+                                'schema' => $config->get('mail.mailers.smtp.schema'),
                                 'host' => $setting->get('email_host', $config->get('mail.mailers.smtp.host')),
                                 'port' => (int) $setting->get('email_port', $config->get('mail.mailers.smtp.port')),
-                                'encryption' => $setting->get(
-                                    'email_encryption',
-                                    $config->get('mail.mailers.smtp.encryption')
-                                ),
                                 'username' => $setting->get('email_username', $config->get('mail.mailers.smtp.username')),
                                 'password' => $setting->get('email_password', $config->get('mail.mailers.smtp.password')),
                                 'auth_mode' => null,
@@ -112,6 +110,14 @@ class MailConfigServiceProvider extends ServiceProvider
                                 'email_log_channel',
                                 $config->get('mail.mailers.log.channel')
                             ),
+                        ]);
+
+                        break;
+                    case 'resend':
+                        $config->set([
+                            'services.resend' => [
+                                'key' => $setting->get('email_resend_key', $config->get('services.resend.key')),
+                            ],
                         ]);
 
                         break;

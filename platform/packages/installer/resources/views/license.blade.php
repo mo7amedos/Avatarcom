@@ -17,7 +17,7 @@
 @section('content')
     <form
         id="license-form"
-        action="{{ route('installers.licenses.createlicenses.store') }}"
+        action="{{ route('installers.licenses.store') }}"
         method="POST"
         data-bb-toggle="activate-license"
         data-reload="true"

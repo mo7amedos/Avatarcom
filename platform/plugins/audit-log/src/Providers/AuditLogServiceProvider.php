@@ -42,7 +42,7 @@ class AuditLogServiceProvider extends ServiceProvider
             ->loadMigrations()
             ->publishAssets();
 
-        PanelSectionManager::group('system')->beforeRendering(function () {
+        PanelSectionManager::group('system')->beforeRendering(function (): void {
             PanelSectionManager::registerItem(
                 SystemPanelSection::class,
                 fn () => PanelSectionItem::make('audit-logs')
@@ -54,12 +54,12 @@ class AuditLogServiceProvider extends ServiceProvider
             );
         });
 
-        $this->app->booted(function () {
+        $this->app->booted(function (): void {
             $this->app->register(HookServiceProvider::class);
         });
 
         if ($this->app->runningInConsole()) {
-            $this->app->afterResolving(Schedule::class, function (Schedule $schedule) {
+            $this->app->afterResolving(Schedule::class, function (Schedule $schedule): void {
                 $schedule
                     ->command(PruneCommand::class, ['--model' => AuditHistory::class])
                     ->dailyAt('00:30');

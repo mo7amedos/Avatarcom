@@ -38,9 +38,7 @@ class StripeConnectController extends BaseController
             $customer->save();
         }
 
-        if ($customer->stripe_account_active) {
-            abort(404);
-        }
+        abort_if($customer->stripe_account_active, 404);
 
         try {
             $url = $this->stripeConnect->createAccountLink($customer->stripe_account_id)->url;
@@ -65,9 +63,7 @@ class StripeConnectController extends BaseController
          */
         $customer = auth('customer')->user();
 
-        if (! $customer->stripe_account_active) {
-            abort(404);
-        }
+        abort_unless($customer->stripe_account_active, 404);
 
         $url = $this->stripeConnect->createLoginLink($customer->stripe_account_id)->url;
 
@@ -85,9 +81,7 @@ class StripeConnectController extends BaseController
          */
         $customer = auth('customer')->user();
 
-        if (! $customer->stripe_account_active) {
-            abort(404);
-        }
+        abort_unless($customer->stripe_account_active, 404);
 
         $url = $this->stripeConnect->createAccountLink($customer->stripe_account_id)->url;
 
@@ -105,9 +99,7 @@ class StripeConnectController extends BaseController
          */
         $customer = auth('customer')->user();
 
-        if ($customer->stripe_account_active) {
-            abort(404);
-        }
+        abort_if($customer->stripe_account_active, 404);
 
         $account = $this->stripeConnect->retrieveAccount($customer->stripe_account_id);
 
@@ -135,9 +127,7 @@ class StripeConnectController extends BaseController
          */
         $customer = auth('customer')->user();
 
-        if (! $customer->stripe_account_active) {
-            abort(404);
-        }
+        abort_unless($customer->stripe_account_active, 404);
 
         $this->stripeConnect->deleteAccount($customer->stripe_account_id);
 

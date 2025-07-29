@@ -16,7 +16,7 @@ return new class () extends Migration {
 
             Slug::query()
                 ->where('reference_type', Product::class)
-                ->whereNotIn('reference_id', function ($query) {
+                ->whereNotIn('reference_id', function ($query): void {
                     $query
                         ->select('id')
                         ->from('ec_products')

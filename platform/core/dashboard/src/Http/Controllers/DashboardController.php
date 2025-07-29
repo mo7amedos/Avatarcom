@@ -29,11 +29,11 @@ class DashboardController extends BaseController
 
         $widgets = DashboardWidget::query()
             ->with([
-                'settings' => function (HasMany $query) use ($request) {
+                'settings' => function (HasMany $query) use ($request): void {
                     $query
                         ->where('user_id', $request->user()->getKey())
                         ->select(['status', 'order', 'settings', 'widget_id'])
-                        ->orderBy('order');
+                        ->oldest('order');
                 },
             ])
             ->select(['id', 'name'])

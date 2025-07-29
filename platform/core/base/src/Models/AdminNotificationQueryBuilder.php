@@ -15,8 +15,8 @@ class AdminNotificationQueryBuilder extends BaseQueryBuilder
             return $this;
         }
 
-        $this->when($user->permissions, function ($query, $permissions) {
-            $query->where(function ($query) use ($permissions) {
+        $this->when($user->permissions, function ($query, $permissions): void {
+            $query->where(function ($query) use ($permissions): void {
                 /**
                  * @var Builder $query
                  */

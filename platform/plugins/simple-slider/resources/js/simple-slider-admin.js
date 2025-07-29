@@ -25,8 +25,10 @@ class SimpleSliderAdminManagement {
 
                 // dragging ended
                 onEnd: () => {
+                    $(document).find('.btn-save-sort-order').addClass('sort-button-active btn-warning').show()
+
                     const $box = $(el).closest('.card')
-                    $box.find('.btn-save-sort-order').addClass('sort-button-active').show()
+
                     $.each($box.find('tbody tr'), (index, sort) => {
                         $(sort)
                             .find('.order-column')
@@ -36,7 +38,7 @@ class SimpleSliderAdminManagement {
             })
         })
 
-        const $sortButton = $table.closest('.card').find('.btn-save-sort-order')
+        const $sortButton = $(document).find('.btn-save-sort-order')
 
         $sortButton.off('click').on('click', (event) => {
             event.preventDefault()

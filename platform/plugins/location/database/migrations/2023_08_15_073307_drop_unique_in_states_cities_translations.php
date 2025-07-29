@@ -8,23 +8,23 @@ return new class () extends Migration {
     public function up(): void
     {
         if (Schema::hasColumn('states_translations', 'slug')) {
-            Schema::table('states_translations', function (Blueprint $table) {
+            Schema::table('states_translations', function (Blueprint $table): void {
                 $table->string('slug', 120)->after('name')->nullable()->change();
             });
         }
 
         if (Schema::hasColumn('cities_translations', 'slug')) {
-            Schema::table('cities_translations', function (Blueprint $table) {
+            Schema::table('cities_translations', function (Blueprint $table): void {
                 $table->string('slug', 120)->after('name')->nullable()->change();
             });
         }
 
         try {
-            Schema::table('states_translations', function (Blueprint $table) {
+            Schema::table('states_translations', function (Blueprint $table): void {
                 $table->dropUnique('states_translations_slug_unique');
             });
 
-            Schema::table('cities_translations', function (Blueprint $table) {
+            Schema::table('cities_translations', function (Blueprint $table): void {
                 $table->dropUnique('cities_translations_slug_unique');
             });
         } catch (Throwable) {

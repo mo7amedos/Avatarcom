@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 return new class () extends Migration {
     public function up(): void
     {
-        rescue(function () {
+        rescue(function (): void {
             $value = 0;
             if (setting('analytics_property_id') && setting('analytics_service_account_credentials')) {
                 $value = 1;

@@ -1,14 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html {{ html_attributes }}>
     <head>
         <meta charset="UTF-8">
         <title>{{ 'plugins/marketplace::withdrawal.invoice.title'|trans }} #{{ withdrawal.id }}</title>
+
+        {{ settings.font_css }}
+
         <style>
             body {
-                font-family: Arial, sans-serif;
-                margin: 0;
-                padding: 0;
+                font-size: 15px;
+                font-family: '{{ settings.font_family }}', Arial, sans-serif !important;
+                position: relative;
             }
+
             .header {
                 text-align: center;
                 margin-bottom: 20px;
@@ -65,33 +69,64 @@
                 font-size: 14px;
                 color: #666666;
             }
+
+            small {
+                font-size: 80%;
+            }
+
             .stamp {
                 border: 2px solid #555;
                 color: #555;
                 display: inline-block;
                 font-size: 18px;
-                left: 70%;
                 line-height: 1;
                 opacity: .5;
                 padding: .3rem .75rem;
                 position: fixed;
                 text-transform: uppercase;
-                top: 50%;
-                transform: rotate(-14deg)
+                top: 40%;
+                left: 40%;
+                transform: rotate(-14deg);
             }
 
             .is-failed {
                 border-color: #d23;
-                color: #d23
+                color: #d23;
             }
 
             .is-completed {
                 border-color: #0a9928;
-                color: #0a9928
+                color: #0a9928;
             }
+
+            body[dir=rtl] {
+                direction: rtl;
+            }
+
+            body[dir=rtl] .right {
+                text-align: left;
+            }
+
+            body[dir=rtl] table tr td:last-child {
+                text-align: left;
+            }
+
+            body[dir=rtl] .line-items-container th.heading-price {
+                text-align: left;
+            }
+
+            body[dir=rtl] .line-items-container th:last-child {
+                text-align: left;
+            }
+
+            body[dir=rtl] .line-items-container th {
+                text-align: right;
+            }
+
+            {{ settings.extra_css }}
         </style>
     </head>
-    <body>
+    <body {{ body_attributes }}>
         <div class="header">
             {% if company.logo %}
                 <img src="{{ company.logo }}" alt="{{ company.name }}" class="logo">

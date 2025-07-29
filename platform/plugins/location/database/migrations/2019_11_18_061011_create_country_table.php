@@ -8,7 +8,7 @@ return new class () extends Migration {
     public function up(): void
     {
         if (! Schema::hasTable('countries')) {
-            Schema::create('countries', function (Blueprint $table) {
+            Schema::create('countries', function (Blueprint $table): void {
                 $table->id();
                 $table->string('name', 120);
                 $table->string('nationality', 120);
@@ -20,7 +20,7 @@ return new class () extends Migration {
         }
 
         if (! Schema::hasTable('states')) {
-            Schema::create('states', function (Blueprint $table) {
+            Schema::create('states', function (Blueprint $table): void {
                 $table->id();
                 $table->string('name', 120);
                 $table->string('abbreviation', 10)->nullable();
@@ -33,7 +33,7 @@ return new class () extends Migration {
         }
 
         if (! Schema::hasTable('cities')) {
-            Schema::create('cities', function (Blueprint $table) {
+            Schema::create('cities', function (Blueprint $table): void {
                 $table->id();
                 $table->string('name', 120);
                 $table->foreignId('state_id');

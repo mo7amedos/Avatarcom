@@ -59,7 +59,7 @@ class DiscountTable extends TableAbstract
             ->getModel()
             ->query()
             ->select(['*'])
-            ->where('store_id', auth('customer')->user()->store->id);
+            ->where('store_id', auth('customer')->user()->store?->id);
 
         return $this->applyScopes($query);
     }
@@ -90,13 +90,11 @@ class DiscountTable extends TableAbstract
     public function bulkActions(): array
     {
         return [
-            DeleteBulkAction::make()->beforeDispatch(function (Discount $discount, array $ids) {
+            DeleteBulkAction::make()->beforeDispatch(function (Discount $discount, array $ids): void {
                 foreach ($ids as $id) {
                     $discount = Discount::query()->findOrFail($id);
 
-                    if ($discount->store_id !== auth('customer')->user()->store->id) {
-                        abort(403);
-                    }
+                    abort_if($discount->store_id !== auth('customer')->user()->store?->id, 403);
                 }
             }),
         ];

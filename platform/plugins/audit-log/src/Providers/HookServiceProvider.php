@@ -35,11 +35,11 @@ class HookServiceProvider extends ServiceProvider
             add_action(BACKUP_ACTION_AFTER_RESTORE, [$this, 'handleRestore'], 45);
         }
 
-        $this->app['events']->listen(RenderingDashboardWidgets::class, function () {
+        $this->app['events']->listen(RenderingDashboardWidgets::class, function (): void {
             add_filter(DASHBOARD_FILTER_ADMIN_LIST, [$this, 'registerDashboardWidgets'], 28, 2);
         });
 
-        GeneralSettingForm::extend(callback: function (GeneralSettingForm $form) {
+        GeneralSettingForm::extend(callback: function (GeneralSettingForm $form): void {
             $form
                 ->add(
                     'audit_log_data_retention_period',
@@ -50,7 +50,7 @@ class HookServiceProvider extends ServiceProvider
                         ->choices(DataRetentionPeriod::labels())
                         ->selected(setting('audit_log_data_retention_period', DataRetentionPeriod::ONE_MONTH))
                 )
-                ->when(! setting('cronjob_last_run_at') && ! $form->has('cronjob_warning'), function (GeneralSettingForm $form) {
+                ->when(! setting('cronjob_last_run_at') && ! $form->has('cronjob_warning'), function (GeneralSettingForm $form): void {
                     $form->add(
                         'cronjob_warning',
                         AlertField::class,

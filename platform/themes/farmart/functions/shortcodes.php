@@ -1,6 +1,10 @@
 <?php
 
 use Botble\Ads\Facades\AdsManager;
+use Botble\Base\Facades\BaseHelper;
+use Botble\Base\Forms\Fields\MediaImageField;
+use Botble\Contact\Forms\Fronts\ContactForm;
+use Botble\Contact\Forms\ShortcodeContactAdminConfigForm;
 use Botble\Ecommerce\Facades\EcommerceHelper;
 use Botble\Ecommerce\Facades\FlashSale as FlashSaleFacade;
 use Botble\Ecommerce\Facades\ProductCategoryHelper;
@@ -16,10 +20,11 @@ use Botble\Shortcode\Forms\ShortcodeForm;
 use Botble\Theme\Facades\Theme;
 use Botble\Theme\Supports\ThemeSupport;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Theme\Farmart\Supports\Wishlist;
 
-app()->booted(function () {
+app()->booted(function (): void {
     ThemeSupport::registerGoogleMapsShortcode();
     ThemeSupport::registerYoutubeShortcode();
 
@@ -49,10 +54,39 @@ app()->booted(function () {
             if ($key == 'simple-slider' && is_plugin_active('ads')) {
                 $ads = AdsManager::getData(true, true);
 
-                $defaultAutoplay = 'yes';
+                $form = ShortcodeForm::createFromArray($attributes)
+                    ->add('is_autoplay', 'customSelect', [
+                        'label' => __('Is autoplay?'),
+                        'choices' => [
+                            'yes' => trans('core/base::base.yes'),
+                            'no' => trans('core/base::base.no'),
+                        ],
+                        'selected' => Arr::get($attributes, 'is_autoplay', 'yes'),
+                    ])
+                    ->add('is_infinite', 'customSelect', [
+                        'label' => __('Loop?'),
+                        'choices' => [
+                            'yes' => trans('core/base::base.yes'),
+                            'no' => trans('core/base::base.no'),
+                        ],
+                        'selected' => Arr::get($attributes, 'is_infinite', 'yes'),
+                    ])
+                    ->add('autoplay_speed', 'customSelect', [
+                        'label' => __('Autoplay speed (if autoplay enabled)'),
+                        'choices' => theme_get_autoplay_speed_options(),
+                        'selected' => Arr::get($attributes, 'autoplay_speed', 3000),
+                    ])
+                    ->add('background', MediaImageField::class, [
+                        'label' => __('Background Image'),
+                        'value' => Arr::get($attributes, 'background'),
+                    ])
+                    ->add('ads', 'customSelect', [
+                        'label' => __('Ads'),
+                        'choices' => ['' => __('-- select --')] + $ads->pluck('name', 'key')->toArray(),
+                        'selected' => Arr::get($attributes, 'ads'),
+                    ]);
 
-                return $data . Theme::partial('shortcodes.includes.autoplay-settings', compact('attributes', 'defaultAutoplay')) .
-                    Theme::partial('shortcodes.select-ads-admin-config', compact('ads', 'attributes'));
+                return $data . $form->renderForm();
             }
 
             return $data;
@@ -87,10 +121,20 @@ app()->booted(function () {
             return Theme::partial('shortcodes.ads.theme-ads', compact('ads'));
         });
 
-        shortcode()->setAdminConfig('theme-ads', function (array $attributes) {
+        ShortcodeFacade::setAdminConfig('theme-ads', function (array $attributes) {
             $ads = AdsManager::getData(true, true);
 
-            return Theme::partial('shortcodes.ads.theme-ads-admin-config', compact('ads', 'attributes'));
+            $form = ShortcodeForm::createFromArray($attributes);
+
+            for ($i = 1; $i < 5; $i++) {
+                $form->add('key_' . $i, 'customSelect', [
+                    'label' => __('Ad :number', ['number' => $i]),
+                    'choices' => ['' => __('-- select --')] + $ads->pluck('name', 'key')->toArray(),
+                    'selected' => Arr::get($attributes, 'key_' . $i),
+                ]);
+            }
+
+            return $form;
         });
     }
 
@@ -100,22 +144,123 @@ app()->booted(function () {
             __('Featured Product Categories'),
             __('Featured Product Categories'),
             function (Shortcode $shortcode) {
-                $categories = ProductCategoryHelper::getProductCategoriesWithUrl([], ['is_featured' => true], $shortcode->limit);
+                $limit = (int) $shortcode->limit ?: 10;
 
-                return Theme::partial('shortcodes.ecommerce.featured-product-categories', compact('shortcode', 'categories'));
+                $categories = ProductCategoryHelper::getProductCategoriesWithUrl([], ['is_featured' => true], $limit);
+
+                if ($categories->isEmpty()) {
+                    return null;
+                }
+
+                return Theme::partial('shortcodes.ecommerce.featured-product-categories', [
+                    'title' => $shortcode->title,
+                    'subtitle' => $shortcode->subtitle,
+                    'categories' => $categories,
+                    'shortcode' => $shortcode,
+                ]);
             }
         );
 
-        shortcode()->setAdminConfig('featured-product-categories', function (array $attributes) {
-            return Theme::partial('shortcodes.ecommerce.featured-product-categories-admin-config', compact('attributes'));
+        ShortcodeFacade::setAdminConfig('featured-product-categories', function (array $attributes) {
+            return ShortcodeForm::createFromArray($attributes)
+                ->add('title', 'text', [
+                    'label' => __('Title'),
+                    'value' => Arr::get($attributes, 'title'),
+                    'placeholder' => __('Title'),
+                ])
+                ->add('subtitle', 'text', [
+                    'label' => __('Subtitle'),
+                    'value' => Arr::get($attributes, 'subtitle'),
+                    'placeholder' => __('Subtitle'),
+                ])
+                ->add('limit', 'number', [
+                    'label' => __('Limit'),
+                    'value' => Arr::get($attributes, 'limit', 10),
+                    'placeholder' => __('Number of categories to display'),
+                ])
+                ->add('is_autoplay', 'customSelect', [
+                    'label' => __('Is autoplay?'),
+                    'choices' => [
+                        'yes' => trans('core/base::base.yes'),
+                        'no' => trans('core/base::base.no'),
+                    ],
+                    'selected' => Arr::get($attributes, 'is_autoplay', 'yes'),
+                ])
+                ->add('is_infinite', 'customSelect', [
+                    'label' => __('Loop?'),
+                    'choices' => [
+                        'yes' => trans('core/base::base.yes'),
+                        'no' => trans('core/base::base.no'),
+                    ],
+                    'selected' => Arr::get($attributes, 'is_infinite', 'yes'),
+                ])
+                ->add('autoplay_speed', 'customSelect', [
+                    'label' => __('Autoplay speed (if autoplay enabled)'),
+                    'choices' => theme_get_autoplay_speed_options(),
+                    'selected' => Arr::get($attributes, 'autoplay_speed', 3000),
+                ]);
         });
 
         add_shortcode('featured-brands', __('Featured Brands'), __('Featured Brands'), function (Shortcode $shortcode) {
-            return Theme::partial('shortcodes.ecommerce.featured-brands', compact('shortcode'));
+            $limit = (int) $shortcode->limit ?: 8;
+
+            $brands = get_featured_brands($limit);
+
+            if ($brands->isEmpty()) {
+                return null;
+            }
+
+            return Theme::partial('shortcodes.ecommerce.featured-brands', [
+                'title' => $shortcode->title,
+                'subtitle' => $shortcode->subtitle,
+                'brands' => $brands,
+                'shortcode' => $shortcode,
+            ]);
         });
 
-        shortcode()->setAdminConfig('featured-brands', function (array $attributes) {
-            return Theme::partial('shortcodes.ecommerce.featured-brands-admin-config', compact('attributes'));
+        ShortcodeFacade::setAdminConfig('featured-brands', function (array $attributes) {
+            return ShortcodeForm::createFromArray($attributes)
+                ->add('title', 'text', [
+                    'label' => __('Title'),
+                    'value' => Arr::get($attributes, 'title'),
+                    'placeholder' => __('Title'),
+                ])
+                ->add('subtitle', 'text', [
+                    'label' => __('Subtitle'),
+                    'value' => Arr::get($attributes, 'subtitle'),
+                    'placeholder' => __('Subtitle'),
+                ])
+                ->add('limit', 'number', [
+                    'label' => __('Limit'),
+                    'value' => Arr::get($attributes, 'limit', 8),
+                    'placeholder' => __('Number of brands to display'),
+                ])
+                ->add('is_autoplay', 'customSelect', [
+                    'label' => __('Is autoplay?'),
+                    'choices' => [
+                        'yes' => trans('core/base::base.yes'),
+                        'no' => trans('core/base::base.no'),
+                    ],
+                    'selected' => Arr::get($attributes, 'is_autoplay', 'yes'),
+                ])
+                ->add('is_infinite', 'customSelect', [
+                    'label' => __('Loop?'),
+                    'choices' => [
+                        'yes' => trans('core/base::base.yes'),
+                        'no' => trans('core/base::base.no'),
+                    ],
+                    'selected' => Arr::get($attributes, 'is_infinite', 'yes'),
+                ])
+                ->add('autoplay_speed', 'customSelect', [
+                    'label' => __('Autoplay speed (if autoplay enabled)'),
+                    'choices' => theme_get_autoplay_speed_options(),
+                    'selected' => Arr::get($attributes, 'autoplay_speed', 3000),
+                ])
+                ->add('slides_to_show', 'customSelect', [
+                    'label' => __('Slides to show'),
+                    'choices' => [4 => 4, 5 => 5, 6 => 6, 7 => 7, 8 => 8, 9 => 9, 10 => 10],
+                    'selected' => Arr::get($attributes, 'slides_to_show', 4),
+                ]);
         });
 
         if (FlashSaleFacade::isEnabled()) {
@@ -147,16 +292,59 @@ app()->booted(function () {
                 $isFlashSale = true;
                 $wishlistIds = Wishlist::getWishlistIds($flashSale->products->pluck('id')->all());
 
-                return Theme::partial('shortcodes.ecommerce.flash-sale', compact('shortcode', 'flashSale', 'isFlashSale', 'wishlistIds'));
+                return Theme::partial('shortcodes.ecommerce.flash-sale', [
+                    'shortcode' => $shortcode,
+                    'flashSale' => $flashSale,
+                    'isFlashSale' => $isFlashSale,
+                    'wishlistIds' => $wishlistIds,
+                    'subtitle' => $shortcode->subtitle,
+                ]);
             });
 
-            shortcode()->setAdminConfig('flash-sale', function (array $attributes) {
+            ShortcodeFacade::setAdminConfig('flash-sale', function (array $attributes) {
                 $flashSales = FlashSale::query()
                     ->wherePublished()
                     ->notExpired()
-                    ->get();
+                    ->pluck('name', 'id')
+                    ->toArray();
 
-                return Theme::partial('shortcodes.ecommerce.flash-sale-admin-config', compact('flashSales', 'attributes'));
+                return ShortcodeForm::createFromArray($attributes)
+                    ->add('title', 'text', [
+                        'label' => __('Title'),
+                        'value' => Arr::get($attributes, 'title'),
+                        'placeholder' => __('Title'),
+                    ])
+                    ->add('subtitle', 'text', [
+                        'label' => __('Subtitle'),
+                        'value' => Arr::get($attributes, 'subtitle'),
+                        'placeholder' => __('Subtitle'),
+                    ])
+                    ->add('flash_sale_id', 'customSelect', [
+                        'label' => __('Select a flash sale'),
+                        'choices' => $flashSales,
+                        'selected' => Arr::get($attributes, 'flash_sale_id'),
+                    ])
+                    ->add('is_autoplay', 'customSelect', [
+                        'label' => __('Is autoplay?'),
+                        'choices' => [
+                            'yes' => trans('core/base::base.yes'),
+                            'no' => trans('core/base::base.no'),
+                        ],
+                        'selected' => Arr::get($attributes, 'is_autoplay', 'yes'),
+                    ])
+                    ->add('is_infinite', 'customSelect', [
+                        'label' => __('Loop?'),
+                        'choices' => [
+                            'yes' => trans('core/base::base.yes'),
+                            'no' => trans('core/base::base.no'),
+                        ],
+                        'selected' => Arr::get($attributes, 'is_infinite', 'yes'),
+                    ])
+                    ->add('autoplay_speed', 'customSelect', [
+                        'label' => __('Autoplay speed (if autoplay enabled)'),
+                        'choices' => theme_get_autoplay_speed_options(),
+                        'selected' => Arr::get($attributes, 'autoplay_speed', 3000),
+                    ]);
             });
         }
 
@@ -201,10 +389,51 @@ app()->booted(function () {
             }
         );
 
-        shortcode()->setAdminConfig('product-collections', function (array $attributes) {
+        ShortcodeFacade::setAdminConfig('product-collections', function (array $attributes) {
             $productCollections = get_product_collections(select: ['id', 'name', 'slug']);
 
-            return Theme::partial('shortcodes.ecommerce.product-collections-admin-config', compact('attributes', 'productCollections'));
+            $collectionChoices = ['0' => __('All')];
+            foreach ($productCollections as $collection) {
+                $collectionChoices[$collection->id] = BaseHelper::clean($collection->indent_text) . ' ' . $collection->name;
+            }
+
+            return ShortcodeForm::createFromArray($attributes)
+                ->add('title', 'text', [
+                    'label' => __('Title'),
+                    'value' => Arr::get($attributes, 'title'),
+                    'placeholder' => __('Title'),
+                ])
+                ->add('limit', 'number', [
+                    'label' => __('Limit'),
+                    'value' => Arr::get($attributes, 'limit', 8),
+                    'placeholder' => __('Limit'),
+                ])
+                ->add('collection_id', 'customSelect', [
+                    'label' => __('Select a product collection'),
+                    'choices' => $collectionChoices,
+                    'selected' => Arr::get($attributes, 'collection_id'),
+                ])
+                ->add('is_autoplay', 'customSelect', [
+                    'label' => __('Is autoplay?'),
+                    'choices' => [
+                        'yes' => trans('core/base::base.yes'),
+                        'no' => trans('core/base::base.no'),
+                    ],
+                    'selected' => Arr::get($attributes, 'is_autoplay', 'no'),
+                ])
+                ->add('is_infinite', 'customSelect', [
+                    'label' => __('Loop?'),
+                    'choices' => [
+                        'yes' => trans('core/base::base.yes'),
+                        'no' => trans('core/base::base.no'),
+                    ],
+                    'selected' => Arr::get($attributes, 'is_infinite', 'yes'),
+                ])
+                ->add('autoplay_speed', 'customSelect', [
+                    'label' => __('Autoplay speed (if autoplay enabled)'),
+                    'choices' => theme_get_autoplay_speed_options(),
+                    'selected' => Arr::get($attributes, 'autoplay_speed', 3000),
+                ]);
         });
 
         add_shortcode(
@@ -248,15 +477,55 @@ app()->booted(function () {
             }
         );
 
-        shortcode()->setAdminConfig('product-category-products', function (array $attributes) {
-            return Theme::partial('shortcodes.ecommerce.product-category-products-admin-config', compact('attributes'));
+        ShortcodeFacade::setAdminConfig('product-category-products', function (array $attributes) {
+            $categoryOptions = ProductCategoryHelper::getProductCategoriesWithIndent()
+                ->pluck('name', 'id')
+                ->toArray();
+
+            return ShortcodeForm::createFromArray($attributes)
+                ->add('category_id', 'customSelect', [
+                    'label' => __('Select category'),
+                    'choices' => $categoryOptions,
+                    'selected' => Arr::get($attributes, 'category_id'),
+                ])
+                ->add('number_of_categories', 'number', [
+                    'label' => __('Limit number of categories'),
+                    'value' => Arr::get($attributes, 'number_of_categories', 3),
+                    'placeholder' => __('Default: 3'),
+                ])
+                ->add('limit', 'number', [
+                    'label' => __('Limit number of products'),
+                    'value' => Arr::get($attributes, 'limit'),
+                    'placeholder' => __('Unlimited by default'),
+                ])
+                ->add('is_autoplay', 'customSelect', [
+                    'label' => __('Is autoplay?'),
+                    'choices' => [
+                        'yes' => trans('core/base::base.yes'),
+                        'no' => trans('core/base::base.no'),
+                    ],
+                    'selected' => Arr::get($attributes, 'is_autoplay', 'no'),
+                ])
+                ->add('is_infinite', 'customSelect', [
+                    'label' => __('Loop?'),
+                    'choices' => [
+                        'yes' => trans('core/base::base.yes'),
+                        'no' => trans('core/base::base.no'),
+                    ],
+                    'selected' => Arr::get($attributes, 'is_infinite', 'yes'),
+                ])
+                ->add('autoplay_speed', 'customSelect', [
+                    'label' => __('Autoplay speed (if autoplay enabled)'),
+                    'choices' => theme_get_autoplay_speed_options(),
+                    'selected' => Arr::get($attributes, 'autoplay_speed', 3000),
+                ]);
         });
 
         add_shortcode('featured-products', __('Featured products'), __('Featured products'), function (Shortcode $shortcode) {
-            $request = request();
+            $limit = (int) $shortcode->limit ?: 10;
 
             $products = get_featured_products([
-                'take' => $request->integer('limit', 10),
+                'take' => $limit,
                 'with' => EcommerceHelper::withProductEagerLoadingRelations(),
             ] + EcommerceHelper::withReviewsParams());
 
@@ -267,14 +536,52 @@ app()->booted(function () {
             $wishlistIds = Wishlist::getWishlistIds(collect($products->toArray())->pluck('id')->all());
 
             return Theme::partial('shortcodes.ecommerce.featured-products', [
+                'title' => $shortcode->title,
+                'subtitle' => $shortcode->subtitle,
                 'shortcode' => $shortcode,
                 'products' => $products,
                 'wishlistIds' => $wishlistIds,
             ]);
         });
 
-        shortcode()->setAdminConfig('featured-products', function (array $attributes) {
-            return Theme::partial('shortcodes.ecommerce.featured-products-admin-config', compact('attributes'));
+        ShortcodeFacade::setAdminConfig('featured-products', function (array $attributes) {
+            return ShortcodeForm::createFromArray($attributes)
+                ->add('title', 'text', [
+                    'label' => __('Title'),
+                    'value' => Arr::get($attributes, 'title'),
+                    'placeholder' => __('Title'),
+                ])
+                ->add('subtitle', 'text', [
+                    'label' => __('Subtitle'),
+                    'value' => Arr::get($attributes, 'subtitle'),
+                    'placeholder' => __('Subtitle'),
+                ])
+                ->add('limit', 'number', [
+                    'label' => __('Limit'),
+                    'value' => Arr::get($attributes, 'limit', 10),
+                    'placeholder' => __('Number of products to display'),
+                ])
+                ->add('is_autoplay', 'customSelect', [
+                    'label' => __('Is autoplay?'),
+                    'choices' => [
+                        'yes' => trans('core/base::base.yes'),
+                        'no' => trans('core/base::base.no'),
+                    ],
+                    'selected' => Arr::get($attributes, 'is_autoplay', 'yes'),
+                ])
+                ->add('is_infinite', 'customSelect', [
+                    'label' => __('Loop?'),
+                    'choices' => [
+                        'yes' => trans('core/base::base.yes'),
+                        'no' => trans('core/base::base.no'),
+                    ],
+                    'selected' => Arr::get($attributes, 'is_infinite', 'yes'),
+                ])
+                ->add('autoplay_speed', 'customSelect', [
+                    'label' => __('Autoplay speed (if autoplay enabled)'),
+                    'choices' => theme_get_autoplay_speed_options(),
+                    'selected' => Arr::get($attributes, 'autoplay_speed', 3000),
+                ]);
         });
     }
 
@@ -283,8 +590,53 @@ app()->booted(function () {
             return Theme::partial('shortcodes.featured-posts', compact('shortcode'));
         });
 
-        shortcode()->setAdminConfig('featured-posts', function (array $attributes) {
-            return Theme::partial('shortcodes.featured-posts-admin-config', compact('attributes'));
+        ShortcodeFacade::setAdminConfig('featured-posts', function (array $attributes) {
+            $appEnabled = Arr::get($attributes, 'app_enabled', '0');
+
+            return ShortcodeForm::createFromArray($attributes)
+                ->add('title', 'text', [
+                    'label' => __('Title'),
+                    'value' => Arr::get($attributes, 'title'),
+                    'placeholder' => __('Title'),
+                ])
+                ->add('app_enabled', 'onOff', [
+                    'label' => __('Show Mobile App Available'),
+                    'value' => $appEnabled,
+                ])
+                ->addOpenCollapsible('app_enabled', '1', $appEnabled)
+                ->add('app_bg', MediaImageField::class, [
+                    'label' => __('App Background'),
+                    'value' => Arr::get($attributes, 'app_bg'),
+                ])
+                ->add('app_title', 'text', [
+                    'label' => __('App Title'),
+                    'value' => Arr::get($attributes, 'app_title'),
+                    'placeholder' => __('App Title'),
+                ])
+                ->add('app_description', 'text', [
+                    'label' => __('App Description'),
+                    'value' => Arr::get($attributes, 'app_description'),
+                    'placeholder' => __('App Description'),
+                ])
+                ->add('app_android_img', MediaImageField::class, [
+                    'label' => __('App Android Image'),
+                    'value' => Arr::get($attributes, 'app_android_img'),
+                ])
+                ->add('app_android_link', 'text', [
+                    'label' => __('App Android Link'),
+                    'value' => Arr::get($attributes, 'app_android_link'),
+                    'placeholder' => __('App Android Link'),
+                ])
+                ->add('app_ios_img', MediaImageField::class, [
+                    'label' => __('App iOS Image'),
+                    'value' => Arr::get($attributes, 'app_ios_img'),
+                ])
+                ->add('app_ios_link', 'text', [
+                    'label' => __('App Title'),
+                    'value' => Arr::get($attributes, 'app_ios_link'),
+                    'placeholder' => __('App iOS Link'),
+                ])
+                ->addCloseCollapsible('app_enabled', '1');
         });
     }
 
@@ -295,34 +647,140 @@ app()->booted(function () {
     }
 
     add_shortcode('contact-info-boxes', __('Contact info boxes'), __('Contact info boxes'), function (Shortcode $shortcode) {
-        return Theme::partial('shortcodes.contact-info-boxes', compact('shortcode'));
+        $form = ContactForm::createFromArray(
+            Arr::except($shortcode->toArray(), ['name', 'email', 'phone', 'content', 'subject', 'address'])
+        );
+
+        return Theme::partial('shortcodes.contact-info-boxes', compact('shortcode', 'form'));
     });
 
-    shortcode()->setAdminConfig('contact-info-boxes', function (array $attributes) {
-        return Theme::partial('shortcodes.contact-info-boxes-admin-config', compact('attributes'));
+    ShortcodeFacade::setAdminConfig('contact-info-boxes', function (array $attributes) {
+        $form = ShortcodeForm::createFromArray($attributes)
+            ->add('title', 'text', [
+                'label' => __('Title'),
+                'value' => Arr::get($attributes, 'title'),
+                'placeholder' => __('Title'),
+            ])
+            ->add('subtitle', 'text', [
+                'label' => __('Subtitle'),
+                'value' => Arr::get($attributes, 'subtitle'),
+                'placeholder' => __('Subtitle'),
+            ])
+            ->add('contact_info_boxes_start', 'html', [
+                'html' => '<div class="p-2 border mb-3">',
+            ]);
+
+        for ($i = 1; $i <= 3; $i++) {
+            $form->add('contact_box_' . $i . '_start', 'html', [
+                'html' => '<div class="p-2 border mb-2">',
+            ])
+            ->add('name_' . $i, 'text', [
+                'label' => __('Name :number', ['number' => $i]),
+                'value' => Arr::get($attributes, 'name_' . $i),
+                'placeholder' => __('Name :number', ['number' => $i]),
+            ])
+            ->add('address_' . $i, 'text', [
+                'label' => __('Address :number', ['number' => $i]),
+                'value' => Arr::get($attributes, 'address_' . $i),
+                'placeholder' => __('Address :number', ['number' => $i]),
+            ])
+            ->add('phone_' . $i, 'text', [
+                'label' => __('Phone :number', ['number' => $i]),
+                'value' => Arr::get($attributes, 'phone_' . $i),
+                'placeholder' => __('Phone :number', ['number' => $i]),
+            ])
+            ->add('email_' . $i, 'text', [
+                'label' => __('Email :number', ['number' => $i]),
+                'value' => Arr::get($attributes, 'email_' . $i),
+                'placeholder' => __('Email :number', ['number' => $i]),
+            ])
+            ->add('contact_box_' . $i . '_end', 'html', [
+                'html' => '</div>',
+            ]);
+        }
+
+        $form->add('contact_info_boxes_help', 'html', [
+            'html' => '<div class="help-block"><small>' . __('You can add up to 3 contact info boxes, to show is required Name and Address') . '</small></div>',
+        ])
+        ->add('contact_info_boxes_end', 'html', [
+            'html' => '</div>',
+        ]);
+
+        if (is_plugin_active('contact')) {
+            $form->add('show_contact_form', 'customSelect', [
+                'label' => __('Show Contact form'),
+                'choices' => [
+                    '0' => __('No'),
+                    '1' => __('Yes'),
+                ],
+                'selected' => Arr::get($attributes, 'show_contact_form', '0'),
+            ]);
+
+            // Merge contact form fields
+            $contactFormHtml = ShortcodeContactAdminConfigForm::createFromArray($attributes)->renderForm();
+            $form->add('contact_form_fields', 'html', [
+                'html' => $contactFormHtml,
+            ]);
+        }
+
+        return $form;
     });
 
     if (is_plugin_active('faq')) {
         add_shortcode('faq', __('FAQs'), __('FAQs'), function (Shortcode $shortcode) {
-            $categories = FaqCategory::query()
+            $categoryIds = array_filter((array) $shortcode->category_ids);
+
+            $categoriesQuery = FaqCategory::query()
                 ->wherePublished()
                 ->with([
-                    'faqs' => function (HasMany $query) {
+                    'faqs' => function (HasMany $query): void {
                         $query->wherePublished();
                     },
                 ])
-                ->orderBy('order')
-                ->orderByDesc('created_at')
-                ->get();
+                ->orderBy('order')->latest();
+
+            if (! empty($categoryIds)) {
+                $categoriesQuery->whereIn('id', $categoryIds);
+            }
+
+            $categories = $categoriesQuery->get();
+
+            if ($categories->isEmpty()) {
+                return null;
+            }
 
             return Theme::partial('shortcodes.faq', [
                 'title' => $shortcode->title,
+                'subtitle' => $shortcode->subtitle,
                 'categories' => $categories,
             ]);
         });
 
-        shortcode()->setAdminConfig('faq', function (array $attributes) {
-            return Theme::partial('shortcodes.faq-admin-config', compact('attributes'));
+        ShortcodeFacade::setAdminConfig('faq', function (array $attributes) {
+            $categories = FaqCategory::query()
+                ->wherePublished()
+                ->pluck('name', 'id')
+                ->toArray();
+
+            return ShortcodeForm::createFromArray($attributes)
+                ->add('title', 'text', [
+                    'label' => __('Title'),
+                    'value' => Arr::get($attributes, 'title'),
+                    'placeholder' => __('Title'),
+                ])
+                ->add('subtitle', 'text', [
+                    'label' => __('Subtitle'),
+                    'value' => Arr::get($attributes, 'subtitle'),
+                    'placeholder' => __('Subtitle'),
+                ])
+                ->add('category_ids', 'multiCheckList', [
+                    'label' => __('Categories'),
+                    'choices' => $categories,
+                    'value' => Arr::get($attributes, 'category_ids', []),
+                    'help_block' => [
+                        'text' => __('Select categories to display. If none is selected, all categories will be displayed.'),
+                    ],
+                ]);
         });
     }
 
@@ -330,8 +788,32 @@ app()->booted(function () {
         return Theme::partial('shortcodes.coming-soon', compact('shortcode'));
     });
 
-    shortcode()->setAdminConfig('coming-soon', function (array $attributes) {
-        return Theme::partial('shortcodes.coming-soon-admin-config', compact('attributes'));
+    ShortcodeFacade::setAdminConfig('coming-soon', function (array $attributes) {
+        return ShortcodeForm::createFromArray($attributes)
+            ->add('title', 'text', [
+                'label' => __('Title'),
+                'value' => Arr::get($attributes, 'title'),
+                'placeholder' => __('Title'),
+            ])
+            ->add('subtitle', 'text', [
+                'label' => __('Subtitle'),
+                'value' => Arr::get($attributes, 'subtitle'),
+                'placeholder' => __('Subtitle'),
+            ])
+            ->add('time', 'datetime-local', [
+                'label' => 'Time',
+                'value' => Arr::get($attributes, 'time'),
+                'placeholder' => 'Time',
+            ])
+            ->add('social_title', 'text', [
+                'label' => __('Connect social networks title'),
+                'value' => Arr::get($attributes, 'social_title'),
+                'placeholder' => __('Connect social networks title'),
+            ])
+            ->add('image', MediaImageField::class, [
+                'label' => __('Image'),
+                'value' => Arr::get($attributes, 'image'),
+            ]);
     });
 
     add_shortcode('site-features', __('Site features'), __('Site features'), function (Shortcode $shortcode) {

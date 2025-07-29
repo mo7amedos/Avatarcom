@@ -2,10 +2,11 @@
 
 namespace Botble\Ads\Supports;
 
+use Botble\Ads\Events\AdsLoading;
 use Botble\Ads\Models\Ads;
 use Botble\Base\Enums\BaseStatusEnum;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
 
 class AdsManager
 {
@@ -20,8 +21,6 @@ class AdsManager
         $this->locations = [
             'not_set' => trans('plugins/ads::ads.not_set'),
         ];
-
-        $this->data = collect();
     }
 
     public function display(string $location, array $attributes = []): string
@@ -45,6 +44,8 @@ class AdsManager
         if (! $this->loaded || $force) {
             $this->data = $this->read($with);
             $this->loaded = true;
+
+            AdsLoading::dispatch($this->data);
         }
 
         return $this;
@@ -94,7 +95,7 @@ class AdsManager
 
     public function getData(bool $isLoad = false, bool $isNotExpired = false): Collection
     {
-        if ($isLoad) {
+        if ($isLoad || ! isset($this->data)) {
             $this->load();
         }
 
@@ -136,6 +137,6 @@ class AdsManager
     {
         return $data
             ->where('status', BaseStatusEnum::PUBLISHED)
-            ->filter(fn (Ads $item) => $item->expired_at->gte(Carbon::now()));
+            ->filter(fn (Ads $item) => $item->ads_type === 'google_adsense' || $item->expired_at->gte(Carbon::now()));
     }
 }

@@ -28,7 +28,7 @@ class GroupedProduct extends BaseModel
 
     public static function createGroupedProducts(int|string $groupedProductId, array $childItems): void
     {
-        DB::transaction(function () use ($childItems, $groupedProductId) {
+        DB::transaction(function () use ($childItems, $groupedProductId): void {
             self::query()
                 ->where('parent_product_id', $groupedProductId)
                 ->delete();

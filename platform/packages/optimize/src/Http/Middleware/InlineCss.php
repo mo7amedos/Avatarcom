@@ -34,7 +34,7 @@ class InlineCss extends PageSpeed
 
     protected function injectStyle(): InlineCss
     {
-        collect($this->class)->each(function ($attributes, $class) {
+        collect($this->class)->each(function ($attributes, $class): void {
             $this->inline[] = '.' . $class . '{' . $attributes . '}';
 
             $this->style[] = [
@@ -56,7 +56,7 @@ class InlineCss extends PageSpeed
 
     protected function injectClass(): InlineCss
     {
-        collect($this->style)->each(function ($item) {
+        collect($this->style)->each(function ($item): void {
             $replace = [
                 '/style="' . $item['attributes'] . '"/' => 'class="' . $item['class'] . '"',
             ];
@@ -81,7 +81,7 @@ class InlineCss extends PageSpeed
 
             if (count($matches[1]) > 1) {
                 $replace = [
-                    '/>/' => 'class="' . implode(' ', $matches[1]) . '">',
+                    '/>/' => ' class="' . implode(' ', $matches[1]) . '">',
                 ];
 
                 $newHTML[] = str_replace(

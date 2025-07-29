@@ -22,10 +22,11 @@ class SpecificationAttributeTable extends TableAbstract
             ->addColumns([
                 IdColumn::make(),
                 NameColumn::make()->route($this->getEditRouteName()),
-                FormattedColumn::make('description')
-                    ->label(trans('core/base::forms.description'))
-                    ->withEmptyState()
-                    ->limit(50),
+                FormattedColumn::make('type')
+                    ->label(trans('plugins/ecommerce::product-specification.specification_attributes.type'))
+                    ->renderUsing(function (FormattedColumn $column) {
+                        return $column->getItem()->type->label();
+                    }),
                 CreatedAtColumn::make(),
             ])
             ->addActions([

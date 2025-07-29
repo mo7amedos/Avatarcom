@@ -10,7 +10,7 @@ return new class () extends Migration {
         if (Schema::hasTable('ec_tax_rules')) {
             return;
         }
-        Schema::create('ec_tax_rules', function (Blueprint $table) {
+        Schema::create('ec_tax_rules', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('tax_id');
             $table->string('country', 120)->nullable();

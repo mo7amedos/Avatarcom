@@ -2,12 +2,25 @@
 
 namespace Botble\Marketplace\Tables;
 
+use Botble\Ecommerce\Models\Customer;
 use Botble\Ecommerce\Tables\SpecificationAttributeTable as BaseSpecificationAttributeTableTable;
 use Botble\Marketplace\Tables\Traits\ForVendor;
+use Illuminate\Database\Eloquent\Builder;
 
 class SpecificationAttributeTable extends BaseSpecificationAttributeTableTable
 {
     use ForVendor;
+
+    public function setup(): void
+    {
+        parent::setup();
+
+        $this->queryUsing(function (Builder $query) {
+            return $query
+                ->where('author_type', Customer::class)
+                ->where('author_id', auth('customer')->id());
+        });
+    }
 
     protected function getCreateRouteName(): string
     {

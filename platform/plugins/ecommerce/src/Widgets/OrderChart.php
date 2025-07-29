@@ -23,6 +23,7 @@ class OrderChart extends Chart
             ->selectRaw('count(id) as total, date_format(created_at, "' . $this->dateFormat . '") as period')
             ->whereDate('created_at', '>=', $this->startDate)
             ->whereDate('created_at', '<=', $this->endDate)
+            ->where('is_finished', true)
             ->groupBy('period')
             ->pluck('total', 'period')
             ->all();

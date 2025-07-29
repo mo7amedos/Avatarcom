@@ -342,7 +342,7 @@
                             @if ($userInfo->id)
                                 <p class="mb-1">
                                     <x-core::icon name="ti ti-inbox" />
-                                    {{ $order->user->orders()->count() }}
+                                    {{ $order->user->completedOrders()->count() }}
                                     {{ trans('plugins/ecommerce::order.orders') }}
                                 </p>
                             @endif

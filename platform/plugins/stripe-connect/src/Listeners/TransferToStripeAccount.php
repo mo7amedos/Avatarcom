@@ -10,10 +10,6 @@ use Exception;
 
 class TransferToStripeAccount
 {
-    public function __construct(protected StripeConnect $stripeConnect)
-    {
-    }
-
     public function handle(WithdrawalRequested $event): void
     {
         $customer = $event->customer;
@@ -29,7 +25,9 @@ class TransferToStripeAccount
         $withdrawal = $event->withdrawal;
 
         try {
-            $transfer = $this->stripeConnect->transfer(
+            $stripeConnect = new StripeConnect();
+
+            $transfer = $stripeConnect->transfer(
                 $customer->stripe_account_id,
                 $withdrawal->amount * 100,
                 mb_strtolower($withdrawal->currency)

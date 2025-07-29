@@ -6,7 +6,7 @@
                 <tr>
                     <td>{{ $attribute->name }}</td>
                     <td>
-                        @if ($attribute->type === 'checkbox')
+                        @if ($attribute->type == 'checkbox')
                             @if ($attribute->pivot->value)
                                 <x-core::icon name="ti ti-check" class="text-success" style="font-size: 1.5rem;" />
                             @else

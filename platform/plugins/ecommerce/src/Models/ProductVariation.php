@@ -5,6 +5,7 @@ namespace Botble\Ecommerce\Models;
 use Botble\Base\Events\CreatedContentEvent;
 use Botble\Base\Events\DeletedContentEvent;
 use Botble\Base\Models\BaseModel;
+use Botble\Ecommerce\Events\ProductQuantityUpdatedEvent;
 use Botble\Ecommerce\Services\Products\UpdateDefaultProductService;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,7 +26,7 @@ class ProductVariation extends BaseModel
 
     protected static function booted(): void
     {
-        self::deleted(function (ProductVariation $variation) {
+        self::deleted(function (ProductVariation $variation): void {
             $variation->productAttributes()->detach();
             $variation->variationItems()->delete();
 
@@ -35,9 +36,11 @@ class ProductVariation extends BaseModel
             }
         });
 
-        self::updated(function (ProductVariation $variation) {
+        self::updated(function (ProductVariation $variation): void {
             if ($variation->is_default) {
                 app(UpdateDefaultProductService::class)->execute($variation->product);
+
+                ProductQuantityUpdatedEvent::dispatch($variation->product);
             }
         });
     }
@@ -79,7 +82,7 @@ class ProductVariation extends BaseModel
         return self::query()
             ->whereNotNull('product_id')
             ->where('configurable_product_id', $configurableProductId)
-            ->whereHas('variationItems', function ($query) use ($attributes) {
+            ->whereHas('variationItems', function ($query) use ($attributes): void {
                 $query->whereIn('attribute_id', $attributes);
             }, '=', count($attributes))
             ->with('variationItems')

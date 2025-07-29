@@ -116,7 +116,7 @@ class SlugHelper
         return ! in_array($model, config('packages.slug.general.disable_preview', []));
     }
 
-    public function createSlug(BaseModel $model, string $name = null): BaseModel|Slug
+    public function createSlug(BaseModel $model, ?string $name = null): BaseModel|Slug
     {
         /**
          * @var Slug $slug
@@ -229,7 +229,7 @@ class SlugHelper
         }
 
         if (is_object($model)) {
-            $model = get_class($model);
+            $model = $model::class;
         }
 
         $config = Arr::get(config('packages.slug.general.slug_generated_columns', []), $model);

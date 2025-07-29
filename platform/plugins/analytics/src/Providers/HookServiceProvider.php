@@ -15,7 +15,7 @@ class HookServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        $this->app['events']->listen(RenderingDashboardWidgets::class, function () {
+        $this->app['events']->listen(RenderingDashboardWidgets::class, function (): void {
             if (
                 ! config('plugins.analytics.general.enabled_dashboard_widgets')
                 || setting('analytics_dashboard_widgets', '0') != '1'
@@ -27,7 +27,7 @@ class HookServiceProvider extends ServiceProvider
             add_filter(DASHBOARD_FILTER_ADMIN_LIST, [$this, 'addAnalyticsWidgets'], 18, 2);
         });
 
-        $this->app['events']->listen(RenderingPluginListingPage::class, function () {
+        $this->app['events']->listen(RenderingPluginListingPage::class, function (): void {
             add_filter('core_layout_before_content', [$this, 'showMissingLibraryWarning'], 99);
         });
     }

@@ -3,9 +3,9 @@
 use Botble\Base\Facades\AdminHelper;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['namespace' => 'Botble\Language\Http\Controllers'], function () {
-    AdminHelper::registerRoutes(function () {
-        Route::group(['prefix' => 'settings/languages'], function () {
+Route::group(['namespace' => 'Botble\Language\Http\Controllers'], function (): void {
+    AdminHelper::registerRoutes(function (): void {
+        Route::group(['prefix' => 'settings/languages'], function (): void {
             Route::get('', [
                 'as' => 'languages.index',
                 'uses' => 'LanguageController@index',
@@ -56,7 +56,7 @@ Route::group(['namespace' => 'Botble\Language\Http\Controllers'], function () {
         });
     });
 
-    Route::group(['prefix' => 'languages'], function () {
+    Route::group(['prefix' => 'languages'], function (): void {
         Route::post('change-item-language', [
             'as' => 'languages.change.item.language',
             'uses' => 'LanguageController@postChangeItemLanguage',

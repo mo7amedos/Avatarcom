@@ -3,10 +3,10 @@
 use Botble\Base\Facades\AdminHelper;
 use Illuminate\Support\Facades\Route;
 
-Route::group(['namespace' => 'Botble\Theme\Http\Controllers'], function () {
-    AdminHelper::registerRoutes(function () {
+Route::group(['namespace' => 'Botble\Theme\Http\Controllers'], function (): void {
+    AdminHelper::registerRoutes(function (): void {
         if (config('packages.theme.general.display_theme_manager_in_admin_panel', true)) {
-            Route::group(['prefix' => 'theme'], function () {
+            Route::group(['prefix' => 'theme'], function (): void {
                 Route::get('all', [
                     'as' => 'theme.index',
                     'uses' => 'ThemeController@index',
@@ -28,7 +28,7 @@ Route::group(['namespace' => 'Botble\Theme\Http\Controllers'], function () {
             });
         }
 
-        Route::group(['prefix' => 'theme/options/{id?}'], function () {
+        Route::group(['prefix' => 'theme/options/{id?}'], function (): void {
             Route::get('', [
                 'as' => 'theme.options',
                 'uses' => 'ThemeController@getOptions',
@@ -41,7 +41,7 @@ Route::group(['namespace' => 'Botble\Theme\Http\Controllers'], function () {
             ]);
         });
 
-        Route::group(['prefix' => 'theme/custom-css'], function () {
+        Route::group(['prefix' => 'theme/custom-css'], function (): void {
             Route::get('', [
                 'as' => 'theme.custom-css',
                 'uses' => 'ThemeController@getCustomCss',
@@ -55,7 +55,7 @@ Route::group(['namespace' => 'Botble\Theme\Http\Controllers'], function () {
             ]);
         });
 
-        Route::group(['prefix' => 'theme/custom-js'], function () {
+        Route::group(['prefix' => 'theme/custom-js'], function (): void {
             Route::get('', [
                 'as' => 'theme.custom-js',
                 'uses' => 'ThemeController@getCustomJs',
@@ -69,7 +69,7 @@ Route::group(['namespace' => 'Botble\Theme\Http\Controllers'], function () {
             ]);
         });
 
-        Route::group(['prefix' => 'theme/custom-html'], function () {
+        Route::group(['prefix' => 'theme/custom-html'], function (): void {
             Route::get('', [
                 'as' => 'theme.custom-html',
                 'uses' => 'ThemeController@getCustomHtml',
@@ -83,7 +83,7 @@ Route::group(['namespace' => 'Botble\Theme\Http\Controllers'], function () {
             ]);
         });
 
-        Route::group(['prefix' => 'theme/robots-txt'], function () {
+        Route::group(['prefix' => 'theme/robots-txt'], function (): void {
             Route::get('', [
                 'as' => 'theme.robots-txt',
                 'uses' => 'ThemeController@getRobotsTxt',
@@ -97,8 +97,8 @@ Route::group(['namespace' => 'Botble\Theme\Http\Controllers'], function () {
             ]);
         });
 
-        Route::prefix('settings')->name('settings.')->group(function () {
-            Route::prefix('website-tracking')->group(function () {
+        Route::prefix('settings')->name('settings.')->group(function (): void {
+            Route::prefix('website-tracking')->group(function (): void {
                 Route::get('/', [
                     'as' => 'website-tracking',
                     'uses' => 'WebsiteTrackingSettingController@edit',

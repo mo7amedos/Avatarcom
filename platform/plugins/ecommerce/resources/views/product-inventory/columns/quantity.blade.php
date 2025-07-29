@@ -10,7 +10,7 @@
         data-column="quantity"
         data-target-id="storehouse-management-{{ $product->id }}"
         data-target-value="1"
-        @style(['display: none;' => ! $product->with_storehouse_management])
+        @style(['display: none;' => ! $product->with_storehouse_management, 'min-width: 80px;' => true])
     />
 
     <x-core::form.select
@@ -19,7 +19,7 @@
         data-column="stock_status"
         data-target-id="storehouse-management-{{ $product->id }}"
         data-target-value="0"
-        @style(['display: none;' => $product->with_storehouse_management])
+        @style(['display: none;' => $product->with_storehouse_management, 'min-width: 120px;' => true])
     >
         @foreach (Botble\Ecommerce\Enums\StockStatusEnum::labels() as $status => $label)
             <option value="{{ $status }}" @selected(($product->stock_status ?: 'in_stock') == $status)>{{ $label }}</option>

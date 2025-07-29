@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Symfony\Component\Process\Process;
 use Throwable;
@@ -68,11 +69,33 @@ class Backup
         return $this->getBackupPath($key . '/database-' . $key . '.zip');
     }
 
+    public function getBackupStoragePath(string $key): string
+    {
+        return $this->getBackupPath($key . '/storage-' . $key . '.zip');
+    }
+
     public function isDatabaseBackupAvailable(string $key): bool
     {
         $file = $this->getBackupDatabasePath($key);
 
         return $this->files->exists($file) && $this->files->size($file) > 1024;
+    }
+
+    public function isStorageBackupAvailable(string $key): bool
+    {
+        $filePath = $this->getBackupStoragePath($key);
+
+        if (! $this->files->exists($filePath)) {
+            $backupPath = $this->getBackupPath($key);
+
+            foreach (BaseHelper::scanFolder($backupPath) as $file) {
+                if (Str::contains(basename($file), 'storage')) {
+                    $filePath = $backupPath . DIRECTORY_SEPARATOR . $file;
+                }
+            }
+        }
+
+        return $this->files->exists($filePath) && $this->files->size($filePath) > 1024;
     }
 
     public function getBackupList(): array
@@ -85,9 +108,13 @@ class Backup
         return [];
     }
 
-    public function backupDb(): bool
+    public function backupDb(?string $key = null): bool
     {
-        $file = 'database-' . Carbon::now()->format('Y-m-d-H-i-s');
+        if (! $key) {
+            $key = Carbon::now()->format('Y-m-d-H-i-s');
+        }
+
+        $file = 'database-' . $key;
         $path = $this->folder . DIRECTORY_SEPARATOR . $file;
 
         $driver = DB::getConfig('driver');
@@ -191,9 +218,13 @@ class Backup
         }
     }
 
-    public function backupFolder(string $source): bool
+    public function backupFolder(string $source, ?string $key = null): bool
     {
-        $file = $this->folder . DIRECTORY_SEPARATOR . 'storage-' . Carbon::now()->format('Y-m-d-H-i-s') . '.zip';
+        if (! $key) {
+            $key = Carbon::now()->format('Y-m-d-H-i-s');
+        }
+
+        $file = $this->folder . DIRECTORY_SEPARATOR . 'storage-' . $key . '.zip';
 
         BaseHelper::maximumExecutionTimeAndMemoryLimit();
 

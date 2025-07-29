@@ -158,7 +158,15 @@ class HandleShippingFeeService
         }
 
         if ($result) {
-            $result = collect($result)->sortBy('price')->toArray();
+            $result = collect($result);
+
+            if (get_ecommerce_setting('sort_shipping_options_direction', 'price_lower_to_higher') == 'price_lower_to_higher') {
+                $result = $result->sortBy('price');
+            } else {
+                $result = $result->sortByDesc('price');
+            }
+
+            $result = $result->toArray();
         }
 
         return $result;
@@ -169,7 +177,7 @@ class HandleShippingFeeService
         int|float $weight,
         int|float $orderTotal,
         array $data,
-        string $option = null
+        ?string $option = null
     ): array {
         $result = [];
 
@@ -205,23 +213,23 @@ class HandleShippingFeeService
                 $zipCode = Arr::get($data, 'address_to.zip_code');
 
                 $rules = ShippingRule::query()
-                    ->where(function (Builder $query) use ($orderTotal, $shipping) {
+                    ->where(function (Builder $query) use ($orderTotal, $shipping): void {
                         $query
                             ->where('shipping_id', $shipping->getKey())
                             ->where('type', ShippingRuleTypeEnum::BASED_ON_PRICE)
                             ->where('from', '<=', $orderTotal)
-                            ->where(function (Builder $sub) use ($orderTotal) {
+                            ->where(function (Builder $sub) use ($orderTotal): void {
                                 $sub
                                     ->whereNull('to')
                                     ->orWhere('to', '>=', $orderTotal);
                             });
                     })
-                    ->orWhere(function (Builder $query) use ($weight, $shipping) {
+                    ->orWhere(function (Builder $query) use ($weight, $shipping): void {
                         $query
                             ->where('shipping_id', $shipping->getKey())
                             ->where('type', ShippingRuleTypeEnum::BASED_ON_WEIGHT)
                             ->where('from', '<=', $weight)
-                            ->where(function (Builder $sub) use ($weight) {
+                            ->where(function (Builder $sub) use ($weight): void {
                                 $sub
                                     ->whereNull('to')
                                     ->orWhere('to', '>=', $weight);
@@ -230,7 +238,7 @@ class HandleShippingFeeService
 
                 if (EcommerceHelper::loadCountriesStatesCitiesFromPluginLocation()) {
                     $rules = $rules
-                        ->orWhere(function (Builder $query) use ($shipping) {
+                        ->orWhere(function (Builder $query) use ($shipping): void {
                             $query
                                 ->where('shipping_id', $shipping->getKey())
                                 ->where('type', ShippingRuleTypeEnum::BASED_ON_LOCATION);
@@ -239,11 +247,11 @@ class HandleShippingFeeService
 
                 if (EcommerceHelper::isZipCodeEnabled()) {
                     $rules = $rules
-                        ->orWhere(function (Builder $query) use ($zipCode, $shipping) {
+                        ->orWhere(function (Builder $query) use ($zipCode, $shipping): void {
                             $query
                                 ->where('shipping_id', $shipping->getKey())
                                 ->where('type', ShippingRuleTypeEnum::BASED_ON_ZIPCODE)
-                                ->whereHas('items', function (Builder $sub) use ($zipCode) {
+                                ->whereHas('items', function (Builder $sub) use ($zipCode): void {
                                     $sub->where(['zip_code' => $zipCode]);
                                 });
                         });
@@ -251,7 +259,7 @@ class HandleShippingFeeService
 
                 $rules = $rules
                     ->with([
-                        'items' => function ($query) {
+                        'items' => function ($query): void {
                             $query
                                 ->where('is_enabled', 1)
                                 ->orderBy('adjustment_price');

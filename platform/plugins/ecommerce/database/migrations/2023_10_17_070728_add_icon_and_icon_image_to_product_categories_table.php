@@ -15,7 +15,7 @@ return new class () extends Migration {
             return;
         }
 
-        Schema::table('ec_product_categories', function (Blueprint $table) {
+        Schema::table('ec_product_categories', function (Blueprint $table): void {
             $table->string('icon')->nullable();
             $table->string('icon_image')->nullable();
         });
@@ -29,19 +29,19 @@ return new class () extends Migration {
                     'mb1.meta_value as icon_meta',
                     'mb2.meta_value as icon_image_meta',
                 ])
-                ->leftJoin('meta_boxes as mb1', function (JoinClause $join) {
+                ->leftJoin('meta_boxes as mb1', function (JoinClause $join): void {
                     $join
                         ->on('mb1.reference_id', 'ec_product_categories.id')
                         ->where('mb1.reference_type', ProductCategory::class)
                         ->where('mb1.meta_key', 'icon');
                 })
-                ->leftJoin('meta_boxes as mb2', function (JoinClause $join) {
+                ->leftJoin('meta_boxes as mb2', function (JoinClause $join): void {
                     $join
                         ->on('mb2.reference_id', 'ec_product_categories.id')
                         ->where('mb2.reference_type', ProductCategory::class)
                         ->where('mb2.meta_key', 'icon_image');
                 })
-                ->where(function ($query) {
+                ->where(function ($query): void {
                     $query->whereNotNull('mb1.meta_value')
                         ->orWhereNotNull('mb2.meta_value');
                 })
@@ -69,7 +69,7 @@ return new class () extends Migration {
     public function down(): void
     {
         try {
-            Schema::table('ec_product_categories', function (Blueprint $table) {
+            Schema::table('ec_product_categories', function (Blueprint $table): void {
                 $table->dropColumn(['icon', 'icon_image']);
             });
         } catch (Throwable) {

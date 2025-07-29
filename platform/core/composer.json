@@ -1,7 +1,11 @@
 {
     "name": "botble/platform",
     "description": "The Botble Platform based on Laravel Framework.",
-    "keywords": ["botble", "botble cms", "botble platform"],
+    "keywords": [
+        "botble",
+        "botble cms",
+        "botble platform"
+    ],
     "homepage": "https://botble.com",
     "support": {
         "issues": "https://botble.ticksy.com",
@@ -15,23 +19,26 @@
     ],
     "type": "project",
     "require": {
-        "ext-zip": "*",
         "ext-gd": "*",
-        "barryvdh/laravel-dompdf": "^3.0",
+        "ext-zip": "*",
+        "barryvdh/laravel-dompdf": "^3.1",
         "botble/assets": "^1.0",
         "botble/form-builder": "^1.0",
         "intervention/image": "^3.4",
-        "maennchen/zipstream-php": "3.1.*",
-        "tightenco/ziggy": "^2.0",
-        "yajra/laravel-datatables-buttons": "^10.0",
-        "yajra/laravel-datatables-oracle": "^10.11",
-        "mews/purifier": "^3.3",
+        "league/flysystem-aws-s3-v3": "^3.0",
         "maatwebsite/excel": "^3.1",
-        "symfony/http-client": "^6.3",
-        "symfony/postmark-mailer": "^6.3",
-        "symfony/mailgun-mailer": "^6.3",
+        "maennchen/zipstream-php": "3.1.*",
+        "mews/purifier": "^3.3",
+        "mobiledetect/mobiledetectlib": "^4.8",
+        "mpdf/mpdf": "^8.2",
+        "resend/resend-php": "*",
+        "symfony/http-client": "^7.2",
+        "symfony/mailgun-mailer": "^7.2",
+        "symfony/postmark-mailer": "^7.2",
+        "tightenco/ziggy": "^2.0",
         "twig/twig": "^3.14",
-        "league/flysystem-aws-s3-v3": "^3.0"
+        "yajra/laravel-datatables-buttons": "^12.0",
+        "yajra/laravel-datatables-oracle": "^12.0"
     },
     "autoload": {
         "psr-4": {

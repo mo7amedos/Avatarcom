@@ -36,7 +36,11 @@ class PageServiceProvider extends ServiceProvider
             ->loadRoutes()
             ->loadMigrations();
 
-        DashboardMenu::default()->beforeRetrieving(function () {
+        if (class_exists('ApiHelper')) {
+            $this->loadRoutes(['api']);
+        }
+
+        DashboardMenu::default()->beforeRetrieving(function (): void {
             DashboardMenu::make()
                 ->registerItem(
                     DashboardMenuItem::make()
@@ -49,7 +53,7 @@ class PageServiceProvider extends ServiceProvider
                 );
         });
 
-        $this->app['events']->listen(RenderingAdminBar::class, function () {
+        $this->app['events']->listen(RenderingAdminBar::class, function (): void {
             AdminBar::registerLink(
                 trans('packages/page::pages.menu_name'),
                 route('pages.create'),
@@ -59,12 +63,12 @@ class PageServiceProvider extends ServiceProvider
         });
 
         if (function_exists('shortcode')) {
-            ViewFacade::composer(['packages/page::themes.page'], function (View $view) {
+            ViewFacade::composer(['packages/page::themes.page'], function (View $view): void {
                 $view->withShortcodes();
             });
         }
 
-        $this->app->booted(function () {
+        $this->app->booted(function (): void {
             $this->app->register(HookServiceProvider::class);
         });
 

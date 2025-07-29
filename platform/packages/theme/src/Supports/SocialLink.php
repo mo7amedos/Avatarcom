@@ -15,7 +15,7 @@ class SocialLink
         protected ?string $icon,
         protected ?string $image,
         protected ?string $color,
-        protected ?string $backgroundColor,
+        protected ?string $backgroundColor
     ) {
     }
 
@@ -59,20 +59,25 @@ class SocialLink
 
     public function getAttributes(array $attributes = []): HtmlString
     {
-        $backgroundColor = $this->getBackgroundColor();
-        $color = $this->getColor();
-
         $attributes = [
             'href' => $this->getUrl(),
             'title' => $this->getName(),
             'target' => '_blank',
-            'style' => ($backgroundColor ? sprintf('background-color: %s !important;', $backgroundColor) : null) .
-                ($color ? sprintf('color: %s !important;', $color) : null),
             ...$attributes,
         ];
 
-        if (! $attributes['style']) {
-            unset($attributes['style']);
+        $styles = [];
+
+        if ($backgroundColor = $this->getBackgroundColor()) {
+            $styles[] = sprintf('background-color: %s !important;', $backgroundColor);
+        }
+
+        if ($color = $this->getColor()) {
+            $styles[] = sprintf('color: %s !important;', $color);
+        }
+
+        if ($styles) {
+            $attributes['style'] = implode(' ', $styles);
         }
 
         return new HtmlString(Html::attributes($attributes));
@@ -95,6 +100,10 @@ class SocialLink
         }
 
         if (BaseHelper::hasIcon($this->icon)) {
+            $color = $this->getColor();
+
+            $attributes['style'] = ($color ? sprintf('color: %s !important;', $color) : null);
+
             $icon = BaseHelper::renderIcon($this->icon, attributes: $attributes);
         } else {
             $icon = BaseHelper::clean(sprintf('<i class="%s"></i>', $this->icon));

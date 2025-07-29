@@ -16,14 +16,14 @@ class HookServiceProvider extends ServiceProvider
             return;
         }
 
-        $this->app['events']->listen(RenderingDashboardWidgets::class, function () {
+        $this->app['events']->listen(RenderingDashboardWidgets::class, function (): void {
             add_filter(DASHBOARD_FILTER_ADMIN_LIST, [$this, 'addStatsWidgets'], 15, 2);
         });
     }
 
     public function addStatsWidgets(array $widgets, Collection $widgetSettings): array
     {
-        $plugins = count(BaseHelper::scanFolder(plugin_path()));
+        $plugins = fn () => count(BaseHelper::scanFolder(plugin_path()));
 
         return (new DashboardWidgetInstance())
             ->setType('stats')

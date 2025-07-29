@@ -37,7 +37,7 @@ class SpecificationTableForm extends FormAbstract
                 TextareaField::class,
                 DescriptionFieldOption::make()
             )
-            ->when($groups->isNotEmpty(), function (FormAbstract $form) use ($groups) {
+            ->when($groups->isNotEmpty(), function (FormAbstract $form) use ($groups): void {
                 $form->add(
                     'groups',
                     HtmlField::class,

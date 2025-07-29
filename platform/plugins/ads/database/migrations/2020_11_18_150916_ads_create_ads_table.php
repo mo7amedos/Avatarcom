@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
-        Schema::create('ads', function (Blueprint $table) {
+        Schema::create('ads', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
             $table->dateTime('expired_at')->nullable();

@@ -103,9 +103,7 @@ class ShippoController extends BaseController
 
         $this->check($shipment);
 
-        if (! $this->shippo->canCreateTransaction($shipment)) {
-            abort(404);
-        }
+        abort_unless($this->shippo->canCreateTransaction($shipment), 404);
 
         $message = trans('plugins/shippo::shippo.transaction.created_success');
 
@@ -289,19 +287,13 @@ class ShippoController extends BaseController
             $vendor = auth('customer')->user();
             $store = $vendor->store;
 
-            if ($store->id != $order->store_id) {
-                abort(403);
-            }
+            abort_if($store->id != $order->store_id, 403);
         }
 
-        if (
-            ! $order
-            || ! $order->id
-            || $order->shipping_method->getValue() != SHIPPO_SHIPPING_METHOD_NAME
-            || ! $shipment->shipment_id
-        ) {
-            abort(404);
-        }
+        abort_if(! $order
+        || ! $order->id
+        || $order->shipping_method->getValue() != SHIPPO_SHIPPING_METHOD_NAME
+        || ! $shipment->shipment_id, 404);
 
         return true;
     }
@@ -310,9 +302,7 @@ class ShippoController extends BaseController
     {
         $logPath = storage_path('logs/' . $logFile);
 
-        if (! File::exists($logPath)) {
-            abort(404);
-        }
+        abort_unless(File::exists($logPath), 404);
 
         return nl2br(File::get($logPath));
     }

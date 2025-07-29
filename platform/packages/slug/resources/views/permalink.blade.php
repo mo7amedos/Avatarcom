@@ -2,7 +2,9 @@
     $prefix = apply_filters(FILTER_SLUG_PREFIX, SlugHelper::getPrefix($model::class), $model);
     $value = $value ?: old('slug');
     $endingURL = SlugHelper::getPublicSingleEndingURL();
-    $previewURL = str_replace('--slug--', (string) $value, url($prefix) . '/' . config('packages.slug.general.pattern')) . $endingURL . (Auth::user() && $preview ? '?preview=true' : '');
+    $canBeReviewed = apply_filters('core_slug_can_be_reviewed', Auth::user() && is_in_admin(true), $model);
+
+    $previewURL = str_replace('--slug--', (string) $value, url($prefix) . '/' . config('packages.slug.general.pattern')) . $endingURL . ($canBeReviewed && $preview ? '?preview=true' : '');
 @endphp
 
 <div
@@ -50,7 +52,7 @@
                 </span>
             </x-slot:append>
         </x-core::form.text-input>
-        @if (Auth::user() && $id && is_in_admin(true))
+        @if ($canBeReviewed)
             <x-core::form.helper-text class="mt-n2 text-truncate">
                 {{ trans('packages/slug::slug.preview') }}: <a href="{{ $previewURL }}" target="_blank">{{ $previewURL }}</a>
             </x-core::form.helper-text>

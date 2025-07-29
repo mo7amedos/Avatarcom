@@ -71,7 +71,7 @@ class Withdrawal extends BaseModel
             return $withdrawal;
         });
 
-        static::deleted(function (Withdrawal $withdrawal) {
+        static::deleted(function (Withdrawal $withdrawal): void {
             if (in_array($withdrawal->status, [WithdrawalStatusEnum::PROCESSING, WithdrawalStatusEnum::PENDING])) {
                 $vendor = $withdrawal->customer;
 

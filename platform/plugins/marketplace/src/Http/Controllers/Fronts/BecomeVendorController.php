@@ -24,12 +24,21 @@ class BecomeVendorController extends BaseController
     public function __construct()
     {
         $this->middleware(function (Request $request, Closure $next) {
-            if (! MarketplaceHelper::isVendorRegistrationEnabled()) {
-                abort(404);
-            }
+            abort_unless(MarketplaceHelper::isVendorRegistrationEnabled(), 404);
 
             return $next($request);
         });
+
+        $version = get_cms_version();
+
+        Theme::asset()
+            ->add('customer-style', 'vendor/core/plugins/ecommerce/css/customer.css', ['bootstrap-css'], version: $version);
+
+        Theme::asset()
+            ->container('footer')
+            ->add('ecommerce-utilities-js', 'vendor/core/plugins/ecommerce/js/utilities.js', ['jquery'], version: $version)
+            ->add('cropper-js', 'vendor/core/plugins/ecommerce/libraries/cropper.js', ['jquery'], version: $version)
+            ->add('avatar-js', 'vendor/core/plugins/ecommerce/js/avatar.js', ['jquery'], version: $version);
     }
 
     public function index()
@@ -87,9 +96,7 @@ class BecomeVendorController extends BaseController
     {
         $customer = auth('customer')->user();
 
-        if ($customer->is_vendor) {
-            abort(404);
-        }
+        abort_if($customer->is_vendor, 404);
 
         $existing = SlugHelper::getSlug($request->input('shop_url'), SlugHelper::getPrefix(Store::class));
 
@@ -114,13 +121,9 @@ class BecomeVendorController extends BaseController
     {
         $customer = auth('customer')->user();
 
-        if (
-            $customer->is_vendor
-            && (! MarketplaceHelper::getSetting('requires_vendor_documentations_verification', true)
-                || ($customer->certificate_of_incorporation && $customer->government_id))
-        ) {
-            abort(404);
-        }
+        abort_if($customer->is_vendor
+        && (! MarketplaceHelper::getSetting('requires_vendor_documentations_verification', true)
+            || ($customer->certificate_of_incorporation && $customer->government_id)), 404);
 
         $store = $customer->store;
 
@@ -164,15 +167,11 @@ class BecomeVendorController extends BaseController
     {
         $customer = auth('customer')->user();
 
-        if (! $customer->is_vendor || ! $customer->store) {
-            abort(404);
-        }
+        abort_if(! $customer->is_vendor || ! $customer->store, 404);
 
         $storage = Storage::disk('local');
 
-        if (! $storage->exists($certificate = $customer->store->certificate_file)) {
-            abort(404);
-        }
+        abort_unless($storage->exists($certificate = $customer->store->certificate_file), 404);
 
         return response()->file($storage->path($certificate));
     }
@@ -181,15 +180,11 @@ class BecomeVendorController extends BaseController
     {
         $customer = auth('customer')->user();
 
-        if (! $customer->is_vendor || ! $customer->store) {
-            abort(404);
-        }
+        abort_if(! $customer->is_vendor || ! $customer->store, 404);
 
         $storage = Storage::disk('local');
 
-        if (! $storage->exists($governmentId = $customer->store->government_id_file)) {
-            abort(404);
-        }
+        abort_unless($storage->exists($governmentId = $customer->store->government_id_file), 404);
 
         return response()->file($storage->path($governmentId));
     }

@@ -8,12 +8,15 @@ use Botble\Base\Enums\BaseStatusEnum;
 use Botble\Base\Models\BaseModel;
 use Botble\Ecommerce\Enums\DiscountTargetEnum;
 use Botble\Ecommerce\Enums\DiscountTypeEnum;
+use Botble\Ecommerce\Enums\ProductLicenseCodeStatusEnum;
 use Botble\Ecommerce\Enums\ProductTypeEnum;
 use Botble\Ecommerce\Enums\StockStatusEnum;
+use Botble\Ecommerce\Events\ProductQuantityUpdatedEvent;
 use Botble\Ecommerce\Facades\EcommerceHelper;
 use Botble\Ecommerce\Services\Products\UpdateDefaultProductService;
 use Botble\Faq\Models\Faq;
 use Botble\Media\Facades\RvMedia;
+use Botble\Theme\Supports\Vimeo;
 use Botble\Theme\Supports\Youtube;
 use Carbon\Carbon;
 use Exception;
@@ -29,6 +32,7 @@ use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 /**
@@ -70,6 +74,7 @@ class Product extends BaseModel
         'barcode',
         'cost_per_item',
         'generate_license_code',
+        'license_code_type',
         'minimum_order_quantity',
         'maximum_order_quantity',
         'notify_attachment_updated',
@@ -101,16 +106,25 @@ class Product extends BaseModel
         'generate_license_code' => 'bool',
         'notify_attachment_updated' => 'bool',
         'video_media' => 'json',
+        'length' => 'float',
+        'wide' => 'float',
+        'height' => 'float',
+        'weight' => 'float',
+        'views' => 'int',
+        'quantity' => 'int',
+        'order' => 'int',
+        'cost_per_item' => 'float',
+        'is_variation' => 'bool',
     ];
 
     protected static function booted(): void
     {
-        static::creating(function (Product $product) {
+        static::creating(function (Product $product): void {
             $product->created_by_id = Auth::check() ? Auth::id() : 0;
             $product->created_by_type = User::class;
         });
 
-        static::deleted(function (Product $product) {
+        static::deleted(function (Product $product): void {
             $product->variations()->each(fn (ProductVariation $item) => $item->delete());
             $product->variationInfo()->delete();
             $product->categories()->detach();
@@ -128,11 +142,18 @@ class Product extends BaseModel
             $product->productLabels()->detach();
             $product->tags()->detach();
             $product->specificationAttributes()->detach();
+            $product->licenseCodes()->delete();
         });
 
-        static::updated(function (Product $product) {
+        static::updated(function (Product $product): void {
             if ($product->is_variation && $product->original_product->defaultVariation->product_id == $product->getKey()) {
                 app(UpdateDefaultProductService::class)->execute($product);
+            }
+
+            // Trigger quantity updated event if quantity, stock status, or storehouse management changed
+            $quantityRelatedFields = ['quantity', 'stock_status', 'with_storehouse_management', 'allow_checkout_when_out_of_stock'];
+            if ($product->wasChanged($quantityRelatedFields)) {
+                ProductQuantityUpdatedEvent::dispatch($product);
             }
 
             if (! $product->is_variation && $product->variations()->exists()) {
@@ -159,8 +180,6 @@ class Product extends BaseModel
             'category_id'
         );
     }
-    
- 
 
     public function productAttributeSets(): BelongsToMany
     {
@@ -170,13 +189,6 @@ class Product extends BaseModel
             'product_id',
             'attribute_set_id'
         );
-    }
-    
-
-    
-    public function wishlists()
-    {
-        return $this->hasMany(Wishlist::class, 'product_id', 'id');
     }
 
     public function productCollections(): BelongsToMany
@@ -188,12 +200,6 @@ class Product extends BaseModel
             'product_collection_id'
         );
     }
-    
-    public function customer(): HasOne
-    {
-        return $this->hasOne(Customer::class, 'id', 'customer_id')->withDefault();
-    }
-
 
     public function discounts(): BelongsToMany
     {
@@ -346,13 +352,17 @@ class Product extends BaseModel
     protected function images(): Attribute
     {
         return Attribute::make(
-            get: function (?string $value): array {
+            get: function (array|string|null $value): array {
                 try {
                     if ($value === '[null]') {
                         return [];
                     }
 
-                    $images = json_decode((string) $value, true);
+                    $images = $value;
+
+                    if (! is_array($images)) {
+                        $images = json_decode((string) $value, true);
+                    }
 
                     if (is_array($images)) {
                         $images = array_filter($images);
@@ -426,6 +436,15 @@ class Product extends BaseModel
     {
         return Attribute::make(
             get: function () {
+                return $this->variations()->count() > 1;
+            }
+        );
+    }
+
+    protected function hasVariation(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
                 return (bool) $this->defaultVariation->id;
             }
         );
@@ -442,9 +461,19 @@ class Product extends BaseModel
 
     public function canAddToCart(int $quantity): bool
     {
-        return ! $this->with_storehouse_management ||
-            ($this->quantity - $quantity) >= 0 ||
-            $this->allow_checkout_when_out_of_stock;
+        if ($this->with_storehouse_management && $this->allow_checkout_when_out_of_stock) {
+            return true;
+        }
+
+        if ($this->max_cart_quantity < $quantity) {
+            return false;
+        }
+
+        if (! $this->with_storehouse_management) {
+            return true;
+        }
+
+        return ($this->quantity - $quantity) >= 0;
     }
 
     public function promotions(): BelongsToMany
@@ -495,15 +524,23 @@ class Product extends BaseModel
             ->flashSales()
             ->wherePublished()
             ->notExpired()
+            ->wherePivot('quantity', '>', DB::raw('sold'))
             ->latest();
     }
 
     protected function totalTaxesPercentage(): Attribute
     {
-        return Attribute::get(fn () => $this->taxes
-            ->where(fn ($item) => ! $item->rules || $item->rules->isEmpty())
-            ->where('status', BaseStatusEnum::PUBLISHED)
-            ->sum('percentage'));
+        return Attribute::get(function () {
+            $taxes = $this->taxes
+                ->where(fn ($item) => ! $item->rules || $item->rules->isEmpty())
+                ->where('status', BaseStatusEnum::PUBLISHED);
+
+            if ($taxes->isEmpty() && $defaultTaxRate = get_ecommerce_setting('default_tax_rate')) {
+                return Tax::query()->where('id', $defaultTaxRate)->value('percentage') ?: 0;
+            }
+
+            return $taxes->sum('percentage');
+        });
     }
 
     public function variationProductAttributes(): HasMany
@@ -530,8 +567,9 @@ class Product extends BaseModel
                 'ec_product_attributes.*',
                 'ec_product_attribute_sets.title as attribute_set_title',
                 'ec_product_attribute_sets.slug as attribute_set_slug',
+                'ec_product_attribute_sets.order as attribute_set_order',
             ])
-            ->orderBy('order');
+            ->oldest('attribute_set_order');
     }
 
     protected function variationAttributes(): Attribute
@@ -630,6 +668,21 @@ class Product extends BaseModel
         return $this->hasMany(ProductFile::class, 'product_id');
     }
 
+    public function licenseCodes(): HasMany
+    {
+        return $this->hasMany(ProductLicenseCode::class, 'product_id');
+    }
+
+    public function availableLicenseCodes(): HasMany
+    {
+        return $this->hasMany(ProductLicenseCode::class, 'product_id')->where('status', ProductLicenseCodeStatusEnum::AVAILABLE);
+    }
+
+    public function usedLicenseCodes(): HasMany
+    {
+        return $this->hasMany(ProductLicenseCode::class, 'product_id')->where('status', ProductLicenseCodeStatusEnum::USED);
+    }
+
     protected function productFileExternalCount(): Attribute
     {
         return Attribute::get(fn () => $this->productFiles->filter(fn (ProductFile $file) => $file->is_external_link)->count());
@@ -640,6 +693,20 @@ class Product extends BaseModel
         return Attribute::get(fn () => $this->productFiles->filter(fn (ProductFile $file) => ! $file->is_external_link)->count());
     }
 
+    public function hasFiles(): bool
+    {
+        return $this->productFiles()->count() > 0;
+    }
+
+    public function scopeForCart(Builder $query): Builder
+    {
+        return $query->with([
+            'variations',
+            'defaultVariation.product',
+            'variationInfo.configurableProduct',
+        ]);
+    }
+
     public function scopeNotOutOfStock(Builder $query): Builder
     {
         if (EcommerceHelper::showOutOfStockProducts() || is_in_admin()) {
@@ -647,19 +714,19 @@ class Product extends BaseModel
         }
 
         return $query
-            ->where(function ($query) {
+            ->where(function ($query): void {
                 $query
-                    ->where(function ($subQuery) {
+                    ->where(function ($subQuery): void {
                         $subQuery
                             ->where('with_storehouse_management', 0)
                             ->where('stock_status', '!=', StockStatusEnum::OUT_OF_STOCK);
                     })
-                    ->orWhere(function ($subQuery) {
+                    ->orWhere(function ($subQuery): void {
                         $subQuery
                             ->where('with_storehouse_management', 1)
                             ->where('quantity', '>', 0);
                     })
-                    ->orWhere(function ($subQuery) {
+                    ->orWhere(function ($subQuery): void {
                         $subQuery
                             ->where('with_storehouse_management', 1)
                             ->where('allow_checkout_when_out_of_stock', 1);
@@ -669,7 +736,7 @@ class Product extends BaseModel
 
     public function options(): HasMany
     {
-        return $this->hasMany(Option::class)->orderBy('order');
+        return $this->hasMany(Option::class)->oldest('order');
     }
 
     public function generateSku(): float|string|null
@@ -736,13 +803,13 @@ class Product extends BaseModel
                     ->whereColumn('ec_products.id', 'ec_product_variations.configurable_product_id')
                     ->groupBy('configurable_product_id'),
             ])
-            ->leftJoin('ec_product_variations', function (JoinClause $join) {
+            ->leftJoin('ec_product_variations', function (JoinClause $join): void {
                 $join
                     ->on('ec_products.id', '=', 'ec_product_variations.product_id')
                     ->where('ec_products.is_variation', 1);
             })
-            ->orderBy('name')
-            ->orderBy('parent_product_id');
+            ->oldest('name')
+            ->oldest('parent_product_id');
     }
 
     public static function getDigitalProductFilesDirectory(): string
@@ -774,31 +841,65 @@ class Product extends BaseModel
 
                     $thumbnail = Arr::get($item, '2.value');
 
-                    if (! $thumbnail) {
-                        $thumbnail = RvMedia::getDefaultImage();
+                    $data = [
+                        'url' => $url,
+                        'thumbnail' => $thumbnail ? RvMedia::getImageUrl($thumbnail) : null,
+                    ];
+
+                    if (Youtube::isYoutubeURL($url)) {
+                        $data['provider'] = 'youtube';
+                        $data['url'] = Youtube::getYoutubeVideoEmbedURL($url) . '?enablejsapi=1&iv_load_policy=3&fs=0&rel=0&loop=1&start=1';
+                        if (! $data['thumbnail']) {
+                            $data['thumbnail'] = Youtube::getThumbnail($url);
+                        }
+                    } elseif (Vimeo::isVimeoURL($url)) {
+                        $videoId = Vimeo::getVimeoID($url);
+                        if ($videoId) {
+                            $data['provider'] = 'vimeo';
+                            $data['url'] = 'https://player.vimeo.com/video/' . $videoId;
+                            if (! $data['thumbnail']) {
+                                $data['thumbnail'] = 'https://vumbnail.com/' . $videoId . '.jpg';
+                            }
+                        }
+                    } elseif (preg_match(
+                        '/^.*https:\/\/(?:m|www|vm)?\.?tiktok\.com\/((?:.*\b(?:(?:usr|v|embed|user|video)\/|\?shareId=|\&item_id=)(\d+))|\w+)/',
+                        $url
+                    )) {
+                        $data['provider'] = 'tiktok';
+                        $data['video_id'] = Str::afterLast($url, 'video/');
+                    } elseif (preg_match('/^.*https:\/\/twitter\.com\/(?:#!\/)?(\w+)\/status(es)?\/(\d+)/', $url)) {
+                        $data['provider'] = 'twitter';
+                    } elseif (in_array(Str::lower(File::extension($url)), ['mp4', 'webm', 'ogg'])) {
+                        $data['provider'] = 'video';
+                    } else {
+                        $data['provider'] = 'iframe';
                     }
 
-                    $isVimeo = (bool) preg_match('/^https?:\/\/(www\.)?vimeo\.com\/(\d+)(#.*)?$/i', $url);
+                    if (! $data['thumbnail']) {
+                        $data['thumbnail'] = RvMedia::getDefaultImage();
+                    }
 
-                    return [
-                        'provider' => match (true) {
-                            Youtube::isYoutubeURL($url) => 'youtube',
-                            $isVimeo => 'vimeo',
-                            default => 'video',
-                        },
-                        'url' => match (true) {
-                            Youtube::isYoutubeURL($url) => Youtube::getYoutubeVideoEmbedURL($url) . '?enablejsapi=1&iv_load_policy=3&fs=0&rel=0&loop=1&start=1',
-                            $isVimeo => 'https://player.vimeo.com/video/' . preg_replace('/^https?:\/\/(www\.)?vimeo\.com\//i', '', $url),
-                            default => $url,
-                        },
-                        'thumbnail' => match (true) {
-                            ! $thumbnail && Youtube::isYoutubeURL($url) => Youtube::getThumbnail($url),
-                            $isVimeo => 'https://vumbnail.com/' . preg_replace('/^https?:\/\/(www\.)?vimeo\.com\//i', '', $url),
-                            default => RvMedia::getImageUrl($thumbnail),
-                        },
-                    ];
+                    return $data;
                 })
                 ->all();
         })->shouldCache();
+    }
+
+    protected function minCartQuantity(): Attribute
+    {
+        return Attribute::get(function () {
+            return $this->minimum_order_quantity ?: 1;
+        });
+    }
+
+    protected function maxCartQuantity(): Attribute
+    {
+        return Attribute::get(function () {
+            if ($this->maximum_order_quantity) {
+                return $this->maximum_order_quantity;
+            }
+
+            return $this->with_storehouse_management ? $this->quantity : 1000;
+        });
     }
 }

@@ -42,12 +42,14 @@
                                         <div class="img-fluid-eq">
                                             <div class="img-fluid-eq__dummy"></div>
                                             <div class="img-fluid-eq__wrap">
-                                                <img
-                                                    class="lazyload"
-                                                    data-src="{{ RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()) }}"
-                                                    src="{{ image_placeholder($product->image, 'thumb') }}"
-                                                    alt="{{ $product->name }}"
-                                                >
+                                                <a href="{{ $product->url }}" title="{{ $product->name }}">
+                                                    <img
+                                                        class="lazyload"
+                                                        data-src="{{ RvMedia::getImageUrl($product->image, 'thumb', false, RvMedia::getDefaultImage()) }}"
+                                                        src="{{ image_placeholder($product->image, 'thumb') }}"
+                                                        alt="{{ $product->name }}"
+                                                    />
+                                                </a>
                                             </div>
                                         </div>
                                     </div>
@@ -57,7 +59,7 @@
                         <tr>
                             <th>{{ __('Title') }}</th>
                             @foreach ($products as $product)
-                                <td>{{ $product->name }}</td>
+                                <td><a href="{{ $product->url }}" title="{{ $product->name }}">{{ $product->name }}</a></td>
                             @endforeach
                         </tr>
                         <tr class="price">
